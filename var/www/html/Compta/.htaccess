@@ -1,0 +1,17 @@
+<Files ~ ".*\.pl$">
+order allow,deny
+deny from all
+satisfy all
+</Files>
+
+<Files ~ ".*\.pm$">
+order allow,deny
+deny from all
+satisfy all
+</Files>
+
+AddType application/octet-stream dump gz txt 
+
+<Files ~ ".*\FEC">
+ForceType application/octet-stream
+</Files>

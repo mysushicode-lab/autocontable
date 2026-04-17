@@ -1,0 +1,94 @@
+{
+  "name": "",
+  "css_prefix_text": "icon-",
+  "css_use_suffix": false,
+  "hinting": true,
+  "units_per_em": 1000,
+  "ascent": 850,
+  "glyphs": [
+    {
+      "uid": "02cca871bb69da75e8ee286b7055832c",
+      "css": "bold",
+      "code": 59392,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "a8cb1c217f02b073db3670c061cc54d2",
+      "css": "italic",
+      "code": 59393,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "d4a4a38a40b728f46dad1de4ac950231",
+      "css": "underline",
+      "code": 61645,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "b3a9e2dab4d19ea3b2f628242c926bfe",
+      "css": "brush",
+      "code": 59394,
+      "src": "iconic"
+    },
+    {
+      "uid": "f4f0e849b805be1f6d76b65581cb3b8b",
+      "css": "align-left",
+      "code": 59395,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "ae6336c46d73af999fe7460c089abb4d",
+      "css": "align-center",
+      "code": 59396,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "e1e7306b47c3c5e6faecce9d32571381",
+      "css": "align-right",
+      "code": 59397,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "25a81737628d1e654a30ad412d7d6dd7",
+      "css": "align-justify",
+      "code": 59398,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "a2a74f5e7b7d9ba054897d8c795a326a",
+      "css": "list-bullet",
+      "code": 61642,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "f6766a8b042c2453a4e153af03294383",
+      "css": "list-numbered",
+      "code": 61643,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "381da2c2f7fd51f8de877c044d7f439d",
+      "css": "picture",
+      "code": 59399,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "3a00327e61b997b58518bd43ed83c3df",
+      "css": "login",
+      "code": 59400,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "0d20938846444af8deb1920dc85a29fb",
+      "css": "logout",
+      "code": 59401,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "8b80d36d4ef43889db10bc1f0dc9a862",
+      "css": "user",
+      "code": 59402,
+      "src": "fontawesome"
+    }
+  ]
+}
