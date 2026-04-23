@@ -1,97 +1,149 @@
-<div align="center">
-    <a href="https://github.com/picsou83/compta.libremen.com">
-        <img width="100" height="100" src="https://user-images.githubusercontent.com/34648108/190251291-28a32777-ad26-4362-8a75-eb41a94c7be3.png">
-    </a> 
-    <br>
-    <br>
-    <p>
-    <a href="https://github.com/picsou83/compta.libremen.com/stargazers">
-      <img src="https://img.shields.io/github/stars/picsou83/compta.libremen.com?style=social" alt="Stars">
-    </a>
-    <a href="https://github.com/picsou83/compta.libremen.com/issues">
-      <img src="https://img.shields.io/github/issues/picsou83/compta.libremen.com?color=orange" alt="Issues">
-    </a>
-    <a href="https://hub.docker.com/r/picsou83/compta-libremen-com">
-      <img src="https://img.shields.io/docker/pulls/picsou83/compta-libremen-com?label=Docker%20pulls" alt="Docker pulls">
-    </a>
-    <a href="https://github.com/picsou83/compta.libremen.com/releases">
-      <img src="https://img.shields.io/github/v/release/picsou83/compta.libremen.com?color=brightgreen" alt="Latest release">
-    </a>
-    <a href="https://github.com/picsou83/compta.libremen.com/blob/main/LICENSE">
-      <img src="https://img.shields.io/badge/Licence-CeCILL--C-blue" alt="Licence CeCILL-C">
-    </a>
-    </p>
-      <h1>compta.libremen.com</h1>
-  </div> 
+# Système de Gestion Comptable pour Carrosserie Automobile
 
- **compta.libremen.com** est un logiciel libre et gratuit de **comptabilité en partie double**, conçu pour simplifier la saisie et le suivi des écritures comptables. 
-Fiable, rapide et intuitif, il permet de gérer toute la comptabilité générale sans dépendre d’un service propriétaire.
+Système automatisé de traitement des factures fournisseurs et rapprochement bancaire, spécialement conçu pour les carrosseries automobiles. Centralise les factures, simplifie la comptabilité et élimine les tâches chronophages.
 
-🧩 Basé sur le projet original de [Vincent Veyron](https://compta.libremen.com/), ce fork indépendant apporte des **améliorations et modules inédits**, avec un **déploiement prêt à l’emploi via Docker** (_Debian + Apache + mod_perl + PostgreSQL_).
+## Objectifs pour Carrosserie
 
-🔗 **Essai immédiat du logiciel** (username: **superadmin** password: **admin**) :  [en cliquant ici](http://141.145.216.88/base/)
+- **Centraliser** toutes les factures fournisseurs (pièces, peinture, sous-traitance)
+- **Matcher** automatiquement les factures avec les dépenses bancaires
+- **Tracer** les commandes par véhicule (immatriculation, N° dossier)
+- **Simplifier** la gestion comptable quotidienne
 
----
+## Fonctionnalités Clés
 
-## 🌍 Fonctionnalités clés
+### Gestion des Factures
+- **Récupération Email** : Télécharge automatiquement les factures PDF des fournisseurs
+- **Extraction Intelligente** : Numéro de facture, date, montant, TVA, N° commande, BL
+- **Données Carrosserie** : Immatriculation véhicule, N° dossier/OT, mode de paiement
 
-| Catégorie | Fonctionnalités |
-|------------|----------------|
-| 📘 Gestion comptable | Journal général, plan comptable, grand livre, balance, export FEC |
-| 📁 Gestion documentaire | Upload, archivage et association de pièces justificatives |
-| 🔁 Automatisation | Écritures récurrentes, tâches automatiques |
-| 📊 Analyse & reporting | Module Bilan (formules personnalisées), détection d’anomalies comptables |
-| 💼 Notes de frais | Génération automatique d’écritures + impression PDF |
-| 💰 Intérêts CCA | Calculs et écritures automatiques |
-| 🧾 PDF | Impression de la balance et du grand livre |
-| ⚡ Saisie rapide | Recherche et ajout d’écritures simplifiés |
-| 📥 Importation | OCR + import CSV |
-| ✉️ Communication | Module de gestion des emails |
-| 🏠 Immobilier | Gestion des baux, logements et quittances |
-| 🐳 Déploiement | Docker prêt à l’emploi pour Linux / Windows / Cloud |
+### Classification Auto (Spécifique Carrosserie)
+- **Pièces détachées** : Carrosserie, mécanique, électricité
+- **Peinture & Vernis** : Axalta, Cromax, Glasurit, Sikkens, etc.
+- **Fournitures Atelier** : Consommables, abrasifs, protection
+- **Sous-traitance** : Dépannage, expertise, contrôle technique
+- **Équipement** : Outillage, machines, pont élévateur
+- **Énergie & Locaux** : Électricité, loyer, charges
+- **Assurances & Frais** : RC Pro, décennale, comptable
 
-> ⚠️ Ce projet **n’est pas affilié** au logiciel original.  
-> Certaines nouveautés du projet officiel peuvent **ne pas être incluses** ici.
+### Rapprochement Bancaire
+- **Import Relevés** : CSV, OFX (toutes banques)
+- **Matching Auto** : Correspondance facture ↔ virement bancaire
+- **Détection Anomalies** : Factures non payées, paiements sans facture
 
----
+### Reporting & Export
+- **Tableau de Bord Mensuel** : Totaux par catégorie, par fournisseur
+- **Export Comptable** : CSV, Excel pour votre expert-comptable
+- **Suivi Immatriculations** : Historique des réparations par véhicule
 
-## 📚 [Wiki et documentation](https://github.com/picsou83/compta.libremen.com/wiki/Home) 
+## Architecture
 
-Le Wiki vous fournit toutes les informations nécessaires pour être opérationnel!.
+```
+src/
+├── email_ingestion/     # Email client & attachment download
+├── invoice_processor/   # PDF parsing & OCR
+├── classifier/          # Supplier detection & categorization
+├── bank_importer/       # Bank statement parsers
+├── reconciliation/      # Invoice ↔ transaction matching
+├── storage/             # Database models & CRUD
+├── reporting/           # Aggregation & export
+├── api/                 # REST API endpoints
+└── scheduler/           # Automated periodic tasks
+```
 
-- **Installation**
-  - ☁️ [Cloud — Installation gratuite](https://github.com/picsou83/compta.libremen.com/wiki/Cloud-installation-gratuite)
-  - 🐧 [Linux — Installation via Hub Docker](https://github.com/picsou83/compta.libremen.com/wiki/Linux-installation-Hub-Docker)
-  - 🧱 [Linux — Installation via Dockerfile](https://github.com/picsou83/compta.libremen.com/wiki/Linux-installation-Dockerfile)
-  - ⚙️ [Linux — Installation manuelle](https://github.com/picsou83/compta.libremen.com/wiki/Linux-installation-manuelle)
-  - 🪟 [Windows — Installation via WSL](https://github.com/picsou83/compta.libremen.com/wiki/Windows-installation-WSL)
-- **Mise à jour**
-  - 🔄️ [Linux — Mise à jour de l’image Docker](https://github.com/picsou83/compta.libremen.com/wiki/Linux-Maj-Docker)
-  - 🔄️ [Linux — Mise à jour manuelle](https://github.com/picsou83/compta.libremen.com/wiki/Linux-Maj-manuelle)
-  - 🔄️ [Windows — Mise à jour via WSL](https://github.com/picsou83/compta.libremen.com/wiki/Windows-Maj-WSL)
-  - 🔄️ [Windows — Mise à jour manuelle](https://github.com/picsou83/compta.libremen.com/wiki/Windows-Maj-manuelle)
-- **Configuration et ressources**
-  - ⚙️ [Configuration](https://github.com/picsou83/compta.libremen.com/wiki/Home)
-  - 📝 [Identifiants & Tips](https://github.com/picsou83/compta.libremen.com/wiki/Identifiants-&-Tips)
-  - 🖼️ [Screenshots](https://github.com/picsou83/compta.libremen.com/wiki/Screenshot)
-  - 🗺️ [Roadmap](https://github.com/picsou83/compta.libremen.com/wiki/Roadmap)
+## Setup
 
----
+1. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-## 💬 Aide et support
+2. Install Tesseract OCR:
+- Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+- macOS: `brew install tesseract`
+- Linux: `sudo apt-get install tesseract-ocr`
 
-- 💡 Questions générales : [Discussions](https://github.com/picsou83/compta.libremen.com/discussions)  
-- 🐛 Signalement de bugs : [Issues](https://github.com/picsou83/compta.libremen.com/issues)  
+3. Configure environment:
+```bash
+cp config/.env.example config/.env
+# Edit config/.env with your credentials
+```
 
----
+4. Initialize database:
+```bash
+python -m src.storage.init_db
+```
 
-## ⚖️ Licence
+5. Run scheduler:
+```bash
+python -m src.scheduler.main
+```
 
-Ce logiciel est une **version modifiée** du projet libre initialement développé par Vincent Veyron.  
-Distribué sous la **licence [CeCILL-C](http://www.cecill.info)**.
+6. Run API server:
+```bash
+uvicorn src.api.main:app --reload
+```
 
-> ⚠️ En accord avec la licence CeCILL-C, le logiciel est fourni sans garantie.  
-> L’utilisateur assume les risques liés à son utilisation.  
-> Ni l’auteur initial, ni le modificateur ne peuvent être tenus responsables de dommages directs ou indirects.
+## Usage Carrosserie
 
+### Traitement Automatique des Factures
+```python
+from src.email_ingestion import EmailClient
+from src.invoice_processor import InvoiceProcessor
 
+# Récupère les factures des fournisseurs auto
+email = EmailClient()
+emails = email.fetch_invoices()  # Cherche : facture, BL, commande, avoir
+
+# Extrait les données (y compris immatriculation, N° OT)
+processor = InvoiceProcessor()
+for email_data in emails:
+    invoice_data = processor.process_invoice(email_data)
+    # Données extraites : montant, TVA, N° commande, immatriculation, etc.
+```
+
+### Rapprochement Bancaire
+```python
+from src.bank_importer import BankImporter
+from src.reconciliation import ReconciliationEngine
+
+# Importe le relevé bancaire
+csv_file = 'releve_bancaire_03-2024.csv'
+bank = BankImporter()
+transactions = bank.import_csv(csv_file)
+
+# Rapproche automatique
+engine = ReconciliationEngine()
+matches = engine.reconcile(invoices, transactions)
+# Détecte : factures payées, impayées, paiements sans facture
+```
+
+### Export pour Expert-Comptable
+```python
+from src.reporting.exporter import Exporter
+
+exporter = Exporter(session)
+
+# Export mensuel avec toutes les données
+exporter.export_invoices_to_csv('export_mars_2024.csv', month=3, year=2024)
+# Colonnes : Facture, Date, Fournisseur, Montant, TVA, Immatriculation, N° OT, etc.
+```
+
+## API Endpoints
+
+- `GET /api/invoices` - List all invoices
+- `POST /api/invoices/process` - Process new invoices
+- `GET /api/reconciliation` - Get reconciliation status
+- `GET /api/reports/monthly` - Monthly totals
+- `GET /api/export/csv` - Export to CSV
+
+## Configuration
+
+Edit `config/.env`:
+- Email credentials (IMAP/Gmail)
+- Database path
+- OCR settings
+- Bank statement format preferences
+
+## License
+
+MIT

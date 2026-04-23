@@ -1,0 +1,35 @@
+{
+  "name": "carrosserie-compta",
+  "version": "1.0.0",
+  "description": "Système de gestion comptable pour carrosserie automobile - Backend Python + Frontend React (Hetzner Cloud)",
+  "scripts": {
+    "preinstall": "cd frontend && npm install",
+    "install:all": "npm install && cd frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:scheduler\"",
+    "dev:scheduler": "python -m src.scheduler.main",
+    "dev:backend": "python -m uvicorn src.api.main:app --reload --port 8000",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "init:db": "python -m src.storage.init_db",
+    "test": "python -m pytest tests/",
+    "lint": "echo No lint configured"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.9"
+  },
+  "keywords": [
+    "carrosserie",
+    "comptabilite",
+    "factures",
+    "automatisation",
+    "python",
+    "react",
+    "fastapi",
+    "hetzner"
+  ],
+  "license": "MIT"
+}
