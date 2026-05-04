@@ -243,7 +243,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
 
       // Header
       doc.setFontSize(20);
-      doc.text('Carrosserie Erik - Historique Véhicule', 14, 20);
+      doc.text('contamail - Historique Véhicule', 14, 20);
 
       doc.setFontSize(12);
       doc.text(`Immatriculation: ${currentVehicle.registration}`, 14, 35);

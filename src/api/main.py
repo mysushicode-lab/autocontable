@@ -3,13 +3,14 @@ FastAPI REST API for invoice processing system
 """
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from pydantic import BaseModel
 from src.storage.database import db
-from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Base
+from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.exporter import Exporter
 from src.invoice_processor import InvoiceProcessor
@@ -20,14 +21,43 @@ import os
 import calendar
 import json
 import shutil
+import hashlib
+import secrets
 
 app = FastAPI(title="Invoice Processing API", version="1.0.0")
+
+# Mount uploads directory for static file serving
+os.makedirs("data/uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="data/uploads"), name="uploads")
 
 
 @app.on_event("startup")
 def startup_event():
     """Create database tables on startup"""
     Base.metadata.create_all(bind=db.engine)
+    # Create default admin user if not exists
+    session = db.get_session()
+    try:
+        # Check if users table exists and admin user exists
+        try:
+            admin_exists = session.query(User).filter(User.username == 'admin').first()
+            if not admin_exists:
+                default_password = 'admin123'
+                password_hash = hashlib.sha256(default_password.encode()).hexdigest()
+                admin = User(
+                    username='admin',
+                    password_hash=password_hash,
+                    role=UserRole.ADMIN,
+                    name='Administrateur',
+                    email='admin@carrosserie-erik.fr'
+                )
+                session.add(admin)
+                session.commit()
+        except Exception as e:
+            print(f"Warning: Could not check/create admin user: {e}")
+            session.rollback()
+    finally:
+        session.close()
 
 UPLOAD_ROOT = os.path.join("data", "uploads")
 INVOICE_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "invoices")
@@ -97,10 +127,11 @@ def _create_or_update_invoice(session: Session, file_path: str, extracted_data: 
 
     invoice.supplier_id = supplier.id if supplier else None
     invoice.amount = extracted_data.get("amount") or 0.0
+    invoice.amount_ht = extracted_data.get("amount_ht")
     invoice.amount_tax = extracted_data.get("amount_tax")
     invoice.date = extracted_data.get("date") or datetime.utcnow()
     invoice.due_date = extracted_data.get("due_date")
-    invoice.category = category_classifier.classify(extracted_data)
+    invoice.category = extracted_data.get("category") or category_classifier.classify(extracted_data)
     invoice.status = InvoiceStatus.PROCESSED if extraction_confidence in {"high", "medium"} else InvoiceStatus.PENDING
     invoice.purchase_order = extracted_data.get("purchase_order")
     invoice.delivery_note = extracted_data.get("delivery_note")
@@ -512,7 +543,10 @@ def list_invoices(
                     "invoice_number": inv.invoice_number,
                     "supplier": inv.supplier.name if inv.supplier else None,
                     "amount": inv.amount,
+                    "amount_ht": inv.amount_ht,
+                    "amount_tax": inv.amount_tax,
                     "date": inv.date.isoformat() if inv.date else None,
+                    "due_date": inv.due_date.isoformat() if inv.due_date else None,
                     "category": inv.category,
                     "status": inv.status.value if inv.status else None,
                     "purchase_order": inv.purchase_order,
@@ -754,6 +788,232 @@ def export_monthly_report_excel(year: int, month: int):
         output_path = os.path.join("data/exports", filename)
         exporter.export_monthly_report_to_excel(output_path, year, month)
         return FileResponse(output_path, filename=filename)
+    finally:
+        session.close()
+
+
+# Settings API endpoints
+class SettingUpdate(BaseModel):
+    value: str
+
+
+@app.get("/api/settings")
+def get_settings(category: Optional[str] = None):
+    """Get all settings or filtered by category"""
+    session = db.get_session()
+    try:
+        query = session.query(Settings)
+        if category:
+            query = query.filter(Settings.category == category)
+        settings = query.all()
+        return {
+            "settings": [
+                {
+                    "key": s.key,
+                    "value": s.value,
+                    "category": s.category,
+                    "description": s.description,
+                    "updated_at": s.updated_at.isoformat() if s.updated_at else None
+                }
+                for s in settings
+            ]
+        }
+    finally:
+        session.close()
+
+
+@app.put("/api/settings/{key}")
+def update_setting(key: str, update: SettingUpdate):
+    """Update a setting value"""
+    session = db.get_session()
+    try:
+        setting = session.query(Settings).filter(Settings.key == key).first()
+        if not setting:
+            setting = Settings(key=key, value=update.value, category="general")
+            session.add(setting)
+        else:
+            setting.value = update.value
+        session.commit()
+        return {"message": "Setting updated", "key": key, "value": update.value}
+    finally:
+        session.close()
+
+
+# Auth endpoints
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    name: str
+    email: Optional[str] = None
+    role: str = "accountant"
+
+
+@app.post("/api/auth/login")
+def login(request: LoginRequest):
+    """Simple login - returns user info if credentials valid"""
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.username == request.username).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+        if user.password_hash != password_hash:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        # Simple token (in production, use JWT)
+        token = secrets.token_hex(16)
+        return {
+            "token": token,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "name": user.name,
+                "role": user.role.value,
+                "email": user.email,
+                "profile_photo": user.profile_photo
+            }
+        }
+    finally:
+        session.close()
+
+
+@app.get("/api/users")
+def list_users():
+    """List all users"""
+    session = db.get_session()
+    try:
+        users = session.query(User).all()
+        return {
+            "users": [
+                {
+                    "id": u.id,
+                    "username": u.username,
+                    "name": u.name,
+                    "email": u.email,
+                    "role": u.role.value,
+                    "created_at": u.created_at.isoformat() if u.created_at else None
+                }
+                for u in users
+            ]
+        }
+    finally:
+        session.close()
+
+
+@app.post("/api/users")
+def create_user(request: CreateUserRequest):
+    """Create a new user (admin only in production)"""
+    session = db.get_session()
+    try:
+        # Check if username exists
+        if session.query(User).filter(User.username == request.username).first():
+            raise HTTPException(status_code=400, detail="Username already exists")
+
+        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+        user = User(
+            username=request.username,
+            password_hash=password_hash,
+            name=request.name,
+            email=request.email,
+            role=UserRole.ADMIN if request.role == "admin" else UserRole.ACCOUNTANT
+        )
+        session.add(user)
+        session.commit()
+        return {"message": "User created", "id": user.id}
+    finally:
+        session.close()
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: int):
+    """Delete a user"""
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if user.username == 'admin':
+            raise HTTPException(status_code=400, detail="Cannot delete admin user")
+        session.delete(user)
+        session.commit()
+        return {"message": "User deleted"}
+    finally:
+        session.close()
+
+
+class UpdateUserRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+
+@app.put("/api/users/{user_id}")
+def update_user(user_id: int, request: UpdateUserRequest):
+    """Update user name and email"""
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if request.name is not None:
+            user.name = request.name
+        if request.email is not None:
+            user.email = request.email
+
+        session.commit()
+        session.refresh(user)
+        return {
+            "message": "User updated",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role.value,
+                "profile_photo": user.profile_photo
+            }
+        }
+    finally:
+        session.close()
+
+
+@app.post("/api/users/{user_id}/profile-photo")
+def upload_profile_photo(user_id: int, file: UploadFile = File(...)):
+    """Upload profile photo for a user"""
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+
+        # Create uploads directory if not exists
+        upload_dir = os.path.join("data", "uploads", "profile_photos")
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Generate filename
+        ext = os.path.splitext(file.filename)[1]
+        filename = f"user_{user_id}{ext}"
+        filepath = os.path.join(upload_dir, filename)
+
+        # Save file
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Update user record
+        user.profile_photo = f"/uploads/profile_photos/{filename}"
+        session.commit()
+
+        return {"message": "Profile photo updated", "photo_url": user.profile_photo}
     finally:
         session.close()
 

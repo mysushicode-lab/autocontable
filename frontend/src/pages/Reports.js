@@ -10,7 +10,7 @@ import {
   Car
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { fetchMonthlyReport, fetchTrends, getExportUrl } from '../api';
+import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
 
 const COLORS = CHART_COLORS_ARRAY;
@@ -60,7 +60,11 @@ const Reports = () => {
   
   // Fetch monthly report for selected period (KPI cards)
   const { data, isLoading } = useQuery(['monthly-report', year, month], () => fetchMonthlyReport({ year, month }));
-  
+
+  // Fetch individual invoices for client-side CSV exports (needs amount_ht, amount_tax, due_date)
+  const { data: invoicesData } = useQuery(['report-invoices', year, month], () => fetchInvoices({ year, month }));
+  const exportInvoices = invoicesData?.invoices || [];
+
   // Fetch trends for evolution chart with selected period
   const { data: trendsData, isLoading: trendsLoading } = useQuery(
     ['trends', trendMonths], 
@@ -78,89 +82,119 @@ const Reports = () => {
     invoices: values.count,
   })).sort((a, b) => b.amount - a.amount);
 
+  // PCG account mapping (Plan Comptable Général — carrosserie auto)
+  const COMPTE_CHARGES = {
+    'Pièces détachées':              '607100',
+    'Peinture et vernis':            '607200',
+    'Fournitures atelier':           '606400',
+    'Sous-traitance':                '611000',
+    'Équipement et outillage':       '606310',
+    'Énergie et locaux':             '606110',
+    'Assurances et frais':           '616000',
+    'Déplacements et véhicules':     '625100',
+    'Informatique et communication': '626000',
+    'Formation et divers':           '628000',
+  };
+  const STATUS_FR = { pending: 'En attente', processed: 'Traité', matched: 'Rapproché', unmatched: 'Non rapproché' };
+
   // Export Grand Livre (all invoices with details)
   const exportGrandLivre = () => {
-    const invoices = data?.invoices || [];
-    const headers = ['Date', 'N° Facture', 'Fournisseur', 'Catégorie', 'Description', 'Montant HT', 'TVA', 'Montant TTC', 'Mode Paiement', 'Statut'];
+    const invoices = exportInvoices;
+    const headers = ['Date', 'Échéance', 'N° Facture', 'Fournisseur', 'Catégorie', 'N° Compte PCG', 'Montant HT', 'TVA', 'Montant TTC', 'Mode Paiement', 'Statut'];
     const rows = invoices.map((inv) => [
       inv.date ? new Date(inv.date).toLocaleDateString('fr-FR') : '-',
+      inv.due_date ? new Date(inv.due_date).toLocaleDateString('fr-FR') : '-',
       inv.invoice_number,
-      inv.supplier,
-      inv.category,
-      inv.description || '-',
-      inv.amount_ht || inv.amount,
-      inv.tva_amount || 0,
-      inv.amount,
+      inv.supplier || '-',
+      inv.category || '-',
+      COMPTE_CHARGES[inv.category] || '608000',
+      (inv.amount_ht ?? 0).toFixed(2),
+      (inv.amount_tax ?? 0).toFixed(2),
+      (inv.amount ?? 0).toFixed(2),
       inv.payment_method || '-',
-      inv.status,
+      STATUS_FR[inv.status] || inv.status,
     ]);
     downloadCSV(`grand_livre_${period}.csv`, headers, rows);
   };
 
   // Export Balance (summary by account/category)
   const exportBalance = () => {
-    const categories = Object.entries(data?.by_category || {});
-    const headers = ['Compte', 'Libellé', 'Total Débit', 'Total Crédit', 'Solde'];
-    const rows = categories.map(([name, values]) => {
-      const accountNum = {
-        'Pièces détachées': '601',
-        'Peinture et vernis': '602',
-        'Fournitures atelier': '606',
-        'Sous-traitance': '611',
-        'Équipement et outillage': '213',
-      }[name] || '600';
-      return [
-        accountNum,
-        name,
-        values.amount.toFixed(2),
-        '0.00',
-        values.amount.toFixed(2),
-      ];
+    const invoices = exportInvoices;
+    const headers = ['N° Compte', 'Libellé compte', 'Total Débit', 'Total Crédit', 'Solde'];
+    const rows = [];
+
+    // Accumulate per charge account
+    const chargeMap = {};
+    let totalHT = 0, totalTVA = 0, totalTTC = 0;
+    invoices.forEach((inv) => {
+      const compte = COMPTE_CHARGES[inv.category] || '608000';
+      const label = inv.category || 'Achats divers';
+      const ht = inv.amount_ht ?? 0;
+      const tva = inv.amount_tax ?? 0;
+      const ttc = inv.amount ?? 0;
+      if (!chargeMap[compte]) chargeMap[compte] = { label, debit: 0 };
+      chargeMap[compte].debit += ht;
+      totalHT += ht; totalTVA += tva; totalTTC += ttc;
     });
-    // Add total row
-    const total = data?.total_amount || 0;
-    rows.push(['', 'TOTAL', total.toFixed(2), '0.00', total.toFixed(2)]);
+
+    // Ligne par compte de charge (6xx)
+    Object.entries(chargeMap).sort().forEach(([compte, { label, debit }]) => {
+      rows.push([compte, label, debit.toFixed(2), '0.00', debit.toFixed(2)]);
+    });
+    // Ligne TVA déductible (445660)
+    if (totalTVA) rows.push(['445660', 'TVA déductible — achats et services', totalTVA.toFixed(2), '0.00', totalTVA.toFixed(2)]);
+    // Ligne Fournisseurs (401000)
+    rows.push(['401000', 'Fournisseurs', '0.00', totalTTC.toFixed(2), (-totalTTC).toFixed(2)]);
+    // Total de contrôle (doit être 0 — partie double)
+    const controle = totalHT + totalTVA - totalTTC;
+    rows.push(['', 'TOTAL DE CONTRÔLE (doit être 0)', (totalHT + totalTVA).toFixed(2), totalTTC.toFixed(2), controle.toFixed(2)]);
+
     downloadCSV(`balance_${period}.csv`, headers, rows);
   };
 
-  // Export Journal des Achats
+  // Export Journal des Achats (écritures comptables PCG — partie double)
   const exportJournalAchats = () => {
-    const invoices = data?.invoices || [];
-    const headers = ['Date', 'Journée', 'N° Pièce', 'N° Compte', 'Libellé', 'Débit', 'Crédit'];
+    const invoices = exportInvoices;
+    const headers = ['Date', 'Journal', 'N° Pièce', 'N° Compte', 'Libellé compte', 'Libellé écriture', 'Débit', 'Crédit'];
     const rows = [];
 
     invoices.forEach((inv) => {
-      const accountNum = {
-        'Pièces détachées': '601',
-        'Peinture et vernis': '602',
-        'Fournitures atelier': '606',
-        'Sous-traitance': '611',
-        'Équipement et outillage': '213',
-      }[inv.category] || '600';
-
+      const compte = COMPTE_CHARGES[inv.category] || '608000';
+      const supplier = inv.supplier || 'Fournisseur inconnu';
       const date = inv.date ? new Date(inv.date).toLocaleDateString('fr-FR') : '-';
+      const ht  = inv.amount_ht  ?? 0;
+      const tva = inv.amount_tax ?? 0;
+      const ttc = inv.amount     ?? 0;
+      const isAvoir = ttc < 0;
+      const libelleBase = `${isAvoir ? 'Avoir' : 'Facture'} ${supplier} — ${inv.invoice_number}`;
 
-      // Débit compte charge
+      // Ligne 1 — Compte de charge (6xx) : débit HT (ou crédit si avoir)
       rows.push([
-        date,
-        'ACH',
-        inv.invoice_number,
-        accountNum,
-        `${inv.supplier} - ${inv.description || inv.category}`,
-        inv.amount.toFixed(2),
-        '',
+        date, 'ACH', inv.invoice_number,
+        compte, inv.category || 'Achats divers',
+        libelleBase,
+        isAvoir ? '' : Math.abs(ht).toFixed(2),
+        isAvoir ? Math.abs(ht).toFixed(2) : '',
       ]);
 
-      // Crédit compte fournisseur (401) ou banque (512)
-      const creditAccount = inv.payment_method === 'card' || inv.payment_method === 'transfer' ? '512' : '401';
+      // Ligne 2 — TVA déductible (445660) : débit TVA (ou crédit si avoir)
+      if (tva !== 0) {
+        rows.push([
+          date, 'ACH', inv.invoice_number,
+          '445660', 'TVA déductible — achats et services',
+          `TVA — ${libelleBase}`,
+          isAvoir ? '' : Math.abs(tva).toFixed(2),
+          isAvoir ? Math.abs(tva).toFixed(2) : '',
+        ]);
+      }
+
+      // Ligne 3 — Fournisseur (401000) : crédit TTC (ou débit si avoir)
       rows.push([
-        date,
-        'ACH',
-        inv.invoice_number,
-        creditAccount,
-        `${inv.supplier} - ${inv.invoice_number}`,
-        '',
-        inv.amount.toFixed(2),
+        date, 'ACH', inv.invoice_number,
+        '401000', 'Fournisseurs',
+        `Fournisseur — ${supplier}`,
+        isAvoir ? Math.abs(ttc).toFixed(2) : '',
+        isAvoir ? '' : Math.abs(ttc).toFixed(2),
       ]);
     });
 
@@ -181,7 +215,7 @@ const Reports = () => {
           <h1 className="text-2xl font-bold text-gray-900">Rapports Comptables</h1>
           <p className="text-gray-500">Analyse et export pour l'expert-comptable</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <select
             className="px-4 py-2 border rounded-lg"
             value={period}
@@ -193,22 +227,6 @@ const Reports = () => {
               </option>
             ))}
           </select>
-          <select
-            className="px-4 py-2 border rounded-lg"
-            value={trendMonths}
-            onChange={(e) => setTrendMonths(Number(e.target.value))}
-            title="Période d'analyse pour le graphique"
-          >
-            {PERIOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                Graphique: {opt.label}
-              </option>
-            ))}
-          </select>
-          <a href={exportExcelUrl} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export Excel
-          </a>
         </div>
       </div>
 
@@ -245,7 +263,18 @@ const Reports = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Dépenses mensuelles */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Évolution des Dépenses</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Évolution des Dépenses</h3>
+            <select
+              className="px-3 py-1.5 border rounded-lg text-sm"
+              value={trendMonths}
+              onChange={(e) => setTrendMonths(Number(e.target.value))}
+            >
+              {PERIOD_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>

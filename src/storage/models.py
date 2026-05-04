@@ -2,7 +2,7 @@
 Database models for invoice processing and bank reconciliation
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Enum
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Enum, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
@@ -17,14 +17,44 @@ class InvoiceStatus(enum.Enum):
     UNMATCHED = "unmatched"
 
 
+class UserRole(enum.Enum):
+    ADMIN = "admin"
+    ACCOUNTANT = "accountant"
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(Enum(UserRole), default=UserRole.ACCOUNTANT)
+    name = Column(String(100), nullable=True)
+    email = Column(String(100), nullable=True)
+    profile_photo = Column(String(255), nullable=True)  # URL path to photo
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Settings(Base):
+    __tablename__ = 'settings'
+
+    id = Column(Integer, primary_key=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value = Column(Text, nullable=True)
+    category = Column(String(50), nullable=False, default='general')  # email, scheduler, general
+    description = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Invoice(Base):
     __tablename__ = 'invoices'
     
     id = Column(Integer, primary_key=True)
     invoice_number = Column(String(100), unique=True, nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=True)
-    amount = Column(Float, nullable=False)
-    amount_tax = Column(Float, nullable=True)
+    amount = Column(Float, nullable=False)       # Total TTC (à payer)
+    amount_ht = Column(Float, nullable=True)      # Montant HT (hors taxes)
+    amount_tax = Column(Float, nullable=True)     # Montant TVA
     date = Column(DateTime, nullable=False)
     due_date = Column(DateTime, nullable=True)
     category = Column(String(100), nullable=True)

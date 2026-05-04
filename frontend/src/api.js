@@ -105,4 +105,49 @@ export const getInvoicePdfUrl = (invoiceId) => {
   return `${API_BASE_URL}/api/invoices/${invoiceId}/download`;
 };
 
+export const fetchSettings = async (category) => {
+  const params = category ? { category } : {};
+  const response = await api.get('/api/settings', { params });
+  return response.data;
+};
+
+export const updateSetting = async (key, value) => {
+  const response = await api.put(`/api/settings/${key}`, { value });
+  return response.data;
+};
+
+export const login = async (username, password) => {
+  const response = await api.post('/api/auth/login', { username, password });
+  return response.data;
+};
+
+export const fetchUsers = async () => {
+  const response = await api.get('/api/users');
+  return response.data;
+};
+
+export const createUser = async (userData) => {
+  const response = await api.post('/api/users', userData);
+  return response.data;
+};
+
+export const deleteUser = async (userId) => {
+  const response = await api.delete(`/api/users/${userId}`);
+  return response.data;
+};
+
+export const updateUser = async (userId, userData) => {
+  const response = await api.put(`/api/users/${userId}`, userData);
+  return response.data;
+};
+
+export const uploadProfilePhoto = async (userId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post(`/api/users/${userId}/profile-photo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
 export default api;

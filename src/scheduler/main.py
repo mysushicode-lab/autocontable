@@ -54,6 +54,7 @@ class InvoiceScheduler:
             invoice_number=invoice_number,
             supplier_id=invoice_data.get('supplier_id'),
             amount=invoice_data.get('amount') or 0,
+            amount_ht=invoice_data.get('amount_ht'),
             amount_tax=invoice_data.get('amount_tax'),
             date=invoice_data.get('date') or datetime.now(),
             due_date=invoice_data.get('due_date'),
@@ -150,10 +151,11 @@ class InvoiceScheduler:
                     if supplier:
                         invoice_data['supplier_id'] = supplier.id
                     
-                    # Classify category
-                    category = category_classifier.classify(invoice_data)
-                    if category:
-                        invoice_data['category'] = category
+                    # Classify category — AI provides directly; keyword classifier as fallback only
+                    if not invoice_data.get('category'):
+                        category = category_classifier.classify(invoice_data)
+                        if category:
+                            invoice_data['category'] = category
 
                     invoice = self._build_invoice(invoice_data)
                     

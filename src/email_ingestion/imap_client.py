@@ -234,11 +234,18 @@ class IMAPClient:
             
             # Sanitize filename
             filename = filename.replace('/', '_').replace('\\', '_')
-            
-            # Save file
+
+            # Prefix with hash to avoid overwriting files with identical names from different emails
+            content_hash = attachment.get('content_hash', '')
+            if content_hash:
+                name, ext = os.path.splitext(filename)
+                filename = f"{content_hash[:8]}_{name}{ext}"
+
+            # Save file (skip if identical file already exists)
             filepath = os.path.join(save_dir, filename)
-            with open(filepath, 'wb') as f:
-                f.write(content)
+            if not os.path.exists(filepath):
+                with open(filepath, 'wb') as f:
+                    f.write(content)
             
             saved_files.append(filepath)
         

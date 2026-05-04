@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { 
   CreditCard, 
@@ -23,6 +25,8 @@ import {
 const Reconciliation = () => {
   const [activeTab, setActiveTab] = useState('matches');
   const bankFileInputRef = useRef(null);
+  const navigate = useNavigate();
+  const { add: addNotif } = useNotifications();
   const queryClient = useQueryClient();
   const today = new Date();
   const filters = { month: today.getMonth() + 1, year: today.getFullYear() };
@@ -42,38 +46,43 @@ const Reconciliation = () => {
   const importMutation = useMutation(importBankStatementFile, {
     onSuccess: (result) => {
       refreshAll();
-      alert(`Relevé importé: ${result.imported_count} transaction(s)`);
+      addNotif(NOTIF_TYPES.SUCCESS, 'Relevé bancaire importé', `${result.imported_count} opération${result.imported_count > 1 ? 's' : ''} importée${result.imported_count > 1 ? 's' : ''} avec succès.`);
     },
     onError: (error) => {
-      alert(error?.response?.data?.detail || 'Échec de l\'import bancaire');
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur import bancaire', error?.response?.data?.detail || 'Impossible d\'importer le relevé.');
     },
   });
 
   const runMutation = useMutation(() => runAutomaticReconciliation(filters), {
     onSuccess: (result) => {
       refreshAll();
-      alert(`Rapprochement terminé: ${result.matches_created} correspondance(s) créée(s)`);
+      const n = result.matches_created;
+      addNotif(
+        n > 0 ? NOTIF_TYPES.SUCCESS : NOTIF_TYPES.INFO,
+        'Rapprochement automatique terminé',
+        n > 0 ? `${n} correspondance${n > 1 ? 's' : ''} créée${n > 1 ? 's' : ''} automatiquement.` : 'Aucune nouvelle correspondance trouvée.'
+      );
     },
     onError: (error) => {
-      alert(error?.response?.data?.detail || 'Échec du rapprochement automatique');
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur rapprochement', error?.response?.data?.detail || 'Analyse automatique échouée.');
     },
   });
 
   const confirmMutation = useMutation(confirmReconciliationMatch, {
-    onSuccess: () => refreshAll(),
+    onSuccess: () => { refreshAll(); addNotif(NOTIF_TYPES.SUCCESS, 'Correspondance confirmée', 'La facture a été rapprochée manuellement.'); },
   });
 
   const rejectMutation = useMutation(rejectReconciliationMatch, {
-    onSuccess: () => refreshAll(),
+    onSuccess: () => { refreshAll(); addNotif(NOTIF_TYPES.WARNING, 'Correspondance rejetée', 'Le rapprochement a été rejeté.'); },
   });
 
   const manualLinkMutation = useMutation(createManualReconciliationLink, {
     onSuccess: () => {
       refreshAll();
-      alert('Lien manuel créé');
+      addNotif(NOTIF_TYPES.SUCCESS, 'Lien manuel créé', 'La facture a été liée manuellement à l\'opération bancaire.');
     },
     onError: (error) => {
-      alert(error?.response?.data?.detail || 'Échec du lien manuel');
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur lien manuel', error?.response?.data?.detail || 'Impossible de créer le lien.');
     },
   });
 
@@ -301,7 +310,7 @@ const Reconciliation = () => {
                     <button onClick={() => handleManualLink(tx.db_id || tx.id)} className="px-3 py-2 bg-white border rounded-lg text-sm hover:bg-gray-50">
                       Lier manuellement
                     </button>
-                    <button onClick={() => window.alert('Importez d\'abord la facture via le bouton Nouvelle Facture, puis utilisez Lier manuellement.')} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                    <button onClick={() => navigate('/invoices')} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
                       Créer facture
                     </button>
                   </div>

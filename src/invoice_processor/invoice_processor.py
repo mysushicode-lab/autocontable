@@ -44,28 +44,38 @@ class InvoiceProcessor:
             raise ValueError(f"Unsupported file format: {file_ext}")
     
     def _process_pdf(self, pdf_path: str, email_metadata: dict = None) -> Dict:
-        """Process PDF invoice - AI first, then fallback to regex/OCR"""
+        """Process PDF invoice - Vision API for scanned, text API for digital PDFs. OCR only if AI disabled."""
         email_metadata = email_metadata or {}
-        
-        # Extract text from PDF
+        filename = os.path.basename(pdf_path)
+        email_from = email_metadata.get('email_from', '')
+        email_subject = email_metadata.get('email_subject', '')
+        email_body = email_metadata.get('email_body', '')
+
+        # Extract text from PDF with pdfplumber
         text = self.pdf_parser.extract_text(pdf_path)
-        
-        # Try AI extraction first if enabled
+        is_scanned = len(text.strip()) < 100
+
         if self.use_ai and self.ai_extractor and self.ai_extractor.is_enabled():
-            ai_result = self.ai_extractor.qualify_document(
-                text=text,
-                filename=os.path.basename(pdf_path),
-                email_from=email_metadata.get('email_from', ''),
-                email_subject=email_metadata.get('email_subject', ''),
-                email_body=email_metadata.get('email_body', '')
-            )
-                        # If AI successfully identified as invoice, use its fields
+            # For scanned PDFs: send image directly to Vision API (GPT reads original document)
+            if is_scanned:
+                print(f"[AI] Scanned PDF detected — using Vision API for {filename}")
+                ai_result = self.ai_extractor.extract_from_pdf_as_images(
+                    pdf_path, filename, email_from, email_subject, email_body
+                )
+            else:
+                # Digital PDF: send extracted text to AI (GPT analyzes full text)
+                ai_result = self.ai_extractor.qualify_document(
+                    text=text, filename=filename,
+                    email_from=email_from, email_subject=email_subject, email_body=email_body
+                )
+
             if ai_result.get('is_invoice') and ai_result.get('fields'):
                 fields = ai_result['fields']
                 return {
                     'invoice_number': fields.get('invoice_number'),
                     'date': fields.get('date'),
                     'amount': fields.get('amount'),
+                    'amount_ht': fields.get('amount_ht'),
                     'amount_tax': fields.get('amount_tax'),
                     'due_date': fields.get('due_date'),
                     'supplier_name': fields.get('supplier_name'),
@@ -75,14 +85,15 @@ class InvoiceProcessor:
                     'delivery_note': fields.get('delivery_note'),
                     'work_order_reference': fields.get('work_order_reference'),
                     'payment_method': fields.get('payment_method'),
+                    'category': fields.get('category'),
                     'extraction_warnings': [],
                     'extraction_confidence': ai_result.get('confidence', 'medium'),
                     'ai_used': True,
+                    'vision_used': is_scanned,
                     'ai_document_type': ai_result.get('document_type'),
                     'raw_text': text
                 }
-            
-            # If AI says not an invoice, return empty but mark as processed
+
             if ai_result.get('is_invoice') is False:
                 return {
                     'invoice_number': None,
@@ -94,51 +105,39 @@ class InvoiceProcessor:
                     'ai_used': True,
                     'raw_text': text
                 }
-        
-        # Fallback: use regex-based PDF parser
+
+        # LAST RESORT: OCR only when AI is completely disabled
+        if self.use_ocr and self.ocr_engine and is_scanned:
+            ocr_text = self.ocr_engine.extract_text_from_pdf_page(pdf_path)
+            if ocr_text.strip():
+                text = ocr_text
         data = self.pdf_parser.extract_invoice_data_from_text(text)
+        data['ocr_used'] = is_scanned and not self.use_ai
         data['ai_used'] = False
-        
-        # Check if OCR is needed (for scanned PDFs)
-        if self.use_ocr and self.ocr_engine:
-            if not data.get('invoice_number') or self.ocr_engine.is_scanned_pdf(pdf_path):
-                ocr_text = self.ocr_engine.extract_text_from_pdf_page(pdf_path)
-                if ocr_text.strip():
-                    data = self.pdf_parser.extract_invoice_data_from_text(ocr_text)
-                data['ocr_used'] = True
-            else:
-                data['ocr_used'] = False
-        else:
-            data['ocr_used'] = False
-        
         return data
     
     def _process_image(self, image_path: str, email_metadata: dict = None) -> Dict:
-        """Process image invoice - AI first, then OCR fallback"""
+        """Process image invoice - Vision API only (GPT reads original image). OCR only if AI disabled."""
         email_metadata = email_metadata or {}
-        
-        if not self.ocr_engine:
-            raise ValueError("OCR engine not enabled")
-        
-        # Always need OCR for images to get text
-        text = self.ocr_engine.extract_text_from_image(image_path)
-        
-        # Try AI extraction first if enabled
+        filename = os.path.basename(image_path)
+        email_from = email_metadata.get('email_from', '')
+        email_subject = email_metadata.get('email_subject', '')
+        email_body = email_metadata.get('email_body', '')
+
+        # GPT Vision API reads the original image directly — no OCR needed
         if self.use_ai and self.ai_extractor and self.ai_extractor.is_enabled():
-            ai_result = self.ai_extractor.qualify_document(
-                text=text,
-                filename=os.path.basename(image_path),
-                email_from=email_metadata.get('email_from', ''),
-                email_subject=email_metadata.get('email_subject', ''),
-                email_body=email_metadata.get('email_body', '')
+            print(f"[AI] Using Vision API for image: {filename}")
+            ai_result = self.ai_extractor.extract_from_image_file(
+                image_path, filename, email_from, email_subject, email_body
             )
-            
+
             if ai_result.get('is_invoice') and ai_result.get('fields'):
                 fields = ai_result['fields']
                 return {
                     'invoice_number': fields.get('invoice_number'),
                     'date': fields.get('date'),
                     'amount': fields.get('amount'),
+                    'amount_ht': fields.get('amount_ht'),
                     'amount_tax': fields.get('amount_tax'),
                     'due_date': fields.get('due_date'),
                     'supplier_name': fields.get('supplier_name'),
@@ -148,14 +147,16 @@ class InvoiceProcessor:
                     'delivery_note': fields.get('delivery_note'),
                     'work_order_reference': fields.get('work_order_reference'),
                     'payment_method': fields.get('payment_method'),
+                    'category': fields.get('category'),
                     'extraction_warnings': [],
                     'extraction_confidence': ai_result.get('confidence', 'medium'),
-                    'ocr_used': True,
+                    'ocr_used': False,
+                    'vision_used': True,
                     'ai_used': True,
                     'ai_document_type': ai_result.get('document_type'),
-                    'raw_text': text
+                    'raw_text': ''
                 }
-            
+
             if ai_result.get('is_invoice') is False:
                 return {
                     'invoice_number': None,
@@ -164,13 +165,19 @@ class InvoiceProcessor:
                     'not_an_invoice': True,
                     'ai_document_type': ai_result.get('document_type', 'unknown'),
                     'extraction_confidence': 'low',
-                    'ocr_used': True,
+                    'ocr_used': False,
+                    'vision_used': True,
                     'ai_used': True,
-                    'raw_text': text
+                    'raw_text': ''
                 }
-        
-        # Fallback to regex on OCR text
+
+        # LAST RESORT: OCR only when AI is completely disabled
+        if not self.ocr_engine:
+            raise ValueError("OCR engine not enabled and AI is unavailable")
+        print(f"[AI] Vision unavailable — using OCR for {filename}")
+        text = self.ocr_engine.extract_text_from_image(image_path)
         data = self.pdf_parser.extract_invoice_data_from_text(text)
         data['ocr_used'] = True
+        data['vision_used'] = False
         data['ai_used'] = False
         return data

@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   FileText,
@@ -88,6 +89,7 @@ const Invoices = () => {
     setVehicleFilter('');
   };
 
+  const { add: addNotif } = useNotifications();
   const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));
   const invoices = data?.invoices || [];
   const uploadMutation = useMutation(uploadInvoiceFile, {
@@ -95,10 +97,15 @@ const Invoices = () => {
       queryClient.invalidateQueries('invoices');
       queryClient.invalidateQueries('dashboard-invoices');
       queryClient.invalidateQueries('dashboard-report');
-      alert(`Facture importée: ${result.invoice.invoice_number}`);
+      const inv = result.invoice;
+      addNotif(
+        NOTIF_TYPES.SUCCESS,
+        'Facture importée',
+        `N° ${inv.invoice_number}${inv.supplier ? ` — ${inv.supplier}` : ''}${inv.amount ? ` — ${Number(inv.amount).toLocaleString('fr-FR')} €` : ''}`
+      );
     },
     onError: (error) => {
-      alert(error?.response?.data?.detail || 'Échec de l\'import de la facture');
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur import facture', error?.response?.data?.detail || 'Impossible d\'importer la facture.');
     },
   });
 
@@ -126,10 +133,6 @@ const Invoices = () => {
           <p className="text-gray-500">Gestion et suivi des factures carrosserie</p>
         </div>
         <div className="flex gap-3">
-          <a href={exportUrl} className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </a>
           <button onClick={handleUploadClick} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
             <FileText className="w-4 h-4" />
             {uploadMutation.isLoading ? 'Import...' : 'Nouvelle Facture'}
