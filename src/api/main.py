@@ -28,7 +28,7 @@ app = FastAPI(title="Invoice Processing API", version="1.0.0")
 
 # Mount uploads directory for static file serving
 os.makedirs("data/uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="data/uploads"), name="uploads")
+app.mount("/api/uploads", StaticFiles(directory="data/uploads"), name="uploads")
 
 
 @app.on_event("startup")
@@ -1040,7 +1040,7 @@ def upload_profile_photo(user_id: int, file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, buffer)
 
         # Update user record
-        user.profile_photo = f"/uploads/profile_photos/{filename}"
+        user.profile_photo = f"/api/uploads/profile_photos/{filename}"
         session.commit()
 
         return {"message": "Profile photo updated", "photo_url": user.profile_photo}
