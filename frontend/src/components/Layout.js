@@ -8,7 +8,6 @@ import {
   Car,
   Settings,
   Bell,
-  Search,
   CheckCircle,
   AlertCircle,
   Info,
@@ -100,28 +99,14 @@ const Layout = ({ children }) => {
           })}
         </nav>
         
-        <div className="p-4 border-t border-slate-700">
-          <Link to="/settings" className="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg w-full">
-            <Settings className="w-5 h-5" />
-            Paramètres
-          </Link>
-        </div>
+        
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input 
-                type="text"
-                placeholder="Rechercher une facture, immatriculation, fournisseur..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
+          <div className="flex-1" />
           
           <div className="flex items-center gap-4">
             {/* Bell + Notification Panel */}

@@ -9,7 +9,7 @@ from .ai_extractor import AIInvoiceExtractor
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 
 class InvoiceProcessor:
@@ -53,21 +53,14 @@ class InvoiceProcessor:
 
         # Extract text from PDF with pdfplumber
         text = self.pdf_parser.extract_text(pdf_path)
-        is_scanned = len(text.strip()) < 100
+        is_scanned = True  # Always use Vision API for better accuracy
 
         if self.use_ai and self.ai_extractor and self.ai_extractor.is_enabled():
-            # For scanned PDFs: send image directly to Vision API (GPT reads original document)
-            if is_scanned:
-                print(f"[AI] Scanned PDF detected — using Vision API for {filename}")
-                ai_result = self.ai_extractor.extract_from_pdf_as_images(
-                    pdf_path, filename, email_from, email_subject, email_body
-                )
-            else:
-                # Digital PDF: send extracted text to AI (GPT analyzes full text)
-                ai_result = self.ai_extractor.qualify_document(
-                    text=text, filename=filename,
-                    email_from=email_from, email_subject=email_subject, email_body=email_body
-                )
+            print(f"[AI] Using Vision API for PDF: {filename}")
+            ai_result = self.ai_extractor.extract_from_pdf_as_images(
+                pdf_path, filename, email_from, email_subject, email_body
+            )
+            print(f"[AI] Vision result: is_invoice={ai_result.get('is_invoice')}, confidence={ai_result.get('confidence')}, reason={ai_result.get('reason', '')}")
 
             if ai_result.get('is_invoice') and ai_result.get('fields'):
                 fields = ai_result['fields']

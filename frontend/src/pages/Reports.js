@@ -57,6 +57,8 @@ const Reports = () => {
   const [period, setPeriod] = useState(monthOptions[0].value);
   const [trendMonths, setTrendMonths] = useState(12); // For evolution chart
   const [year, month] = period.split('-').map(Number);
+  const periodLabel = monthOptions.find(o => o.value === period)?.label || period;
+  const periodDisplay = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
   
   // Fetch monthly report for selected period (KPI cards)
   const { data, isLoading } = useQuery(['monthly-report', year, month], () => fetchMonthlyReport({ year, month }));
@@ -239,6 +241,7 @@ const Reports = () => {
           value={`${(data?.total_amount || 0).toLocaleString('fr-FR')} €`}
           change={`${(trendsData?.month_over_month_change || 0).toFixed(1)}%`}
           trend={trendsData?.trend_direction || 'stable'}
+          invertTrend
           icon={BarChart3}
         />
         <KpiCard 
@@ -289,37 +292,57 @@ const Reports = () => {
 
         {/* Répartition par catégorie */}
         <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Répartition par Catégorie</h3>
-          <div className="h-64">
-            {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `${Number(value).toLocaleString('fr-FR')} €`} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">Aucune donnée</div>
-            )}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Répartition par Catégorie</h3>
+            <span className="text-sm text-gray-400">{periodDisplay}</span>
           </div>
+          {categoryData.length > 0 ? (
+            <div className="flex gap-4">
+              <div className="h-52 flex-shrink-0" style={{ width: 180 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${Number(value).toLocaleString('fr-FR')} €`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 flex flex-col justify-center gap-1.5 overflow-auto">
+                {categoryData.map((entry, index) => {
+                  const total = categoryData.reduce((s, e) => s + e.value, 0);
+                  const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
+                  return (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                      <span className="truncate text-gray-700 flex-1" title={entry.name}>{entry.name}</span>
+                      <span className="text-gray-500 font-medium flex-shrink-0">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="h-52 flex items-center justify-center text-sm text-gray-500">Aucune donnée</div>
+          )}
         </div>
       </div>
 
       {/* Top Fournisseurs */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Top Fournisseurs - {period}</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900">Top Fournisseurs</h3>
+          <span className="text-sm text-gray-400">{periodDisplay}</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -406,10 +429,13 @@ const Reports = () => {
   );
 };
 
-const KpiCard = ({ title, value, change, icon: Icon, trend }) => {
+const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend }) => {
   const isUp = trend === 'up';
   const isDown = trend === 'down';
-  
+  // For expenses: up = bad (red), down = good (green)
+  const isPositive = invertTrend ? isDown : isUp;
+  const isNegative = invertTrend ? isUp : isDown;
+
   return (
     <div className="bg-white rounded-xl shadow-sm border p-6">
       <div className="flex items-center justify-between">
@@ -418,7 +444,7 @@ const KpiCard = ({ title, value, change, icon: Icon, trend }) => {
           <p className="text-2xl font-bold text-gray-900">{value}</p>
           {change && (
             <div className={`flex items-center gap-1 mt-1 text-sm ${
-              isUp ? 'text-green-600' : isDown ? 'text-red-600' : 'text-gray-600'
+              isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-600'
             }`}>
               {isUp ? <TrendingUp className="w-4 h-4" /> : isDown ? <TrendingDown className="w-4 h-4" /> : <span className="w-4 h-4">−</span>}
               {change} vs mois dernier

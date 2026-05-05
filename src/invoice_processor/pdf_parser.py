@@ -1,4 +1,4 @@
-﻿"""
+"""
 PDF parsing - Simplified: AI handles all extraction
 Only extracts raw text from PDF, no regex pattern matching
 """
@@ -8,7 +8,7 @@ import pdfplumber
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 
 class PDFParser:

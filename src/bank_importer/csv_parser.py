@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 BANK_DATE_FORMAT = os.getenv('BANK_DATE_FORMAT', '%d/%m/%Y')
 

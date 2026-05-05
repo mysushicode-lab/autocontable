@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 MATCHING_AMOUNT_TOLERANCE = float(os.getenv('MATCHING_AMOUNT_TOLERANCE', 0.01))
 MATCHING_DATE_WINDOW_DAYS = int(os.getenv('MATCHING_DATE_WINDOW_DAYS', 7))

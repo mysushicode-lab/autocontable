@@ -31,6 +31,7 @@ ENV/
 *.sqlite3
 
 # Environment variables
+.env
 config/.env
 
 # Data files
@@ -58,6 +59,11 @@ Thumbs.db
 # Temporary files
 *.tmp
 temp/
+
+# Debug / test scripts (not for production)
+delete_invoice.py
+test_invoice.py
+debug_invoices.py
 
 # Node modules
 node_modules/

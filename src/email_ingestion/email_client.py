@@ -10,18 +10,18 @@ from dotenv import load_dotenv
 from .imap_client import IMAPClient
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 
 class EmailClient:
     """Main email client for invoice ingestion"""
-    
-    def __init__(self, email_type: str = None):
+
+    def __init__(self, email_type: str = None, server=None, port=None, email=None, password=None, folder=None):
         self.email_type = email_type or os.getenv('EMAIL_TYPE', 'imap')
         self.client = None
-        
+
         if self.email_type == 'imap':
-            self.client = IMAPClient()
+            self.client = IMAPClient(server=server, port=port, email=email, password=password, folder=folder)
     
     def fetch_invoices(
         self,
@@ -45,7 +45,7 @@ class EmailClient:
         if not self.client:
             raise NotImplementedError(f"Email type {self.email_type} not implemented")
         
-        folder = folder or os.getenv('EMAIL_FOLDER', 'INVOICE')
+        folder = folder or getattr(self.client, 'folder', None) or os.getenv('EMAIL_FOLDER', 'INBOX')
         search_subject = search_subject or os.getenv('EMAIL_SEARCH_SUBJECT', 'facture')
         
         emails = self.client.fetch_emails(

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Mail, RefreshCw, Clock, Save, CheckCircle, AlertCircle, Users, UserPlus, Trash2, Shield, Camera, Edit, X, LogOut } from 'lucide-react';
-import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser, uploadProfilePhoto } from '../api';
+import { Mail, RefreshCw, Clock, Save, CheckCircle, AlertCircle, Users, UserPlus, Trash2, Shield, Camera, Edit, X, LogOut, Wifi, WifiOff } from 'lucide-react';
+import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser, uploadProfilePhoto, testImap } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -37,6 +37,7 @@ const Settings = () => {
   const [newUser, setNewUser] = useState({ username: '', password: '', name: '', email: '', role: 'accountant' });
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '' });
+  const [imapTestResult, setImapTestResult] = useState(null);
 
   const { data: settingsData, isLoading } = useQuery('settings', fetchSettings);
   const { data: usersData } = useQuery('users', fetchUsers);
@@ -71,11 +72,26 @@ const Settings = () => {
     }
   }, [settings]);
 
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    Object.entries(emailForm).forEach(([key, value]) => {
-      if (value) updateMutation.mutate({ key, value });
+    setImapTestResult(null);
+
+    // Test IMAP connection first
+    const testResult = await testImap({
+      server: emailForm['imap_server'] || '',
+      port: parseInt(emailForm['imap_port']) || 993,
+      email: emailForm['email_address'] || '',
+      password: emailForm['email_password'] || '',
     });
+
+    setImapTestResult(testResult);
+
+    // Only save if connection test succeeded
+    if (testResult.success) {
+      Object.entries(emailForm).forEach(([key, value]) => {
+        if (value) updateMutation.mutate({ key, value });
+      });
+    }
   };
 
   const handleSchedulerSubmit = (e) => {
@@ -310,16 +326,24 @@ const Settings = () => {
               )}
             </div>
           ))}
+          {/* IMAP Test Result */}
+          {imapTestResult && (
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${imapTestResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+              {imapTestResult.success ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+              {imapTestResult.message}
+            </div>
+          )}
+
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={updateMutation.isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 bg-transparent text-gray-900 border-2 border-gray-900 rounded-lg hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
             >
               {updateMutation.isLoading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Sauvegarde...
+                  Test et sauvegarde...
                 </>
               ) : (
                 <>
@@ -373,7 +397,7 @@ const Settings = () => {
             <button
               type="submit"
               disabled={updateMutation.isLoading}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 bg-transparent text-gray-900 border-2 border-gray-900 rounded-lg hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
             >
               {updateMutation.isLoading ? (
                 <>

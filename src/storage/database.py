@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from .models import Base
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/accounting.db')
 

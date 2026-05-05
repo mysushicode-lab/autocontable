@@ -8,7 +8,7 @@ from typing import Optional
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 TESSERACT_PATH = os.getenv('TESSERACT_PATH')
 OCR_LANGUAGE = os.getenv('OCR_LANGUAGE', 'fra+eng')

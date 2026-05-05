@@ -8,6 +8,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
 
 from src.email_ingestion import EmailClient
+from src.storage.models import Settings
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
@@ -15,9 +16,28 @@ from src.storage.models import Invoice, InvoiceStatus
 from src.reconciliation import ReconciliationEngine
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 SCHEDULER_INTERVAL_MINUTES = int(os.getenv('SCHEDULER_INTERVAL_MINUTES', 5))
+
+
+def get_imap_settings():
+    """Read IMAP settings from database"""
+    session = db.get_session()
+    try:
+        settings = session.query(Settings).filter(
+            Settings.key.in_(['imap_server', 'imap_port', 'email_address', 'email_password', 'email_folder'])
+        ).all()
+        settings_dict = {s.key: s.value for s in settings}
+        return {
+            'server': settings_dict.get('imap_server', 'imap.gmail.com'),
+            'port': int(settings_dict.get('imap_port', 993)),
+            'email': settings_dict.get('email_address'),
+            'password': settings_dict.get('email_password'),
+            'folder': settings_dict.get('email_folder', 'INBOX')
+        }
+    finally:
+        session.close()
 
 
 class InvoiceScheduler:
@@ -87,7 +107,8 @@ class InvoiceScheduler:
         
         try:
             # Fetch emails (with optional date filter for startup)
-            email_client = EmailClient()
+            imap_settings = get_imap_settings()
+            email_client = EmailClient(**imap_settings)
             emails = email_client.fetch_invoices(mark_as_read=False, since_date=since_date)
             
             print(f"[{datetime.now()}] Found {len(emails)} invoice emails")

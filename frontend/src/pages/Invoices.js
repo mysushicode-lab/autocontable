@@ -3,7 +3,6 @@ import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   FileText,
-  Download,
   FileDown,
   Filter,
   Search,
@@ -11,7 +10,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Eye,
   X,
   Calendar
 } from 'lucide-react';
@@ -133,6 +131,14 @@ const Invoices = () => {
           <p className="text-gray-500">Gestion et suivi des factures carrosserie</p>
         </div>
         <div className="flex gap-3">
+          <a
+            href={exportUrl}
+            download
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+          >
+            <FileDown className="w-4 h-4" />
+            Exporter
+          </a>
           <button onClick={handleUploadClick} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
             <FileText className="w-4 h-4" />
             {uploadMutation.isLoading ? 'Import...' : 'Nouvelle Facture'}
@@ -404,23 +410,15 @@ const Invoices = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <a
-                        href={getInvoicePdfUrl(invoice.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg"
-                        title="Télécharger PDF"
-                      >
-                        <FileDown className="w-4 h-4" />
-                      </a>
-                      <button 
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                        title="Voir détails"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <a
+                      href={getInvoicePdfUrl(invoice.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg inline-flex items-center justify-center"
+                      title="Télécharger PDF"
+                    >
+                      <FileDown className="w-4 h-4" />
+                    </a>
                   </td>
                 </tr>
               );
@@ -436,19 +434,10 @@ const Invoices = () => {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-end">
         <p className="text-sm text-gray-500">
-          Affichage de {invoices.length} facture(s)
+          {invoices.length} facture{invoices.length > 1 ? 's' : ''}
         </p>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50" disabled>
-            Précédent
-          </button>
-          <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">
-            Suivant
-          </button>
-        </div>
       </div>
     </div>
   );

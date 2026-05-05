@@ -12,19 +12,20 @@ from typing import List, Dict, Optional
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 SUPPORTED_ATTACHMENT_EXTENSIONS = ('.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp')
 
 
 class IMAPClient:
     """IMAP email client for fetching invoices"""
-    
-    def __init__(self):
-        self.server = os.getenv('IMAP_SERVER', 'imap.gmail.com')
-        self.port = int(os.getenv('IMAP_PORT', 993))
-        self.email_address = os.getenv('EMAIL_ADDRESS')
-        self.password = os.getenv('EMAIL_PASSWORD')
+
+    def __init__(self, server=None, port=None, email=None, password=None, folder=None):
+        self.server = server or os.getenv('IMAP_SERVER', 'imap.gmail.com')
+        self.port = int(port or os.getenv('IMAP_PORT', 993))
+        self.email_address = email or os.getenv('EMAIL_ADDRESS')
+        self.password = password or os.getenv('EMAIL_PASSWORD')
+        self.folder = folder or os.getenv('EMAIL_FOLDER', 'INBOX')
         self.connection = None
     
     def connect(self):

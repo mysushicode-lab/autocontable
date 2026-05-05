@@ -2,10 +2,10 @@
 # Script de déploiement Hetzner Cloud
 # Exécuter sur le serveur Hetzner après configuration initiale
 
-echo "🚀 Déploiement Carrosserie Pro sur Hetzner"
+echo "🚀 Déploiement contamail sur Hetzner"
 
 # Variables
-APP_DIR="/opt/carrosserie-app"
+APP_DIR="/opt/contamail"
 BACKEND_PORT="8000"
 
 cd $APP_DIR
@@ -32,8 +32,8 @@ python -m src.storage.init_db || echo "DB déjà initialisée"
 
 # 5. Redémarrer services
 echo "🔄 Redémarrage des services..."
-systemctl restart carrosserie-api || echo "Service API non configuré"
-systemctl restart carrosserie-scheduler || echo "Service scheduler non configuré"
+systemctl restart contamail-api || echo "Service API non configuré"
+systemctl restart contamail-scheduler || echo "Service scheduler non configuré"
 systemctl restart nginx
 
 echo "✅ Déploiement terminé !"

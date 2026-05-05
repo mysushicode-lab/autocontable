@@ -3,9 +3,9 @@
 
 set -e
 
-echo "🔧 Installation de l'application..."
+echo "🔧 Installation contamail..."
 
-APP_DIR="/opt/carrosserie-app"
+APP_DIR="/opt/contamail"
 cd $APP_DIR
 
 # 1. Python Virtual Environment
@@ -14,6 +14,9 @@ python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# Install poppler for Vision API (PDF to image conversion)
+apt-get install -y poppler-utils
 
 # 2. Frontend Build
 echo "⚛️  Build React..."
@@ -33,7 +36,7 @@ chmod -R 777 $APP_DIR/data
 
 # 5. Configuration Nginx
 echo "🌐 Configuration Nginx..."
-cat > /etc/nginx/sites-available/carrosserie << 'EOF'
+cat > /etc/nginx/sites-available/contamail << 'EOF'
 server {
     listen 80;
     server_name _;
@@ -65,6 +68,12 @@ server {
     }
 
     # Static files backend
+    # Profile photos and uploaded files
+    location /uploads {
+        proxy_pass http://127.0.0.1:8000/uploads;
+        proxy_set_header Host $host;
+    }
+
     location /exports {
         alias /opt/carrosserie-app/data/exports;
         autoindex off;
@@ -72,16 +81,16 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/carrosserie /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/contamail /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl restart nginx
 
 # 6. Service Systemd Backend
 echo "⚙️  Configuration service API..."
-cat > /etc/systemd/system/carrosserie-api.service << EOF
+cat > /etc/systemd/system/contamail-api.service << EOF
 [Unit]
-Description=Carrosserie API
+Description=contamail API
 After=network.target
 
 [Service]
@@ -91,7 +100,8 @@ WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/venv/bin"
 Environment="DATABASE_URL=sqlite:///data/accounting.db"
 Environment="PYTHONPATH=$APP_DIR"
-ExecStart=$APP_DIR/venv/bin/uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+EnvironmentFile=$APP_DIR/.env
+ExecStart=$APP_DIR/venv/bin/uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --workers 2
 Restart=always
 RestartSec=3
 
@@ -101,9 +111,9 @@ EOF
 
 # 7. Service Scheduler
 echo "⏰ Configuration Scheduler..."
-cat > /etc/systemd/system/carrosserie-scheduler.service << EOF
+cat > /etc/systemd/system/contamail-scheduler.service << EOF
 [Unit]
-Description=Carrosserie Scheduler
+Description=contamail Scheduler
 After=network.target
 
 [Service]
@@ -113,6 +123,7 @@ WorkingDirectory=$APP_DIR
 Environment="PATH=$APP_DIR/venv/bin"
 Environment="DATABASE_URL=sqlite:///data/accounting.db"
 Environment="PYTHONPATH=$APP_DIR"
+EnvironmentFile=$APP_DIR/.env
 ExecStart=$APP_DIR/venv/bin/python -m src.scheduler.main
 Restart=always
 RestartSec=10
@@ -124,25 +135,25 @@ EOF
 # 8. Démarrer services
 echo "🚀 Démarrage services..."
 systemctl daemon-reload
-systemctl enable carrosserie-api
-systemctl enable carrosserie-scheduler
-systemctl start carrosserie-api
-systemctl start carrosserie-scheduler
+systemctl enable contamail-api
+systemctl enable contamail-scheduler
+systemctl start contamail-api
+systemctl start contamail-scheduler
 
 # 9. Status
 echo ""
 echo "✅ Installation terminée !"
 echo ""
 echo "📊 Status :"
-systemctl status carrosserie-api --no-pager -l
-systemctl status carrosserie-scheduler --no-pager -l
+systemctl status contamail-api --no-pager -l
+systemctl status contamail-scheduler --no-pager -l
 echo ""
 echo "🌐 URLs :"
 echo "   - Application : http://$(curl -s ifconfig.me)"
 echo "   - API Docs    : http://$(curl -s ifconfig.me)/docs"
 echo ""
 echo "📁 Logs :"
-echo "   - API : journalctl -u carrosserie-api -f"
-echo "   - Scheduler : journalctl -u carrosserie-scheduler -f"
+echo "   - API : journalctl -u contamail-api -f"
+echo "   - Scheduler : journalctl -u contamail-scheduler -f"
 echo "   - Nginx : tail -f /var/log/nginx/access.log"
 echo ""

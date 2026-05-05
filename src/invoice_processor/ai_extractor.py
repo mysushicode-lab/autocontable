@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../config/.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 _SYSTEM_PROMPT = """You are an expert accounting assistant specializing in French business invoices (factures).
 Your task: carefully read the document and extract every invoice field with maximum accuracy.
@@ -213,7 +213,9 @@ class AIInvoiceExtractor:
                     'reason': 'AI not enabled', 'fields': {}}
         try:
             from pdf2image import convert_from_path
-            images = convert_from_path(pdf_path, first_page=1, last_page=3, dpi=250)
+            poppler_path = r"C:\poppler\poppler-26.02.0\Library\bin"
+            images = convert_from_path(pdf_path, first_page=1, last_page=3, dpi=250,
+                                       poppler_path=poppler_path if os.path.exists(poppler_path) else None)
             if not images:
                 return {'is_invoice': None, 'document_type': 'error', 'confidence': 'low',
                         'reason': 'Could not convert PDF to image', 'fields': {}}

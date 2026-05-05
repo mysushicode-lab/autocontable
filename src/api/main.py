@@ -839,6 +839,36 @@ def update_setting(key: str, update: SettingUpdate):
         session.close()
 
 
+class TestImapRequest(BaseModel):
+    server: str
+    port: int
+    email: str
+    password: str
+
+
+@app.post("/api/settings/test-imap")
+def test_imap_connection(request: TestImapRequest):
+    """Test IMAP connection with provided credentials"""
+    import imaplib
+    import ssl
+    try:
+        context = ssl.create_default_context()
+        mail = imaplib.IMAP4_SSL(request.server, request.port, ssl_context=context)
+        mail.login(request.email, request.password)
+        mail.logout()
+        return {"success": True, "message": "Connexion réussie"}
+    except imaplib.IMAP4.error as e:
+        return {"success": False, "message": f"Erreur d'authentification : {str(e)}"}
+    except ConnectionRefusedError:
+        return {"success": False, "message": "Connexion refusée - vérifiez le serveur et le port"}
+    except ssl.SSLError as e:
+        return {"success": False, "message": f"Erreur SSL : {str(e)}"}
+    except OSError as e:
+        return {"success": False, "message": f"Serveur introuvable : {str(e)}"}
+    except Exception as e:
+        return {"success": False, "message": f"Erreur : {str(e)}"}
+
+
 # Auth endpoints
 class LoginRequest(BaseModel):
     username: str

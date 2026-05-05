@@ -141,6 +141,11 @@ export const updateUser = async (userId, userData) => {
   return response.data;
 };
 
+export const testImap = async (data) => {
+  const response = await api.post('/api/settings/test-imap', data);
+  return response.data;
+};
+
 export const uploadProfilePhoto = async (userId, file) => {
   const formData = new FormData();
   formData.append('file', file);
