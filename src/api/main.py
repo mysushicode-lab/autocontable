@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from pydantic import BaseModel
 from src.storage.database import db
-from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base
+from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base, Supplier
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.exporter import Exporter
 from src.invoice_processor import InvoiceProcessor
@@ -156,6 +156,22 @@ def get_db():
         yield session
     finally:
         session.close()
+
+
+class UpdateInvoiceRequest(BaseModel):
+    invoice_number: Optional[str] = None
+    supplier_name: Optional[str] = None
+    amount: Optional[float] = None
+    amount_ht: Optional[float] = None
+    amount_tax: Optional[float] = None
+    date: Optional[str] = None
+    due_date: Optional[str] = None
+    category: Optional[str] = None
+    vehicle_registration: Optional[str] = None
+    work_order_reference: Optional[str] = None
+    purchase_order: Optional[str] = None
+    payment_method: Optional[str] = None
+    status: Optional[str] = None
 
 
 @app.post("/api/invoices/upload")
@@ -560,6 +576,98 @@ def list_invoices(
         }
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid invoice status")
+    finally:
+        session.close()
+
+
+@app.delete("/api/invoices/{invoice_id}")
+def delete_invoice(invoice_id: int):
+    """Delete an invoice and its reconciliation matches"""
+    session = db.get_session()
+    try:
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        session.query(ReconciliationMatch).filter(ReconciliationMatch.invoice_id == invoice_id).delete()
+        if invoice.file_path and os.path.exists(invoice.file_path):
+            try:
+                os.remove(invoice.file_path)
+            except Exception:
+                pass
+        session.delete(invoice)
+        session.commit()
+        return {"message": "Invoice deleted"}
+    finally:
+        session.close()
+
+
+@app.put("/api/invoices/{invoice_id}")
+def update_invoice(invoice_id: int, request: UpdateInvoiceRequest):
+    """Update invoice fields and propagate changes"""
+    session = db.get_session()
+    try:
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        if request.invoice_number is not None:
+            invoice.invoice_number = request.invoice_number
+        if request.amount is not None:
+            invoice.amount = request.amount
+        if request.amount_ht is not None:
+            invoice.amount_ht = request.amount_ht
+        if request.amount_tax is not None:
+            invoice.amount_tax = request.amount_tax
+        if request.date is not None:
+            invoice.date = datetime.fromisoformat(request.date)
+        if request.due_date is not None:
+            invoice.due_date = datetime.fromisoformat(request.due_date) if request.due_date else None
+        if request.category is not None:
+            invoice.category = request.category
+        if request.vehicle_registration is not None:
+            invoice.vehicle_registration = request.vehicle_registration.upper() if request.vehicle_registration else None
+        if request.work_order_reference is not None:
+            invoice.work_order_reference = request.work_order_reference
+        if request.purchase_order is not None:
+            invoice.purchase_order = request.purchase_order
+        if request.payment_method is not None:
+            invoice.payment_method = request.payment_method
+        if request.status is not None:
+            try:
+                invoice.status = InvoiceStatus(request.status)
+            except ValueError:
+                pass
+        if request.supplier_name is not None:
+            if request.supplier_name:
+                supplier = session.query(Supplier).filter(Supplier.name == request.supplier_name).first()
+                if not supplier:
+                    normalized = request.supplier_name.lower().strip()
+                    supplier = Supplier(name=request.supplier_name, normalized_name=normalized)
+                    session.add(supplier)
+                    session.flush()
+                invoice.supplier_id = supplier.id
+            else:
+                invoice.supplier_id = None
+        session.commit()
+        session.refresh(invoice)
+        return {
+            "message": "Invoice updated",
+            "invoice": {
+                "id": invoice.id,
+                "invoice_number": invoice.invoice_number,
+                "supplier": invoice.supplier.name if invoice.supplier else None,
+                "amount": invoice.amount,
+                "amount_ht": invoice.amount_ht,
+                "amount_tax": invoice.amount_tax,
+                "date": invoice.date.isoformat() if invoice.date else None,
+                "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+                "category": invoice.category,
+                "vehicle_registration": invoice.vehicle_registration,
+                "work_order_reference": invoice.work_order_reference,
+                "purchase_order": invoice.purchase_order,
+                "payment_method": invoice.payment_method,
+                "status": invoice.status.value if invoice.status else None,
+            }
+        }
     finally:
         session.close()
 

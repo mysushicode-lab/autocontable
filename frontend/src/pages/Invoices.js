@@ -11,9 +11,12 @@ import {
   XCircle,
   Clock,
   X,
-  Calendar
+  Calendar,
+  Pencil,
+  Trash2,
+  Save
 } from 'lucide-react';
-import { fetchInvoices, getExportUrl, uploadInvoiceFile, getInvoicePdfUrl } from '../api';
+import { fetchInvoices, getExportUrl, uploadInvoiceFile, getInvoicePdfUrl, deleteInvoice, updateInvoice } from '../api';
 
 const statusConfig = {
   matched: { label: 'Rapprochée', icon: CheckCircle, color: 'text-green-600 bg-green-50' },
@@ -51,6 +54,10 @@ const Invoices = () => {
   const [amountMax, setAmountMax] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
   const [vehicleFilter, setVehicleFilter] = useState('');
+
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const uploadInputRef = useRef(null);
   const queryClient = useQueryClient();
@@ -90,6 +97,56 @@ const Invoices = () => {
   const { add: addNotif } = useNotifications();
   const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));
   const invoices = data?.invoices || [];
+
+  const deleteMutation = useMutation((id) => deleteInvoice(id), {
+    onSuccess: () => {
+      queryClient.invalidateQueries('invoices');
+      queryClient.invalidateQueries('dashboard-invoices');
+      queryClient.invalidateQueries('dashboard-report');
+      setDeleteConfirm(null);
+      addNotif(NOTIF_TYPES.SUCCESS, 'Facture supprimée', 'La facture a été supprimée avec succès.');
+    },
+    onError: () => {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur', 'Impossible de supprimer la facture.');
+    },
+  });
+
+  const updateMutation = useMutation(({ id, data }) => updateInvoice(id, data), {
+    onSuccess: () => {
+      queryClient.invalidateQueries('invoices');
+      queryClient.invalidateQueries('dashboard-invoices');
+      queryClient.invalidateQueries('dashboard-report');
+      setEditingInvoice(null);
+      addNotif(NOTIF_TYPES.SUCCESS, 'Facture mise à jour', 'Les modifications ont été enregistrées.');
+    },
+    onError: () => {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur', 'Impossible de modifier la facture.');
+    },
+  });
+
+  const handleEditOpen = (invoice) => {
+    setEditingInvoice(invoice);
+    setEditForm({
+      invoice_number: invoice.invoice_number || '',
+      supplier_name: invoice.supplier || '',
+      amount: invoice.amount || '',
+      amount_ht: invoice.amount_ht || '',
+      amount_tax: invoice.amount_tax || '',
+      date: invoice.date ? invoice.date.slice(0, 10) : '',
+      due_date: invoice.due_date ? invoice.due_date.slice(0, 10) : '',
+      category: invoice.category || '',
+      vehicle_registration: invoice.vehicle_registration || '',
+      work_order_reference: invoice.work_order_reference || '',
+      purchase_order: invoice.purchase_order || '',
+      payment_method: invoice.payment_method || '',
+      status: invoice.status || 'pending',
+    });
+  };
+
+  const handleEditSave = () => {
+    updateMutation.mutate({ id: editingInvoice.id, data: editForm });
+  };
+
   const uploadMutation = useMutation(uploadInvoiceFile, {
     onSuccess: (result) => {
       queryClient.invalidateQueries('invoices');
@@ -410,15 +467,31 @@ const Invoices = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-center">
-                    <a
-                      href={getInvoicePdfUrl(invoice.id)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg inline-flex items-center justify-center"
-                      title="Télécharger PDF"
-                    >
-                      <FileDown className="w-4 h-4" />
-                    </a>
+                    <div className="flex items-center justify-center gap-1">
+                      <a
+                        href={getInvoicePdfUrl(invoice.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg inline-flex items-center justify-center"
+                        title="Télécharger PDF"
+                      >
+                        <FileDown className="w-4 h-4" />
+                      </a>
+                      <button
+                        onClick={() => handleEditOpen(invoice)}
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                        title="Modifier"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(invoice)}
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -439,6 +512,117 @@ const Invoices = () => {
           {invoices.length} facture{invoices.length > 1 ? 's' : ''}
         </p>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Supprimer la facture</h3>
+            <p className="text-gray-600 mb-1">Facture : <strong>{deleteConfirm.invoice_number}</strong></p>
+            <p className="text-gray-600 mb-4">Fournisseur : <strong>{deleteConfirm.supplier || '—'}</strong></p>
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3 mb-6">Cette action supprimera la facture, ses rapprochements bancaires associés et le fichier PDF. Cette action est irréversible.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Annuler</button>
+              <button
+                onClick={() => deleteMutation.mutate(deleteConfirm.id)}
+                disabled={deleteMutation.isLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteMutation.isLoading ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Modifier la facture</h3>
+              <button onClick={() => setEditingInvoice(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 overflow-y-auto grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">N° Facture</label>
+                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.invoice_number} onChange={e => setEditForm(f => ({ ...f, invoice_number: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Fournisseur</label>
+                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.supplier_name} onChange={e => setEditForm(f => ({ ...f, supplier_name: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Montant TTC (€)</label>
+                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Montant HT (€)</label>
+                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.amount_ht} onChange={e => setEditForm(f => ({ ...f, amount_ht: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">TVA (€)</label>
+                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.amount_tax} onChange={e => setEditForm(f => ({ ...f, amount_tax: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Catégorie</label>
+                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Date facture</label>
+                <input type="date" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Date échéance</label>
+                <input type="date" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Immatriculation</label>
+                <input className="w-full px-3 py-2 border rounded-lg text-sm uppercase" value={editForm.vehicle_registration} onChange={e => setEditForm(f => ({ ...f, vehicle_registration: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">N° Dossier / OT</label>
+                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.work_order_reference} onChange={e => setEditForm(f => ({ ...f, work_order_reference: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Bon de commande</label>
+                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.purchase_order} onChange={e => setEditForm(f => ({ ...f, purchase_order: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-600">Mode de paiement</label>
+                <select className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.payment_method} onChange={e => setEditForm(f => ({ ...f, payment_method: e.target.value }))}>
+                  <option value="">—</option>
+                  <option value="virement">Virement</option>
+                  <option value="cheque">Chèque</option>
+                  <option value="carte">Carte bancaire</option>
+                  <option value="especes">Espèces</option>
+                  <option value="prelevement">Prélèvement</option>
+                </select>
+              </div>
+              <div className="space-y-1 col-span-2">
+                <label className="text-xs font-medium text-gray-600">Statut</label>
+                <select className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
+                  <option value="pending">En attente</option>
+                  <option value="processed">Traitée</option>
+                  <option value="matched">Rapprochée</option>
+                  <option value="unmatched">Non rapprochée</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end p-6 border-t bg-gray-50">
+              <button onClick={() => setEditingInvoice(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+              <button
+                onClick={handleEditSave}
+                disabled={updateMutation.isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {updateMutation.isLoading ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

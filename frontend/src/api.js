@@ -105,6 +105,16 @@ export const getInvoicePdfUrl = (invoiceId) => {
   return `${API_BASE_URL}/api/invoices/${invoiceId}/download`;
 };
 
+export const deleteInvoice = async (invoiceId) => {
+  const response = await api.delete(`/api/invoices/${invoiceId}`);
+  return response.data;
+};
+
+export const updateInvoice = async (invoiceId, data) => {
+  const response = await api.put(`/api/invoices/${invoiceId}`, data);
+  return response.data;
+};
+
 export const fetchSettings = async (category) => {
   const params = category ? { category } : {};
   const response = await api.get('/api/settings', { params });
