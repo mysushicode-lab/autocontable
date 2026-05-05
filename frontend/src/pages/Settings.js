@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Mail, RefreshCw, Clock, Save, CheckCircle, AlertCircle, Users, UserPlus, Trash2, Shield, Camera, Edit, X, LogOut, Wifi, WifiOff } from 'lucide-react';
-import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser, uploadProfilePhoto, testImap } from '../api';
+import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser as apiUpdateUser, uploadProfilePhoto, testImap } from '../api';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = '';
 
 const EMAIL_FIELDS = [
   { key: 'imap_server', label: 'Serveur IMAP', placeholder: 'imap.gmail.com', type: 'text' },
@@ -144,7 +144,7 @@ const Settings = () => {
   };
 
   const updateUserMutation = useMutation(
-    ({ userId, data }) => updateUser(userId, data),
+    ({ userId, data }) => apiUpdateUser(userId, data),
     {
       onSuccess: (data, variables) => {
         queryClient.invalidateQueries('users');

@@ -40,7 +40,7 @@ const Layout = ({ children }) => {
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const API_BASE_URL = '';
 
   const menuItems = [
     { path: '/', icon: LayoutDashboard, label: 'Tableau de Bord' },
