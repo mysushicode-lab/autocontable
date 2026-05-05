@@ -15,6 +15,23 @@ services:
     networks:
       - contamail-network
 
+  scheduler:
+    build: .
+    container_name: contamail-scheduler
+    restart: unless-stopped
+    command: python -m src.scheduler.main
+    environment:
+      - DATABASE_URL=sqlite:///data/accounting.db
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - backend
+    networks:
+      - contamail-network
+
   frontend:
     build:
       context: ./frontend
@@ -35,7 +52,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./data/exports:/app/data/exports:ro
+      - ./data:/app/data:ro
       - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
     depends_on:

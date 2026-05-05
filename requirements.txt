@@ -37,5 +37,9 @@ pydantic-settings>=2.1.0
 # AI
 openai>=1.50.0
 
+# Auth
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+
 # Utilities
 requests>=2.31.0
