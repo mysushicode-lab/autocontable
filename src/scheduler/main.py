@@ -40,6 +40,24 @@ def get_imap_settings():
         session.close()
 
 
+def get_scheduler_settings():
+    """Read scheduler settings from database"""
+    session = db.get_session()
+    try:
+        settings = session.query(Settings).filter(
+            Settings.key.in_(['scheduler_interval', 'auto_reconciliation'])
+        ).all()
+        settings_dict = {s.key: s.value for s in settings}
+        interval_minutes = float(settings_dict.get('scheduler_interval', '0.166'))  # default 10 seconds
+        auto_reconciliation = settings_dict.get('auto_reconciliation', 'true').lower() == 'true'
+        return {
+            'interval_seconds': int(interval_minutes * 60),
+            'auto_reconciliation': auto_reconciliation
+        }
+    finally:
+        session.close()
+
+
 class InvoiceScheduler:
     """Scheduler for automated invoice processing"""
     
@@ -219,9 +237,14 @@ class InvoiceScheduler:
     def start(self):
         """Start the scheduler with initial current-month fetch"""
         print(f"[{datetime.now()}] === Starting Invoice Scheduler ===")
-        
+
+        # Read scheduler settings from DB
+        sched_settings = get_scheduler_settings()
+        interval_seconds = sched_settings['interval_seconds'] or 10  # fallback to 10 seconds
+        auto_reconciliation = sched_settings['auto_reconciliation']
+        print(f"[{datetime.now()}] Interval: {interval_seconds}s | Auto-reconciliation: {auto_reconciliation}")
+
         # STEP 1: Initial fetch - get emails from start of current month
-        # This ensures recent invoices are processed immediately on startup
         today = datetime.now()
         start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
@@ -236,10 +259,10 @@ class InvoiceScheduler:
         # STEP 2: Schedule regular jobs
         print(f"[{datetime.now()}] Step 2: Setting up scheduled jobs...")
         
-        # Schedule invoice processing (without since_date - will get recent emails)
+        # Schedule invoice processing
         self.scheduler.add_job(
             self.process_new_invoices,
-            trigger=IntervalTrigger(minutes=self.interval_minutes),
+            trigger=IntervalTrigger(seconds=interval_seconds),
             id='process_invoices',
             name='Process New Invoices',
             replace_existing=True,
@@ -247,19 +270,19 @@ class InvoiceScheduler:
             misfire_grace_time=300
         )
         
-        # Schedule reconciliation
-        self.scheduler.add_job(
-            self.run_reconciliation,
-            trigger=IntervalTrigger(minutes=self.interval_minutes * 2),
-            id='run_reconciliation',
-            name='Run Reconciliation',
-            replace_existing=True,
-            max_instances=1,
-            misfire_grace_time=300
-        )
+        # Schedule reconciliation only if enabled
+        if auto_reconciliation:
+            self.scheduler.add_job(
+                self.run_reconciliation,
+                trigger=IntervalTrigger(seconds=interval_seconds * 2),
+                id='run_reconciliation',
+                name='Run Reconciliation',
+                replace_existing=True,
+                max_instances=1,
+                misfire_grace_time=300
+            )
         
-        print(f"[{datetime.now()}] Scheduler ready. Running every {self.interval_minutes} minutes.")
-        print(f"[{datetime.now()}] Press Ctrl+C to stop.")
+        print(f"[{datetime.now()}] Scheduler ready. Running every {interval_seconds}s.")
         
         # STEP 3: Start scheduler (blocking)
         try:

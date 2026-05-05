@@ -16,7 +16,7 @@ const EMAIL_FIELDS = [
 ];
 
 const SCHEDULER_FIELDS = [
-  { key: 'scheduler_interval', label: 'Intervalle de vérification (minutes)', placeholder: '30', type: 'number' },
+  { key: 'scheduler_interval', label: 'Intervalle de vérification (minutes, ex: 0.166 = 10 secondes)', placeholder: '0.166', type: 'number' },
   { key: 'auto_reconciliation', label: 'Rapprochement automatique', placeholder: 'true/false', type: 'select', options: ['true', 'false'] },
 ];
 
