@@ -12,7 +12,7 @@ from src.storage.models import Settings
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
-from src.storage.models import Invoice, InvoiceStatus
+from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash
 from src.reconciliation import ReconciliationEngine
 
 # Load environment variables
@@ -65,21 +65,20 @@ class InvoiceScheduler:
         self.scheduler = BlockingScheduler()
         self.interval_minutes = SCHEDULER_INTERVAL_MINUTES
     
-    def _find_existing_invoice(self, session, message_id: str, content_hash: str, subject: str):
-        if content_hash:
-            existing = session.query(Invoice).filter(
-                Invoice.content_hash == content_hash
-            ).first()
-            if existing:
-                return existing
+    def _is_already_processed(self, session, content_hash: str) -> bool:
+        """Check permanent hash registry — returns True if file was ever processed, even if invoice was later deleted."""
+        if not content_hash:
+            return False
+        return session.query(ProcessedFileHash).filter(
+            ProcessedFileHash.content_hash == content_hash
+        ).first() is not None
 
-        if message_id and subject:
-            return session.query(Invoice).filter(
-                Invoice.message_id == message_id,
-                Invoice.email_subject == subject
-            ).first()
-
-        return None
+    def _register_hash(self, session, content_hash: str, filename: str):
+        """Permanently register a file hash so it is never re-processed."""
+        if not content_hash:
+            return
+        if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
+            session.add(ProcessedFileHash(content_hash=content_hash, filename=filename))
 
     def _build_invoice(self, invoice_data: dict) -> Invoice:
         extraction_confidence = invoice_data.get('extraction_confidence', 'low')
@@ -127,7 +126,7 @@ class InvoiceScheduler:
             # Fetch emails (with optional date filter for startup)
             imap_settings = get_imap_settings()
             email_client = EmailClient(**imap_settings)
-            emails = email_client.fetch_invoices(mark_as_read=False, since_date=since_date)
+            emails = email_client.fetch_invoices(mark_as_read=True, since_date=since_date)
             
             print(f"[{datetime.now()}] Found {len(emails)} invoice emails")
             
@@ -148,16 +147,9 @@ class InvoiceScheduler:
                     attachment = email['attachments'][idx] if idx < len(email['attachments']) else {}
                     content_hash = attachment.get('content_hash', '')
                     filename = attachment.get('filename', '')
-                    
-                    existing = self._find_existing_invoice(
-                        session,
-                        message_id,
-                        content_hash,
-                        email['subject']
-                    )
-                    
-                    if existing:
-                        print(f"[{datetime.now()}] Skipping duplicate: {filename} (hash: {content_hash[:8]}...)")
+
+                    if self._is_already_processed(session, content_hash):
+                        print(f"[{datetime.now()}] Skipping already-processed file: {filename} (hash: {content_hash[:8]}...)")
                         continue
                     
                     # Prepare email metadata for AI
@@ -197,15 +189,11 @@ class InvoiceScheduler:
                             invoice_data['category'] = category
 
                     invoice = self._build_invoice(invoice_data)
-                    
                     session.add(invoice)
+                    self._register_hash(session, content_hash, filename)
                     processed_count += 1
             
             session.commit()
-            
-            # Mark emails as read
-            if processed_count > 0:
-                email_client.fetch_invoices(mark_as_read=True)
             
             print(f"[{datetime.now()}] Processed {processed_count} new invoices")
             

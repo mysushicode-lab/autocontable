@@ -53,13 +53,20 @@ class InvoiceProcessor:
 
         # Extract text from PDF with pdfplumber
         text = self.pdf_parser.extract_text(pdf_path)
-        is_scanned = True  # Always use Vision API for better accuracy
+        # Scanned = less than 80 chars of real text extracted (no OCR layer)
+        is_scanned = len(text.strip()) < 80
 
         if self.use_ai and self.ai_extractor and self.ai_extractor.is_enabled():
-            print(f"[AI] Using Vision API for PDF: {filename}")
-            ai_result = self.ai_extractor.extract_from_pdf_as_images(
-                pdf_path, filename, email_from, email_subject, email_body
-            )
+            if is_scanned:
+                print(f"[AI] Scanned PDF — using Vision API: {filename}")
+                ai_result = self.ai_extractor.extract_from_pdf_as_images(
+                    pdf_path, filename, email_from, email_subject, email_body
+                )
+            else:
+                print(f"[AI] Digital PDF — using text API (cheaper): {filename}")
+                ai_result = self.ai_extractor.qualify_document(
+                    text, filename, email_from, email_subject, email_body
+                )
             print(f"[AI] Vision result: is_invoice={ai_result.get('is_invoice')}, confidence={ai_result.get('confidence')}, reason={ai_result.get('reason', '')}")
 
             if ai_result.get('is_invoice') and ai_result.get('fields'):

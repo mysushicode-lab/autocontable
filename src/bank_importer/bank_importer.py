@@ -5,6 +5,7 @@ import os
 from typing import List, Dict
 from .csv_parser import CSVParser
 from .ofx_parser import OFXParser
+from .pdf_parser import BankPDFParser
 
 
 class BankImporter:
@@ -13,6 +14,7 @@ class BankImporter:
     def __init__(self):
         self.csv_parser = CSVParser()
         self.ofx_parser = OFXParser()
+        self.pdf_parser = BankPDFParser()
     
     def import_file(self, file_path: str, column_mapping: Dict = None) -> List[Dict]:
         """
@@ -29,10 +31,10 @@ class BankImporter:
         
         if file_ext == '.csv':
             return self.csv_parser.parse(file_path, column_mapping)
-        elif file_ext == '.ofx':
+        elif file_ext in ('.ofx', '.qfx'):
             return self.ofx_parser.parse(file_path)
-        elif file_ext == '.qfx':
-            return self.ofx_parser.parse(file_path)
+        elif file_ext == '.pdf':
+            return self.pdf_parser.parse(file_path)
         else:
             raise ValueError(f"Unsupported file format: {file_ext}")
     

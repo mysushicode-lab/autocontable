@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from pydantic import BaseModel
 from src.storage.database import db
-from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base, Supplier
+from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base, Supplier, ProcessedFileHash
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.exporter import Exporter
 from src.invoice_processor import InvoiceProcessor
@@ -55,6 +55,24 @@ def startup_event():
                 session.commit()
         except Exception as e:
             print(f"Warning: Could not check/create admin user: {e}")
+            session.rollback()
+        # Insert default settings if not already set
+        try:
+            default_settings = [
+                ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
+                ('imap_port', '993', 'email', 'Port IMAP'),
+                ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
+                ('scheduler_interval', '0.166', 'scheduler', 'Intervalle en minutes (0.166 = toutes les 10 secondes)'),
+                ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
+                ('company_name', '', 'general', 'Nom de votre entreprise (ignoré comme fournisseur par l\'IA)'),
+            ]
+            for key, value, category, description in default_settings:
+                exists = session.query(Settings).filter(Settings.key == key).first()
+                if not exists:
+                    session.add(Settings(key=key, value=value, category=category, description=description))
+            session.commit()
+        except Exception as e:
+            print(f"Warning: Could not insert default settings: {e}")
             session.rollback()
     finally:
         session.close()
@@ -182,12 +200,41 @@ async def upload_invoice(file: UploadFile = File(...)):
     if extension not in allowed_extensions:
         raise HTTPException(status_code=400, detail="Unsupported invoice file format")
 
+    file_bytes = await file.read()
+    content_hash = hashlib.md5(file_bytes).hexdigest()
+    file.file.seek(0)
+
     saved_path = _save_uploaded_file(file, INVOICE_UPLOAD_DIR)
     session = db.get_session()
     try:
+        already_done = session.query(ProcessedFileHash).filter(
+            ProcessedFileHash.content_hash == content_hash
+        ).first()
+        if already_done:
+            existing_invoice = session.query(Invoice).filter(
+                Invoice.content_hash == content_hash
+            ).first()
+            if existing_invoice:
+                return {
+                    "message": "Facture déjà importée (fichier identique)",
+                    "invoice": {
+                        "id": existing_invoice.id,
+                        "invoice_number": existing_invoice.invoice_number,
+                        "amount": existing_invoice.amount,
+                        "status": existing_invoice.status.value if existing_invoice.status else None,
+                        "supplier": existing_invoice.supplier.name if existing_invoice.supplier else None,
+                    }
+                }
+            raise HTTPException(status_code=409, detail="Ce fichier a déjà été traité et la facture associée a été supprimée. Import ignoré pour éviter un double scan IA.")
+
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
         invoice = _create_or_update_invoice(session, saved_path, extracted_data)
+        invoice.content_hash = content_hash
+        if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
+            session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename))
+        session.commit()
+        session.refresh(invoice)
         return {
             "message": "Invoice imported successfully",
             "invoice": {
@@ -207,8 +254,8 @@ async def upload_invoice(file: UploadFile = File(...)):
 
 @app.post("/api/transactions/import")
 async def import_bank_statement(file: UploadFile = File(...)):
-    """Import a bank statement from CSV/OFX/QFX."""
-    allowed_extensions = {".csv", ".ofx", ".qfx"}
+    """Import a bank statement from CSV/OFX/QFX/PDF."""
+    allowed_extensions = {".csv", ".ofx", ".qfx", ".pdf"}
     extension = os.path.splitext(file.filename or "")[1].lower()
     if extension not in allowed_extensions:
         raise HTTPException(status_code=400, detail="Unsupported bank statement format")
@@ -223,7 +270,8 @@ async def import_bank_statement(file: UploadFile = File(...)):
         for tx in transactions:
             transaction_id = tx.get("reference") or tx.get("transaction_id")
             if not transaction_id:
-                continue
+                raw = f"{tx.get('date')}{tx.get('amount')}{tx.get('description', '')}"
+                transaction_id = "PDF-" + hashlib.md5(raw.encode()).hexdigest()[:16]
 
             existing_transaction = session.query(BankTransaction).filter(
                 BankTransaction.transaction_id == transaction_id
@@ -266,12 +314,6 @@ def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None):
         )
         transaction_query = session.query(BankTransaction)
 
-        if month and year:
-            last_day_num = calendar.monthrange(year, month)[1]
-            first_day = datetime(year, month, 1)
-            last_day = datetime(year, month, last_day_num, 23, 59, 59)
-            invoice_query = invoice_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
-            transaction_query = transaction_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
 
         engine = ReconciliationEngine(session)
         matches = engine.reconcile(invoice_query.all(), transaction_query.all())
@@ -388,7 +430,7 @@ def get_reconciliation_details(
     session = db.get_session()
     try:
         invoice_query = session.query(Invoice)
-        match_query = session.query(ReconciliationMatch).join(Invoice)
+        match_query = session.query(ReconciliationMatch).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
         transaction_query = session.query(BankTransaction)
 
         if month and year:
@@ -396,7 +438,10 @@ def get_reconciliation_details(
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
             invoice_query = invoice_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
-            match_query = match_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
+            match_query = match_query.filter(
+                or_(Invoice.date >= first_day, BankTransaction.date >= first_day),
+                or_(Invoice.date <= last_day, BankTransaction.date <= last_day),
+            )
             transaction_query = transaction_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
 
         matches = match_query.all()
@@ -771,13 +816,16 @@ def get_reconciliation_status(
     """Get reconciliation status"""
     session = db.get_session()
     try:
-        query = session.query(ReconciliationMatch).join(Invoice)
+        query = session.query(ReconciliationMatch).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
         
         if month and year:
             last_day_num = calendar.monthrange(year, month)[1]
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
-            query = query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
+            query = query.filter(
+                or_(Invoice.date >= first_day, BankTransaction.date >= first_day),
+                or_(Invoice.date <= last_day, BankTransaction.date <= last_day),
+            )
         
         matches = query.all()
         

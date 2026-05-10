@@ -10,13 +10,16 @@ import {
   Link,
   Unlink,
   FileText,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   confirmReconciliationMatch,
   createManualReconciliationLink,
   fetchReconciliationDetails,
   fetchReconciliationStatus,
+  fetchTransactions,
   importBankStatementFile,
   rejectReconciliationMatch,
   runAutomaticReconciliation,
@@ -24,12 +27,20 @@ import {
 
 const Reconciliation = () => {
   const [activeTab, setActiveTab] = useState('matches');
+  const [linkModal, setLinkModal] = useState(null); // { txDbId, txDescription }
+  const [linkInvoiceId, setLinkInvoiceId] = useState('');
   const bankFileInputRef = useRef(null);
   const navigate = useNavigate();
   const { add: addNotif } = useNotifications();
   const queryClient = useQueryClient();
   const today = new Date();
-  const filters = { month: today.getMonth() + 1, year: today.getFullYear() };
+  const [globalPeriod, setGlobalPeriod] = useState(''); // '' = all, 'YYYY-MM' = filtered
+  const periodMonths = Array.from({ length: 18 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - i);
+    return { value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) };
+  });
+  const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {};
+
   const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
   const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
   const refreshAll = () => {
@@ -37,6 +48,7 @@ const Reconciliation = () => {
     queryClient.invalidateQueries('reconciliation-details');
     queryClient.invalidateQueries('invoices');
     queryClient.invalidateQueries('transactions');
+    queryClient.invalidateQueries('all-transactions');
     queryClient.invalidateQueries('dashboard-reconciliation-status');
     queryClient.invalidateQueries('dashboard-reconciliation-details');
     queryClient.invalidateQueries('dashboard-invoices');
@@ -46,6 +58,7 @@ const Reconciliation = () => {
   const importMutation = useMutation(importBankStatementFile, {
     onSuccess: (result) => {
       refreshAll();
+      setActiveTab('transactions');
       addNotif(NOTIF_TYPES.SUCCESS, 'Relevé bancaire importé', `${result.imported_count} opération${result.imported_count > 1 ? 's' : ''} importée${result.imported_count > 1 ? 's' : ''} avec succès.`);
     },
     onError: (error) => {
@@ -86,6 +99,9 @@ const Reconciliation = () => {
     },
   });
 
+  const { data: transactionsData } = useQuery(['all-transactions', filters], () => fetchTransactions(filters));
+  const allTransactions = transactionsData?.transactions || [];
+
   const matches = detailsData?.matches || [];
   const unmatchedInvoices = detailsData?.unmatched_invoices || [];
   const bankOnly = detailsData?.bank_only || [];
@@ -111,15 +127,18 @@ const Reconciliation = () => {
     event.target.value = '';
   };
 
-  const handleManualLink = async (transactionDbId) => {
-    const invoiceId = window.prompt('Entrez l\'ID de la facture à lier manuellement :');
-    if (!invoiceId) {
-      return;
-    }
+  const handleManualLink = (txDbId, txDescription) => {
+    setLinkInvoiceId('');
+    setLinkModal({ txDbId, txDescription });
+  };
+
+  const submitManualLink = async () => {
+    if (!linkInvoiceId) return;
     await manualLinkMutation.mutateAsync({
-      invoice_id: Number(invoiceId),
-      transaction_id: Number(transactionDbId),
+      invoice_id: Number(linkInvoiceId),
+      transaction_id: Number(linkModal.txDbId),
     });
+    setLinkModal(null);
   };
 
   return (
@@ -130,7 +149,16 @@ const Reconciliation = () => {
           <h1 className="text-2xl font-bold text-gray-900">Rapprochement Bancaire</h1>
           <p className="text-gray-500">Matcher les factures avec les opérations bancaires</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          {/* Sélecteur de période */}
+          <select
+            value={globalPeriod}
+            onChange={e => setGlobalPeriod(e.target.value)}
+            className="px-3 py-2 border rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+          >
+            <option value="">Toutes périodes</option>
+            {periodMonths.map(m => <option key={m.value} value={m.value} className="capitalize">{m.label}</option>)}
+          </select>
           <button onClick={handleBankImportClick} className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
             {importMutation.isLoading ? 'Import...' : 'Import bancaire'}
@@ -138,7 +166,7 @@ const Reconciliation = () => {
           <input
             ref={bankFileInputRef}
             type="file"
-            accept=".csv,.ofx,.qfx"
+            accept=".csv,.ofx,.qfx,.pdf"
             className="hidden"
             onChange={handleBankFileSelected}
           />
@@ -192,55 +220,36 @@ const Reconciliation = () => {
             >
               Paiements sans facture ({bankOnly.length})
             </button>
+            <button
+              onClick={() => setActiveTab('transactions')}
+              className={`px-6 py-4 font-medium border-b-2 ${
+                activeTab === 'transactions'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Transactions importées ({allTransactions.length})
+            </button>
           </div>
         </div>
 
         <div className="p-6">
           {isLoading && <div className="text-sm text-gray-500 mb-4">Chargement du rapprochement...</div>}
           {activeTab === 'matches' && (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {matches.map((match) => (
-                <div key={match.id} className="flex items-center gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                  {/* Facture */}
-                  <div className="flex-1 p-3 bg-white rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">{match.invoice.number}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{match.invoice.supplier}</p>
-                    <p className="font-semibold">{match.invoice.amount.toLocaleString('fr-FR')} €</p>
-                    <p className="text-xs text-gray-500">{match.invoice.date ? new Date(match.invoice.date).toLocaleDateString('fr-FR') : '-'}</p>
+                <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 bg-white rounded-lg border border-gray-200">
+                  {/* Fournisseur + N° facture + score */}
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{match.invoice.supplier || '—'}</p>
+                    <p className="text-xs text-gray-400">{match.invoice.number} · {match.invoice.date ? new Date(match.invoice.date).toLocaleDateString('fr-FR') : '—'} · <span className={match.score >= 80 ? 'text-green-600 font-medium' : match.score >= 60 ? 'text-orange-500 font-medium' : 'text-red-500 font-medium'}>{match.score}%</span></p>
                   </div>
-
-                  {/* Connector */}
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-2">
-                      <Link className="w-5 h-5 text-green-600" />
-                      <span className="text-xs font-medium text-green-700">
-                        {match.score}%
-                      </span>
-                    </div>
-                    <div className="w-px h-8 bg-green-300 my-1"></div>
-                  </div>
-
-                  {/* Transaction */}
-                  <div className="flex-1 p-3 bg-white rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="w-4 h-4 text-green-600" />
-                      <span className="font-medium text-sm">{match.transaction.id}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{match.transaction.description}</p>
-                    <p className="font-semibold">{match.transaction.amount.toLocaleString('fr-FR')} €</p>
-                    <p className="text-xs text-gray-500">{match.transaction.date ? new Date(match.transaction.date).toLocaleDateString('fr-FR') : '-'}</p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button onClick={() => confirmMutation.mutate(match.id)} className="p-2 text-green-600 hover:bg-green-100 rounded-lg">
-                      <CheckCircle className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => rejectMutation.mutate(match.id)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg">
-                      <XCircle className="w-5 h-5" />
+                  {/* Montant centré */}
+                  <p className="font-bold text-gray-900 text-center">{match.invoice.amount.toLocaleString('fr-FR')} €</p>
+                  {/* Supprimer uniquement */}
+                  <div className="flex items-center justify-end">
+                    <button onClick={() => rejectMutation.mutate(match.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Supprimer la correspondance">
+                      <XCircle className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -250,34 +259,19 @@ const Reconciliation = () => {
           )}
 
           {activeTab === 'unmatched' && (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {unmatchedInvoices.map((match) => (
-                <div key={match.id} className="flex items-center gap-4 p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="p-3 bg-white rounded-lg flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">{match.invoice.number}</span>
-                      {match.vehicle && (
-                        <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                          {match.vehicle}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600">{match.invoice.supplier}</p>
-                    <p className="font-semibold">{match.invoice.amount.toLocaleString('fr-FR')} €</p>
-                    <p className="text-xs text-gray-500">{match.invoice.date ? new Date(match.invoice.date).toLocaleDateString('fr-FR') : '-'}</p>
+                <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 bg-white rounded-lg border border-gray-200">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{match.invoice.supplier || '—'}</p>
+                    <p className="text-xs text-gray-400">{match.invoice.number} · {match.invoice.date ? new Date(match.invoice.date).toLocaleDateString('fr-FR') : '—'}</p>
                   </div>
-
-                  <div className="flex items-center gap-2 text-red-600">
-                    <XCircle className="w-5 h-5" />
-                    <span className="text-sm font-medium">Aucun paiement trouvé</span>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button onClick={() => runMutation.mutate()} className="px-3 py-2 bg-white border rounded-lg text-sm hover:bg-gray-50">
-                      Relancer auto
+                  <p className="font-bold text-gray-900 text-center">{match.invoice.amount.toLocaleString('fr-FR')} €</p>
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => runMutation.mutate()} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
+                      Relancer
                     </button>
-                    <button onClick={handleBankImportClick} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                    <button onClick={handleBankImportClick} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
                       Import relevé
                     </button>
                   </div>
@@ -287,30 +281,47 @@ const Reconciliation = () => {
             </div>
           )}
 
+          {activeTab === 'transactions' && (
+            <div className="space-y-3">
+              {allTransactions.length === 0 && (
+                <div className="text-sm text-gray-500">Aucune transaction pour cette période.</div>
+              )}
+              {allTransactions.map((tx) => (
+                <div key={tx.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                  <CreditCard className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{tx.description || '—'}</p>
+                    {tx.effect_number && (
+                      <div className="mt-1">
+                        <span className="text-xs text-gray-500">N° Effet : <span className="font-mono text-gray-700">{tx.effect_number}</span></span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`font-bold text-lg ${tx.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                      {tx.amount < 0 ? '' : '+'}{tx.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    </p>
+                    <p className="text-xs text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {activeTab === 'bankonly' && (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {bankOnly.map((tx) => (
-                <div key={tx.id} className="flex items-center gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="p-3 bg-white rounded-lg flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="w-4 h-4 text-yellow-600" />
-                      <span className="font-medium">{tx.id}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{tx.description}</p>
-                    <p className="font-semibold">{tx.amount.toLocaleString('fr-FR')} €</p>
-                    <p className="text-xs text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '-'}</p>
+                <div key={tx.id} className="grid grid-cols-3 items-center px-4 py-3 bg-white rounded-lg border border-gray-200">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{tx.description || '—'}</p>
+                    <p className="text-xs text-gray-400">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</p>
                   </div>
-
-                  <div className="flex items-center gap-2 text-yellow-600">
-                    <AlertTriangle className="w-5 h-5" />
-                    <span className="text-sm font-medium">Pas de facture associée</span>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button onClick={() => handleManualLink(tx.db_id || tx.id)} className="px-3 py-2 bg-white border rounded-lg text-sm hover:bg-gray-50">
-                      Lier manuellement
+                  <p className="font-bold text-gray-900 text-center">{tx.amount.toLocaleString('fr-FR')} €</p>
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => handleManualLink(tx.db_id || tx.id, tx.description)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
+                      Lier
                     </button>
-                    <button onClick={() => navigate('/invoices')} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                    <button onClick={() => navigate('/invoices')} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
                       Créer facture
                     </button>
                   </div>
@@ -321,6 +332,29 @@ const Reconciliation = () => {
           )}
         </div>
       </div>
+      {/* Modal lien manuel */}
+      {linkModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h3 className="font-semibold text-gray-900 mb-1">Lier à une facture</h3>
+            <p className="text-xs text-gray-500 mb-4 truncate">{linkModal.txDescription}</p>
+            <label className="block text-xs font-medium text-gray-600 mb-1">ID de la facture</label>
+            <input
+              autoFocus
+              type="number"
+              value={linkInvoiceId}
+              onChange={e => setLinkInvoiceId(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submitManualLink()}
+              placeholder="ex: 3"
+              className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setLinkModal(null)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Annuler</button>
+              <button onClick={submitManualLink} disabled={!linkInvoiceId} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40">Lier</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

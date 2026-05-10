@@ -224,9 +224,14 @@ class SupplierClassifier:
             email_domain = self._extract_email_domain(email)
         
         # Check if supplier already exists (by normalized_name or email_domain)
-        existing = self.session.query(Supplier).filter(
-            (Supplier.normalized_name == normalized) | (Supplier.email_domain == email_domain)
-        ).first()
+        if email_domain:
+            existing = self.session.query(Supplier).filter(
+                (Supplier.normalized_name == normalized) | (Supplier.email_domain == email_domain)
+            ).first()
+        else:
+            existing = self.session.query(Supplier).filter(
+                Supplier.normalized_name == normalized
+            ).first()
         
         if existing:
             return existing

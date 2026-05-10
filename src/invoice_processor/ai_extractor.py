@@ -28,7 +28,7 @@ Field extraction rules:
 - amount: Total TTC (toutes taxes comprises) — the final amount to pay. Look for "Total TTC", "Net à payer", "Montant TTC". Return as a decimal number. If only HT and TVA found, you may compute TTC = HT + TVA. Return null if not found.
   Note: For accounting — amount_ht is used for journal entries (charge), amount_tax for TVA recovery, amount for bank reconciliation.
 - due_date: Payment due date formatted as DD/MM/YYYY. Return null if not found.
-- supplier_name: The VENDOR/SELLER company name (the entity billing YOU, not your company). Look in the document header/logo area. Fallback: name associated with SIRET/SIREN or TVA intracom number. IGNORE: accounting software names (Sage, Ciel, EBP, QuickBooks, Pennylane, etc.). IGNORE: your own company name (you are the buyer). Return null if not found.
+- supplier_name: The VENDOR/SELLER company name — the entity issuing this invoice (the one being PAID). It is ALWAYS found at the very TOP of the document in the letterhead/header block, associated with their SIRET/SIREN/TVA number and address. NEVER pick the company in the "Facturer à", "Client", "Adresse de livraison" or recipient address block — that is the BUYER, not the supplier. IGNORE: accounting software names (Sage, Ciel, EBP, QuickBooks, Pennylane, etc.). Return null if not found.
 - supplier_email: Professional email of the vendor/seller, found in their header block only. IGNORE: emails in client/buyer address blocks. IGNORE: free email services (Gmail, Yahoo, Outlook, Hotmail). Return null if not found.
 - vehicle_registration: French SIV format XX-XXX-XX (e.g. AB-123-CD). No letters O or I allowed. If multiple vehicles on same invoice, return primary one (first mentioned or associated with the work). Return null if not found.
 - purchase_order: Bon de commande / PO number. Return null if not found.
@@ -115,6 +115,12 @@ class AIInvoiceExtractor:
             parts.append(f"Email body:\n{email_body[:3000]}")
         return "\n".join(parts)
 
+    def _build_system_prompt(self, own_company_name: str = '') -> str:
+        extra = ''
+        if own_company_name:
+            extra = f"\nCRITICAL: The buyer's company (YOUR client) is '{own_company_name}'. NEVER extract this name as supplier_name — it is the buyer, not the vendor."
+        return _SYSTEM_PROMPT + extra + _EXTRACTION_RULES
+
     def _call_structured(self, messages: list) -> Dict:
         """Call OpenAI with Structured Outputs — returns guaranteed valid dict"""
         client = self._get_client()
@@ -164,7 +170,8 @@ class AIInvoiceExtractor:
         return raw
 
     def extract_from_image_file(self, image_path: str, filename: str,
-                                 email_from: str = '', email_subject: str = '', email_body: str = '') -> Dict:
+                                 email_from: str = '', email_subject: str = '', email_body: str = '',
+                                 own_company_name: str = '') -> Dict:
         """
         Extract invoice data from an image using GPT Vision + Structured Outputs.
         GPT reads the original image directly — no OCR intermediate step.
@@ -191,7 +198,7 @@ class AIInvoiceExtractor:
 
             context = self._build_context(filename, email_from, email_subject, email_body)
             return self._call_structured([
-                {'role': 'system', 'content': _SYSTEM_PROMPT + _EXTRACTION_RULES},
+                {'role': 'system', 'content': self._build_system_prompt(own_company_name)},
                 {'role': 'user', 'content': [
                     {'type': 'text', 'text': context},
                     {'type': 'image_url', 'image_url': {'url': f'data:image/png;base64,{b64}', 'detail': 'high'}}
@@ -202,7 +209,8 @@ class AIInvoiceExtractor:
                     'reason': f'Vision error: {str(e)}', 'fields': {}}
 
     def extract_from_pdf_as_images(self, pdf_path: str, filename: str,
-                                    email_from: str = '', email_subject: str = '', email_body: str = '') -> Dict:
+                                    email_from: str = '', email_subject: str = '', email_body: str = '',
+                                    own_company_name: str = '') -> Dict:
         """
         Convert PDF pages to images and extract with Vision + Structured Outputs.
         Sends up to 3 pages simultaneously for multi-page invoices.
@@ -240,7 +248,7 @@ class AIInvoiceExtractor:
 
             context = self._build_context(filename, email_from, email_subject, email_body)
             return self._call_structured([
-                {'role': 'system', 'content': _SYSTEM_PROMPT + _EXTRACTION_RULES},
+                {'role': 'system', 'content': self._build_system_prompt(own_company_name)},
                 {'role': 'user', 'content': [{'type': 'text', 'text': context}] + image_contents}
             ])
         except Exception as e:
@@ -248,7 +256,8 @@ class AIInvoiceExtractor:
                     'reason': f'PDF Vision error: {str(e)}', 'fields': {}}
 
     def qualify_document(self, text: str, filename: str,
-                          email_from: str = '', email_subject: str = '', email_body: str = '') -> Dict:
+                          email_from: str = '', email_subject: str = '', email_body: str = '',
+                          own_company_name: str = '') -> Dict:
         """
         Extract invoice fields from digital PDF text using Structured Outputs.
         Used when pdfplumber can extract reliable text (no vision needed).
@@ -260,7 +269,7 @@ class AIInvoiceExtractor:
             context = self._build_context(filename, email_from, email_subject, email_body)
             user_content = f"{context}\n\nDocument text:\n{text[:5000]}"
             return self._call_structured([
-                {'role': 'system', 'content': _SYSTEM_PROMPT + _EXTRACTION_RULES},
+                {'role': 'system', 'content': self._build_system_prompt(own_company_name)},
                 {'role': 'user', 'content': user_content}
             ])
         except Exception as e:

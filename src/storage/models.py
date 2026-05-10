@@ -100,6 +100,17 @@ class Supplier(Base):
     invoices = relationship("Invoice", back_populates="supplier")
 
 
+class ProcessedFileHash(Base):
+    """Permanent registry of all file hashes ever processed by AI.
+    Never cleared even when invoices are deleted — prevents re-scanning."""
+    __tablename__ = 'processed_file_hashes'
+
+    id = Column(Integer, primary_key=True)
+    content_hash = Column(String(32), unique=True, nullable=False, index=True)
+    filename = Column(String(500), nullable=True)
+    processed_at = Column(DateTime, default=datetime.utcnow)
+
+
 class BankTransaction(Base):
     __tablename__ = 'bank_transactions'
     

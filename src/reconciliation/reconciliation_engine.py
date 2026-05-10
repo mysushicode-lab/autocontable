@@ -12,7 +12,7 @@ import os
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 MATCHING_AMOUNT_TOLERANCE = float(os.getenv('MATCHING_AMOUNT_TOLERANCE', 0.01))
-MATCHING_DATE_WINDOW_DAYS = int(os.getenv('MATCHING_DATE_WINDOW_DAYS', 7))
+MATCHING_DATE_WINDOW_DAYS = int(os.getenv('MATCHING_DATE_WINDOW_DAYS', 60))
 
 
 class ReconciliationEngine:
@@ -44,36 +44,46 @@ class ReconciliationEngine:
         if transactions is None:
             transactions = self.session.query(BankTransaction).all()
         
-        matches = []
-        matched_transaction_ids = {
+        already_matched_tx_ids = {
             transaction_id for (transaction_id,) in self.session.query(ReconciliationMatch.transaction_id).all()
         }
-        
+
+        # Build all candidate pairs sorted by score descending (best-first greedy)
+        candidates = []
         for invoice in invoices:
-            # Find matching transaction
-            match, score = self._find_match(invoice, transactions, matched_transaction_ids)
-            
-            if match:
-                # Create reconciliation match
-                reconciliation = ReconciliationMatch(
-                    invoice_id=invoice.id,
-                    transaction_id=match.id,
-                    match_score=score,
-                    match_type='automatic',
-                    status='pending'
-                )
-                
-                self.session.add(reconciliation)
-                
-                # Update invoice status
-                invoice.status = InvoiceStatus.MATCHED
-                
-                matched_transaction_ids.add(match.id)
-                matches.append(reconciliation)
-            else:
-                # Mark as unmatched
+            for transaction in transactions:
+                if transaction.id in already_matched_tx_ids:
+                    continue
+                score = self._calculate_match_score(invoice, transaction)
+                if score >= 0.5:
+                    candidates.append((score, invoice, transaction))
+        candidates.sort(key=lambda x: x[0], reverse=True)
+
+        matched_invoice_ids = set()
+        matched_transaction_ids = set(already_matched_tx_ids)
+        matches = []
+
+        for score, invoice, transaction in candidates:
+            if invoice.id in matched_invoice_ids or transaction.id in matched_transaction_ids:
+                continue
+            reconciliation = ReconciliationMatch(
+                invoice_id=invoice.id,
+                transaction_id=transaction.id,
+                match_score=score,
+                match_type='automatic',
+                status='pending'
+            )
+            self.session.add(reconciliation)
+            invoice.status = InvoiceStatus.MATCHED
+            matched_invoice_ids.add(invoice.id)
+            matched_transaction_ids.add(transaction.id)
+            matches.append(reconciliation)
+
+        # Mark remaining unmatched
+        for invoice in invoices:
+            if invoice.id not in matched_invoice_ids:
                 invoice.status = InvoiceStatus.UNMATCHED
-        
+
         self.session.commit()
         return matches
     
