@@ -225,7 +225,9 @@ async def upload_invoice(file: UploadFile = File(...)):
                         "supplier": existing_invoice.supplier.name if existing_invoice.supplier else None,
                     }
                 }
-            raise HTTPException(status_code=409, detail="Ce fichier a déjà été traité et la facture associée a été supprimée. Import ignoré pour éviter un double scan IA.")
+            # Invoice was deleted — remove hash to allow re-import
+            session.delete(already_done)
+            session.commit()
 
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
