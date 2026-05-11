@@ -57,16 +57,11 @@ class InvoiceProcessor:
         is_scanned = len(text.strip()) < 80
 
         if self.use_ai and self.ai_extractor and self.ai_extractor.is_enabled():
-            if is_scanned:
-                print(f"[AI] Scanned PDF — using Vision API: {filename}")
-                ai_result = self.ai_extractor.extract_from_pdf_as_images(
-                    pdf_path, filename, email_from, email_subject, email_body
-                )
-            else:
-                print(f"[AI] Digital PDF — using text API (cheaper): {filename}")
-                ai_result = self.ai_extractor.qualify_document(
-                    text, filename, email_from, email_subject, email_body
-                )
+            # Always use Vision API for better accuracy
+            print(f"[AI] Using Vision API for PDF: {filename}")
+            ai_result = self.ai_extractor.extract_from_pdf_as_images(
+                pdf_path, filename, email_from, email_subject, email_body
+            )
             print(f"[AI] Vision result: is_invoice={ai_result.get('is_invoice')}, confidence={ai_result.get('confidence')}, reason={ai_result.get('reason', '')}")
 
             if ai_result.get('is_invoice') and ai_result.get('fields'):
@@ -89,7 +84,7 @@ class InvoiceProcessor:
                     'extraction_warnings': [],
                     'extraction_confidence': ai_result.get('confidence', 'medium'),
                     'ai_used': True,
-                    'vision_used': is_scanned,
+                    'vision_used': True,
                     'ai_document_type': ai_result.get('document_type'),
                     'raw_text': text
                 }
