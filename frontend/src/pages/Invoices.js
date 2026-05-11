@@ -407,7 +407,9 @@ const Invoices = () => {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-48">Facture</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-40">Fournisseur</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-28">Catégorie</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-28">Montant</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">Montant HT</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">TVA</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">Montant TTC</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-28">Date</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">Véhicule/OT</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">Statut</th>
@@ -443,7 +445,13 @@ const Invoices = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap font-medium">
-                    {invoice.amount.toLocaleString('fr-FR')} €
+                    {invoice.amount_ht ? invoice.amount_ht.toLocaleString('fr-FR') : '-'} €
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap font-medium">
+                    {invoice.amount_tax ? invoice.amount_tax.toLocaleString('fr-FR') : '-'} €
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap font-medium">
+                    {invoice.amount ? invoice.amount.toLocaleString('fr-FR') : '-'} €
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500 text-sm">
                     {invoice.date ? new Date(invoice.date).toLocaleDateString('fr-FR') : '-'}

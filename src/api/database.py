@@ -1,0 +1,202 @@
+"""Database startup and migrations"""
+from sqlalchemy import text
+from src.storage.database import db
+from src.storage.models import Base, Settings, User, UserRole, Organization
+import os
+import hashlib
+
+
+def startup_event():
+    """Create database tables on startup and run migrations"""
+    Base.metadata.create_all(bind=db.engine)
+
+    conn = db.engine.connect()
+
+    # Recreate settings table without UNIQUE(key) constraint if needed
+    try:
+        idx_info = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='settings' AND sql LIKE '%UNIQUE%key%'")).fetchall()
+        if idx_info:
+            conn.execute(text("ALTER TABLE settings RENAME TO settings_old"))
+            conn.execute(text("""CREATE TABLE settings (
+                id INTEGER PRIMARY KEY,
+                key VARCHAR(100) NOT NULL,
+                value TEXT,
+                category VARCHAR(50) NOT NULL DEFAULT 'general',
+                description TEXT,
+                organization_id INTEGER REFERENCES organizations(id),
+                updated_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO settings SELECT id,key,value,category,description,NULL,updated_at FROM settings_old"))
+            conn.execute(text("DROP TABLE settings_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"Settings migration: {e}")
+
+    # Recreate suppliers table without global UNIQUE constraints if needed
+    try:
+        sup_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='suppliers'")).fetchone()
+        if sup_sql and 'UNIQUE' in (sup_sql[0] or ''):
+            conn.execute(text("ALTER TABLE suppliers RENAME TO suppliers_old"))
+            conn.execute(text("""CREATE TABLE suppliers (
+                id INTEGER PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                normalized_name VARCHAR(200) NOT NULL,
+                organization_id INTEGER REFERENCES organizations(id),
+                email VARCHAR(200),
+                email_domain VARCHAR(100),
+                category VARCHAR(100),
+                vat_number VARCHAR(50),
+                address TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO suppliers SELECT id,name,normalized_name,NULL,email,email_domain,category,vat_number,address,created_at,updated_at FROM suppliers_old"))
+            conn.execute(text("DROP TABLE suppliers_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"Suppliers migration: {e}")
+
+    # Recreate invoices table without global UNIQUE on invoice_number if needed
+    try:
+        inv_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='invoices' AND sql LIKE '%UNIQUE%invoice_number%'")).fetchall()
+        if inv_sql:
+            conn.execute(text("ALTER TABLE invoices RENAME TO invoices_old"))
+            conn.execute(text("""CREATE TABLE invoices (
+                id INTEGER PRIMARY KEY,
+                invoice_number VARCHAR(100) NOT NULL,
+                supplier_id INTEGER REFERENCES suppliers(id),
+                organization_id INTEGER REFERENCES organizations(id),
+                amount FLOAT NOT NULL,
+                amount_ht FLOAT,
+                amount_tax FLOAT,
+                date DATETIME NOT NULL,
+                due_date DATETIME,
+                category VARCHAR(100),
+                status VARCHAR(50),
+                purchase_order VARCHAR(100),
+                delivery_note VARCHAR(100),
+                vehicle_registration VARCHAR(20),
+                work_order_reference VARCHAR(100),
+                payment_method VARCHAR(50),
+                file_path VARCHAR(500),
+                email_subject VARCHAR(500),
+                email_from VARCHAR(500),
+                email_date DATETIME,
+                message_id VARCHAR(200),
+                content_hash VARCHAR(32),
+                extracted_data TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO invoices SELECT id,invoice_number,supplier_id,NULL,amount,amount_ht,amount_tax,date,due_date,category,status,purchase_order,delivery_note,vehicle_registration,work_order_reference,payment_method,file_path,email_subject,email_from,email_date,message_id,content_hash,extracted_data,created_at,updated_at FROM invoices_old"))
+            conn.execute(text("DROP TABLE invoices_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"Invoices migration: {e}")
+
+    # Recreate bank_transactions without global UNIQUE on transaction_id if needed
+    try:
+        bt_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='bank_transactions' AND sql LIKE '%UNIQUE%transaction_id%'")).fetchall()
+        if bt_sql:
+            conn.execute(text("ALTER TABLE bank_transactions RENAME TO bank_transactions_old"))
+            conn.execute(text("""CREATE TABLE bank_transactions (
+                id INTEGER PRIMARY KEY,
+                transaction_id VARCHAR(100) NOT NULL,
+                organization_id INTEGER REFERENCES organizations(id),
+                date DATETIME NOT NULL,
+                amount FLOAT NOT NULL,
+                description TEXT NOT NULL,
+                reference VARCHAR(200),
+                account_number VARCHAR(50),
+                category VARCHAR(100),
+                source_file VARCHAR(500),
+                created_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO bank_transactions SELECT id,transaction_id,NULL,date,amount,description,reference,account_number,category,source_file,created_at FROM bank_transactions_old"))
+            conn.execute(text("DROP TABLE bank_transactions_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"BankTransactions migration: {e}")
+
+    # Add organization_id columns to remaining tables
+    add_col_migrations = [
+        "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE reconciliation_matches ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE processed_file_hashes ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+    ]
+    for stmt in add_col_migrations:
+        try:
+            conn.execute(text(stmt))
+            conn.commit()
+        except Exception:
+            pass
+
+    conn.close()
+
+    session = db.get_session()
+    try:
+        # Create default organization for existing data
+        default_org = session.query(Organization).filter(Organization.id == 1).first()
+        if not default_org:
+            default_org = Organization(name="Organisation par défaut")
+            session.add(default_org)
+            session.flush()
+            default_org_id = default_org.id
+            session.commit()
+        else:
+            default_org_id = default_org.id
+
+        # Assign existing users without org to default org
+        session.execute(text(f"UPDATE users SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE invoices SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE suppliers SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE bank_transactions SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE reconciliation_matches SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE settings SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE processed_file_hashes SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.commit()
+
+        # Create default admin user if not exists
+        try:
+            default_admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+            default_admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+            default_admin_email = os.environ.get('ADMIN_EMAIL', '')
+            admin_exists = session.query(User).filter(User.username == default_admin_username).first()
+            if not admin_exists:
+                password_hash = hashlib.sha256(default_admin_password.encode()).hexdigest()
+                admin = User(
+                    username=default_admin_username,
+                    password_hash=password_hash,
+                    role=UserRole.ADMIN,
+                    name='Administrateur',
+                    email=default_admin_email or None,
+                    organization_id=default_org_id
+                )
+                session.add(admin)
+                session.commit()
+        except Exception as e:
+            print(f"Warning: Could not check/create admin user: {e}")
+            session.rollback()
+
+        # Insert default settings if not already set
+        try:
+            default_settings = [
+                ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
+                ('imap_port', '993', 'email', 'Port IMAP'),
+                ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
+                ('scheduler_interval', '0.166', 'scheduler', 'Intervalle en minutes (0.166 = toutes les 10 secondes)'),
+                ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
+                ('company_name', '', 'general', 'Nom de votre entreprise (ignoré comme fournisseur par l\'IA)'),
+            ]
+            for key, value, category, description in default_settings:
+                exists = session.query(Settings).filter(
+                    Settings.key == key, Settings.organization_id == default_org_id
+                ).first()
+                if not exists:
+                    session.add(Settings(key=key, value=value, category=category, description=description, organization_id=default_org_id))
+            session.commit()
+        except Exception as e:
+            print(f"Warning: Could not insert default settings: {e}")
+            session.rollback()
+    finally:
+        session.close()
