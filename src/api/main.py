@@ -420,7 +420,9 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
         print(f"[DEBUG] Extracted data: {extracted_data}")
+        print(f"[DEBUG] Current user organization_id: {current_user['organization_id']}")
         invoice = _create_or_update_invoice(session, saved_path, extracted_data, current_user["organization_id"])
+        print(f"[DEBUG] Invoice created with organization_id: {invoice.organization_id}")
         invoice.content_hash = content_hash
         if invoice.supplier:
             invoice.supplier.organization_id = current_user["organization_id"]
