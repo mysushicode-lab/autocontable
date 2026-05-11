@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '';
+const API_BASE_URL = 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -129,6 +129,11 @@ export const getInvoicePdfUrl = (invoiceId) => {
 
 export const deleteInvoice = async (invoiceId) => {
   const response = await api.delete(`/api/invoices/${invoiceId}`);
+  return response.data;
+};
+
+export const deleteTransaction = async (transactionId) => {
+  const response = await api.delete(`/api/transactions/${transactionId}`);
   return response.data;
 };
 

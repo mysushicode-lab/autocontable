@@ -1,5 +1,5 @@
 """Transaction endpoints"""
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
@@ -108,5 +108,26 @@ def list_transactions(
                 for tx in transactions
             ]
         }
+    finally:
+        session.close()
+
+
+@router.delete("/{transaction_id}")
+def delete_transaction(transaction_id: int, current_user: dict = Depends(get_current_user)):
+    """Delete a bank transaction"""
+    session = db.get_session()
+    try:
+        transaction = session.query(BankTransaction).filter(
+            BankTransaction.id == transaction_id,
+            BankTransaction.organization_id == current_user["organization_id"]
+        ).first()
+        
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        session.delete(transaction)
+        session.commit()
+        
+        return {"message": "Transaction deleted successfully"}
     finally:
         session.close()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { 
   Download, 
@@ -13,6 +13,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
+import DropdownButton from '../components/DropdownButton';
 
 const COLORS = CHART_COLORS_ARRAY;
 
@@ -57,6 +58,10 @@ const Reports = () => {
   const monthOptions = generateLast12Months();
   const [period, setPeriod] = useState(monthOptions[0].value);
   const [trendMonths, setTrendMonths] = useState(12); // For evolution chart
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const [showTrendDropdown, setShowTrendDropdown] = useState(false);
+  const periodButtonRef = useRef(null);
+  const trendButtonRef = useRef(null);
   const [year, month] = period.split('-').map(Number);
   const periodLabel = monthOptions.find(o => o.value === period)?.label || period;
   const periodDisplay = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
@@ -204,8 +209,65 @@ const Reports = () => {
     downloadCSV(`journal_achats_${period}.csv`, headers, rows);
   };
 
-  const exportExcelUrl = getExportUrl('/api/export/monthly-report', { year, month });
-  const exportCsvUrl = getExportUrl('/api/export/invoices', { year, month });
+  const exportExcelUrl = getExportUrl('/api/reports/export/monthly-report', { year, month });
+  
+  const handleCsvExport = async () => {
+    const token = localStorage.getItem('auth_token');
+    const url = getExportUrl('/api/reports/export/invoices', { year, month });
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export CSV');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `invoices_${year}_${month}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+    }
+  };
+
+  const handleExcelExport = async () => {
+    const token = localStorage.getItem('auth_token');
+    const url = getExportUrl('/api/reports/export/monthly-report', { year, month });
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export Excel');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `monthly_report_${year}_${month}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+    }
+  };
 
   // Use real 12-month trends data instead of single month
   const monthlyData = trendsData?.months || [];
@@ -219,17 +281,16 @@ const Reports = () => {
           <p className="text-gray-500">Analyse et export pour l'expert-comptable</p>
         </div>
         <div className="flex gap-3 items-center">
-          <select
-            className="px-4 py-2 bg-white rounded-md focus:ring-1 focus:ring-blue-500 outline-none"
+          <DropdownButton
+            label={monthOptions[0].label.charAt(0).toUpperCase() + monthOptions[0].label.slice(1)}
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label.charAt(0).toUpperCase() + opt.label.slice(1)}
-              </option>
-            ))}
-          </select>
+            options={monthOptions.map(opt => ({ ...opt, label: opt.label.charAt(0).toUpperCase() + opt.label.slice(1) }))}
+            onChange={setPeriod}
+            isOpen={showPeriodDropdown}
+            onToggle={() => setShowPeriodDropdown(!showPeriodDropdown)}
+            buttonRef={periodButtonRef}
+            width="200px"
+          />
         </div>
       </div>
 
@@ -269,15 +330,16 @@ const Reports = () => {
         <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Évolution des Dépenses</h3>
-            <select
-              className="px-3 py-1.5 border rounded-md text-sm"
+            <DropdownButton
+              label="12 mois"
               value={trendMonths}
-              onChange={(e) => setTrendMonths(Number(e.target.value))}
-            >
-              {PERIOD_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+              options={PERIOD_OPTIONS}
+              onChange={setTrendMonths}
+              isOpen={showTrendDropdown}
+              onToggle={() => setShowTrendDropdown(!showTrendDropdown)}
+              buttonRef={trendButtonRef}
+              width="150px"
+            />
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -395,12 +457,12 @@ const Reports = () => {
             <p className="text-blue-100">Générez un fichier Excel complet avec toutes les données du mois</p>
           </div>
           <div className="flex gap-3">
-            <a href={exportCsvUrl} className="px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:bg-blue-50">
+            <button onClick={handleCsvExport} className="px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:bg-blue-50">
               Export CSV
-            </a>
-            <a href={exportExcelUrl} className="px-4 py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-400 border border-blue-400">
+            </button>
+            <button onClick={handleExcelExport} className="px-4 py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-400 border border-blue-400">
               Export Excel
-            </a>
+            </button>
           </div>
         </div>
       </div>

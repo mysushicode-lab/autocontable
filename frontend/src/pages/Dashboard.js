@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,6 +14,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { fetchInvoices, fetchMonthlyReport, fetchReconciliationDetails, fetchReconciliationStatus, fetchTrends } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
 import { PoweredByMysushicode } from '../components/powered-by-mysushicode';
+import DropdownButton from '../components/DropdownButton';
 
 const COLORS = CHART_COLORS_ARRAY;
 
@@ -37,6 +38,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [trendMonths, setTrendMonths] = useState(12);
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const periodButtonRef = useRef(null);
   const today = new Date();
   const filters = { month: today.getMonth() + 1, year: today.getFullYear() };
 
@@ -97,18 +100,16 @@ const Dashboard = () => {
           <p className="text-gray-500">Vue d'ensemble de votre activité comptable</p>
         </div>
         <div className="flex gap-3 items-center">
-          <select
-            className="px-3 py-2 bg-white rounded-md text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+          <DropdownButton
+            label="12 mois"
             value={trendMonths}
-            onChange={(e) => setTrendMonths(Number(e.target.value))}
-            title="Période d'analyse"
-          >
-            {PERIOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            options={PERIOD_OPTIONS}
+            onChange={setTrendMonths}
+            isOpen={showPeriodDropdown}
+            onToggle={() => setShowPeriodDropdown(!showPeriodDropdown)}
+            buttonRef={periodButtonRef}
+            width="150px"
+          />
         </div>
       </div>
 

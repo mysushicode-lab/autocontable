@@ -36,6 +36,8 @@ class CSVParser:
             column_mapping = {
                 'date': ['Date', 'date', 'DATE', 'Opération', 'Date opération'],
                 'amount': ['Montant', 'montant', 'Amount', 'amount', 'Montant (€)', 'Valeur'],
+                'debit': ['Débit', 'debit', 'Debit', 'DEBIT'],
+                'credit': ['Crédit', 'credit', 'Credit', 'CREDIT'],
                 'description': ['Description', 'description', 'Libellé', 'Libelle', 'Détail'],
                 'reference': ['Référence', 'reference', 'Ref', 'REF']
             }
@@ -76,12 +78,20 @@ class CSVParser:
                         transaction[field] = self._parse_date(value)
                     elif field == 'amount':
                         transaction[field] = self._parse_amount(value)
+                    elif field == 'debit':
+                        debit_amount = self._parse_amount(value)
+                        if debit_amount is not None and debit_amount != 0:
+                            transaction['amount'] = -abs(debit_amount)
+                    elif field == 'credit':
+                        credit_amount = self._parse_amount(value)
+                        if credit_amount is not None and credit_amount != 0:
+                            transaction['amount'] = abs(credit_amount)
                     elif field == 'description':
                         transaction[field] = str(value) if pd.notna(value) else ''
                     elif field == 'reference':
                         transaction[field] = str(value) if pd.notna(value) else None
                     
-                    if transaction[field] is not None:
+                    if transaction[field] is not None and field not in ['debit', 'credit']:
                         break
         
         # Generate transaction ID if not present

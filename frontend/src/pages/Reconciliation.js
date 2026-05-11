@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
@@ -23,12 +23,16 @@ import {
   importBankStatementFile,
   rejectReconciliationMatch,
   runAutomaticReconciliation,
+  deleteTransaction,
 } from '../api';
+import DropdownButton from '../components/DropdownButton';
 
 const Reconciliation = () => {
   const [activeTab, setActiveTab] = useState('matches');
   const [linkModal, setLinkModal] = useState(null); // { txDbId, txDescription }
   const [linkInvoiceId, setLinkInvoiceId] = useState('');
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
   const navigate = useNavigate();
   const { add: addNotif } = useNotifications();
@@ -39,6 +43,11 @@ const Reconciliation = () => {
     const d = new Date(today.getFullYear(), today.getMonth() - i);
     return { value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) };
   });
+  
+  const periodOptions = [
+    { value: '', label: 'Toutes périodes' },
+    ...periodMonths
+  ];
   const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {};
 
   const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
@@ -99,6 +108,16 @@ const Reconciliation = () => {
     },
   });
 
+  const deleteTransactionMutation = useMutation(deleteTransaction, {
+    onSuccess: () => {
+      refreshAll();
+      addNotif(NOTIF_TYPES.SUCCESS, 'Transaction supprimée', 'La transaction a été supprimée avec succès.');
+    },
+    onError: (error) => {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', error?.response?.data?.detail || 'Impossible de supprimer la transaction.');
+    },
+  });
+
   const { data: transactionsData } = useQuery(['all-transactions', filters], () => fetchTransactions(filters));
   const allTransactions = transactionsData?.transactions || [];
 
@@ -151,14 +170,16 @@ const Reconciliation = () => {
         </div>
         <div className="flex items-center gap-3">
           {/* Sélecteur de période */}
-          <select
+          <DropdownButton
+            label="Toutes périodes"
             value={globalPeriod}
-            onChange={e => setGlobalPeriod(e.target.value)}
-            className="px-3 py-2 bg-white rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-blue-500 outline-none capitalize"
-          >
-            <option value="">Toutes périodes</option>
-            {periodMonths.map(m => <option key={m.value} value={m.value} className="capitalize">{m.label}</option>)}
-          </select>
+            options={periodOptions}
+            onChange={setGlobalPeriod}
+            isOpen={showPeriodDropdown}
+            onToggle={() => setShowPeriodDropdown(!showPeriodDropdown)}
+            buttonRef={periodButtonRef}
+            width="200px"
+          />
           <button onClick={handleBankImportClick} className="px-4 py-2 bg-white border rounded-md hover:bg-gray-50 flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
             {importMutation.isLoading ? 'Import...' : 'Import bancaire'}
@@ -303,6 +324,13 @@ const Reconciliation = () => {
                     </p>
                     <p className="text-xs text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</p>
                   </div>
+                  <button
+                    onClick={() => deleteTransactionMutation.mutate(tx.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md flex-shrink-0"
+                    title="Supprimer la transaction"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
