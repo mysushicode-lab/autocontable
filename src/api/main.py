@@ -279,8 +279,7 @@ def _save_uploaded_file(upload: UploadFile, target_dir: str) -> str:
 
 
 def _build_invoice_number(file_path: str) -> str:
-    basename = os.path.splitext(os.path.basename(file_path))[0]
-    return f"MANUAL-{basename[:40]}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    return f"MANUAL-{datetime.utcnow().strftime('%Y%m%d-%H%M')}"
 
 
 def _serialize_match(match: ReconciliationMatch) -> dict:
