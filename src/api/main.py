@@ -328,12 +328,16 @@ def _create_or_update_invoice(session: Session, file_path: str, extracted_data: 
     extraction_confidence = extracted_data.get("extraction_confidence", "low")
 
     invoice = session.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
+    print(f"[DEBUG] Query result: invoice found = {invoice is not None}")
     if invoice is None:
+        print(f"[DEBUG] Creating new invoice with number: {invoice_number}, org_id: {organization_id}")
         invoice = Invoice(invoice_number=invoice_number, organization_id=organization_id)
         session.add(invoice)
     else:
+        print(f"[DEBUG] Updating existing invoice ID: {invoice.id}")
         invoice.organization_id = organization_id
 
+    print(f"[DEBUG] Setting invoice fields...")
     invoice.supplier_id = supplier.id if supplier else None
     invoice.amount = extracted_data.get("amount") or 0.0
     invoice.amount_ht = extracted_data.get("amount_ht")
@@ -342,6 +346,7 @@ def _create_or_update_invoice(session: Session, file_path: str, extracted_data: 
     invoice.due_date = extracted_data.get("due_date")
     invoice.category = extracted_data.get("category") or category_classifier.classify(extracted_data)
     invoice.status = InvoiceStatus.PROCESSED if extraction_confidence in {"high", "medium"} else InvoiceStatus.PENDING
+    print(f"[DEBUG] Invoice fields set - amount: {invoice.amount}, date: {invoice.date}")
     invoice.purchase_order = extracted_data.get("purchase_order")
     invoice.delivery_note = extracted_data.get("delivery_note")
     invoice.vehicle_registration = extracted_data.get("vehicle_registration")
