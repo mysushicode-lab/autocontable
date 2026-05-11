@@ -145,6 +145,7 @@ class AIInvoiceExtractor:
     def _post_process(self, raw: Dict) -> Dict:
         """Validate and normalize AI output (dates, plate, supplier fallback, avoir negation)"""
         fields = raw.get('fields') or {}
+        print(f"[AI DEBUG] Raw fields from Vision: {fields}")
 
         fields['date'] = self._parse_date(fields.get('date'))
         fields['due_date'] = self._parse_date(fields.get('due_date'))
@@ -167,6 +168,7 @@ class AIInvoiceExtractor:
                     fields[key] = -fields[key]
 
         raw['fields'] = fields
+        print(f"[AI DEBUG] Post-processed fields: amount={fields.get('amount')}, date={fields.get('date')}, supplier={fields.get('supplier_name')}")
         return raw
 
     def extract_from_image_file(self, image_path: str, filename: str,
