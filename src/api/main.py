@@ -422,7 +422,12 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         print(f"[DEBUG] Extracted data: {extracted_data}")
         print(f"[DEBUG] Current user organization_id: {current_user['organization_id']}")
         invoice = _create_or_update_invoice(session, saved_path, extracted_data, current_user["organization_id"])
-        print(f"[DEBUG] Invoice created with organization_id: {invoice.organization_id}")
+        print(f"[DEBUG] Invoice created - ID: {invoice.id}, Number: {invoice.invoice_number}, organization_id: {invoice.organization_id}")
+        
+        # Verify invoice exists in DB after creation
+        verify_invoice = session.query(Invoice).filter(Invoice.id == invoice.id).first()
+        print(f"[DEBUG] Verification - Invoice in DB: {verify_invoice is not None}, org_id: {verify_invoice.organization_id if verify_invoice else None}")
+        
         invoice.content_hash = content_hash
         if invoice.supplier:
             invoice.supplier.organization_id = current_user["organization_id"]
