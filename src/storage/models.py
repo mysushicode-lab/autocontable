@@ -22,6 +22,27 @@ class UserRole(enum.Enum):
     ACCOUNTANT = "accountant"
 
 
+class Organization(Base):
+    __tablename__ = 'organizations'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    users = relationship("User", back_populates="organization")
+
+
+class UserToken(Base):
+    __tablename__ = 'user_tokens'
+
+    id = Column(Integer, primary_key=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="tokens")
+
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -31,18 +52,23 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.ACCOUNTANT)
     name = Column(String(100), nullable=True)
     email = Column(String(100), nullable=True)
-    profile_photo = Column(String(255), nullable=True)  # URL path to photo
+    profile_photo = Column(String(255), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    organization = relationship("Organization", back_populates="users")
+    tokens = relationship("UserToken", back_populates="user")
 
 
 class Settings(Base):
     __tablename__ = 'settings'
 
     id = Column(Integer, primary_key=True)
-    key = Column(String(100), unique=True, nullable=False, index=True)
+    key = Column(String(100), nullable=False, index=True)
     value = Column(Text, nullable=True)
-    category = Column(String(50), nullable=False, default='general')  # email, scheduler, general
+    category = Column(String(50), nullable=False, default='general')
     description = Column(Text, nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
@@ -50,34 +76,33 @@ class Invoice(Base):
     __tablename__ = 'invoices'
     
     id = Column(Integer, primary_key=True)
-    invoice_number = Column(String(100), unique=True, nullable=False)
+    invoice_number = Column(String(100), nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=True)
-    amount = Column(Float, nullable=False)       # Total TTC (à payer)
-    amount_ht = Column(Float, nullable=True)      # Montant HT (hors taxes)
-    amount_tax = Column(Float, nullable=True)     # Montant TVA
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    amount = Column(Float, nullable=False)
+    amount_ht = Column(Float, nullable=True)
+    amount_tax = Column(Float, nullable=True)
     date = Column(DateTime, nullable=False)
     due_date = Column(DateTime, nullable=True)
     category = Column(String(100), nullable=True)
     status = Column(Enum(InvoiceStatus), default=InvoiceStatus.PENDING)
     
-    # Carrosserie specific fields
-    purchase_order = Column(String(100), nullable=True)  # Numéro de commande
-    delivery_note = Column(String(100), nullable=True)   # Numéro de BL
-    vehicle_registration = Column(String(20), nullable=True)  # Immatriculation
-    work_order_reference = Column(String(100), nullable=True)  # N° dossier/OT
-    payment_method = Column(String(50), nullable=True)  # Mode de paiement
+    purchase_order = Column(String(100), nullable=True)
+    delivery_note = Column(String(100), nullable=True)
+    vehicle_registration = Column(String(20), nullable=True)
+    work_order_reference = Column(String(100), nullable=True)
+    payment_method = Column(String(50), nullable=True)
     
     file_path = Column(String(500), nullable=True)
     email_subject = Column(String(500), nullable=True)
     email_from = Column(String(500), nullable=True)
     email_date = Column(DateTime, nullable=True)
-    message_id = Column(String(200), nullable=True)  # Email Message-ID for dedup
-    content_hash = Column(String(32), nullable=True)  # MD5 hash for dedup
-    extracted_data = Column(Text, nullable=True)  # JSON string
+    message_id = Column(String(200), nullable=True)
+    content_hash = Column(String(32), nullable=True)
+    extracted_data = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
     supplier = relationship("Supplier", back_populates="invoices")
     matches = relationship("ReconciliationMatch", back_populates="invoice")
 
@@ -86,9 +111,10 @@ class Supplier(Base):
     __tablename__ = 'suppliers'
     
     id = Column(Integer, primary_key=True)
-    name = Column(String(200), unique=True, nullable=False)
-    normalized_name = Column(String(200), unique=True, nullable=False)
-    email = Column(String(200), nullable=True)  # Complete email address from sender
+    name = Column(String(200), nullable=False)
+    normalized_name = Column(String(200), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    email = Column(String(200), nullable=True)
     email_domain = Column(String(100), nullable=True)
     category = Column(String(100), nullable=True)
     vat_number = Column(String(50), nullable=True)
@@ -96,17 +122,16 @@ class Supplier(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
     invoices = relationship("Invoice", back_populates="supplier")
 
 
 class ProcessedFileHash(Base):
-    """Permanent registry of all file hashes ever processed by AI.
-    Never cleared even when invoices are deleted — prevents re-scanning."""
+    """Permanent registry of all file hashes ever processed by AI."""
     __tablename__ = 'processed_file_hashes'
 
     id = Column(Integer, primary_key=True)
     content_hash = Column(String(32), unique=True, nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     filename = Column(String(500), nullable=True)
     processed_at = Column(DateTime, default=datetime.utcnow)
 
@@ -115,7 +140,8 @@ class BankTransaction(Base):
     __tablename__ = 'bank_transactions'
     
     id = Column(Integer, primary_key=True)
-    transaction_id = Column(String(100), unique=True, nullable=False)
+    transaction_id = Column(String(100), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     date = Column(DateTime, nullable=False)
     amount = Column(Float, nullable=False)
     description = Column(Text, nullable=False)
@@ -125,7 +151,6 @@ class BankTransaction(Base):
     source_file = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationships
     matches = relationship("ReconciliationMatch", back_populates="transaction")
 
 
@@ -135,13 +160,13 @@ class ReconciliationMatch(Base):
     id = Column(Integer, primary_key=True)
     invoice_id = Column(Integer, ForeignKey('invoices.id'), nullable=False)
     transaction_id = Column(Integer, ForeignKey('bank_transactions.id'), nullable=False)
-    match_score = Column(Float, nullable=True)  # Confidence score 0-1
-    match_type = Column(String(50), default='automatic')  # automatic, manual, review
-    status = Column(String(50), default='pending')  # pending, confirmed, rejected
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    match_score = Column(Float, nullable=True)
+    match_type = Column(String(50), default='automatic')
+    status = Column(String(50), default='pending')
     notes = Column(Text, nullable=True)
     matched_at = Column(DateTime, default=datetime.utcnow)
-    matched_by = Column(String(100), nullable=True)  # system or user
+    matched_by = Column(String(100), nullable=True)
     
-    # Relationships
     invoice = relationship("Invoice", back_populates="matches")
     transaction = relationship("BankTransaction", back_populates="matches")

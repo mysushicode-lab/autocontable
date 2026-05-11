@@ -13,6 +13,7 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { fetchInvoices, fetchMonthlyReport, fetchReconciliationDetails, fetchReconciliationStatus, fetchTrends } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
+import { PoweredByMysushicode } from '../components/powered-by-mysushicode';
 
 const COLORS = CHART_COLORS_ARRAY;
 
@@ -97,7 +98,7 @@ const Dashboard = () => {
         </div>
         <div className="flex gap-3 items-center">
           <select
-            className="px-3 py-2 border rounded-lg text-sm"
+            className="px-3 py-2 bg-white rounded-md text-sm focus:ring-1 focus:ring-blue-500 outline-none"
             value={trendMonths}
             onChange={(e) => setTrendMonths(Number(e.target.value))}
             title="Période d'analyse"
@@ -147,7 +148,7 @@ const Dashboard = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Expenses by Category */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-md">
           <h3 className="font-semibold text-gray-900 mb-4">Dépenses par Catégorie</h3>
           <div className="h-64">
             {categoryData.length > 0 ? (
@@ -185,7 +186,7 @@ const Dashboard = () => {
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="text-gray-600">{item.name}</span>
-                <span className="font-medium ml-auto">
+                <span className="font-medium ml-auto text-gray-900">
                   {item.value.toLocaleString('fr-FR')} €
                 </span>
               </div>
@@ -194,7 +195,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Factures Récentes</h3>
             <a href="/invoices" className="text-blue-600 text-sm hover:underline">
@@ -205,7 +206,7 @@ const Dashboard = () => {
             {recentInvoices.map((invoice) => (
               <div 
                 key={invoice.id} 
-                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg border"
+                className="flex items-center justify-between p-3 rounded-md border border-slate-200/70 bg-white/60 backdrop-blur-md hover:bg-white/80"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${
@@ -218,7 +219,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">{invoice.amount.toLocaleString('fr-FR')} €</p>
+                  <p className="font-medium text-gray-900">{invoice.amount.toLocaleString('fr-FR')} €</p>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     {invoice.vehicle && (
                       <span className="flex items-center gap-1">
@@ -239,7 +240,7 @@ const Dashboard = () => {
       </div>
 
       {/* Vehicle Quick Search */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+      <div className="rounded-md border border-white/40 bg-gradient-to-r from-blue-600/80 to-blue-700/80 p-6 text-white shadow-xl backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-semibold mb-2">Rechercher par Immatriculation</h3>
@@ -249,7 +250,7 @@ const Dashboard = () => {
             <input
               type="text"
               placeholder="AB-123-CD"
-              className="px-4 py-2 rounded-lg text-gray-900 w-48 uppercase"
+              className="px-4 py-2 rounded-md bg-white/90 text-gray-900 placeholder:text-gray-400 w-48 uppercase"
               maxLength={9}
               value={vehicleSearch}
               onChange={(e) => setVehicleSearch(e.target.value)}
@@ -257,12 +258,15 @@ const Dashboard = () => {
             />
             <button
               onClick={handleVehicleSearch}
-              className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50"
+              className="px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:bg-blue-50"
             >
               Rechercher
             </button>
           </div>
         </div>
+      </div>
+      <div className="fixed bottom-4 left-4 z-40">
+        <PoweredByMysushicode />
       </div>
     </div>
   );
@@ -277,7 +281,7 @@ const StatCard = ({ title, value, icon: Icon, trend, trendUp, trendDown, alert, 
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="rounded-md border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-md">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-gray-600">{title}</p>
@@ -292,7 +296,7 @@ const StatCard = ({ title, value, icon: Icon, trend, trendUp, trendDown, alert, 
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${colors[color]}`}>
+        <div className={`p-3 rounded-md ${colors[color]}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>

@@ -154,12 +154,12 @@ const Reconciliation = () => {
           <select
             value={globalPeriod}
             onChange={e => setGlobalPeriod(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+            className="px-3 py-2 bg-white rounded-md text-sm text-gray-700 focus:ring-1 focus:ring-blue-500 outline-none capitalize"
           >
             <option value="">Toutes périodes</option>
             {periodMonths.map(m => <option key={m.value} value={m.value} className="capitalize">{m.label}</option>)}
           </select>
-          <button onClick={handleBankImportClick} className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+          <button onClick={handleBankImportClick} className="px-4 py-2 bg-white border rounded-md hover:bg-gray-50 flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
             {importMutation.isLoading ? 'Import...' : 'Import bancaire'}
           </button>
@@ -170,7 +170,7 @@ const Reconciliation = () => {
             className="hidden"
             onChange={handleBankFileSelected}
           />
-          <button onClick={() => runMutation.mutate()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <button onClick={() => runMutation.mutate()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />
             {runMutation.isLoading ? 'Analyse...' : 'Lancer le rapprochement'}
           </button>
@@ -187,7 +187,7 @@ const Reconciliation = () => {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border">
+      <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md">
         <div className="border-b">
           <div className="flex">
             <button
@@ -238,7 +238,7 @@ const Reconciliation = () => {
           {activeTab === 'matches' && (
             <div className="space-y-2">
               {matches.map((match) => (
-                <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 bg-white rounded-lg border border-gray-200">
+                <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 rounded-md border border-white/30 bg-white/50 backdrop-blur-sm">
                   {/* Fournisseur + N° facture + score */}
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{match.invoice.supplier || '—'}</p>
@@ -248,7 +248,7 @@ const Reconciliation = () => {
                   <p className="font-bold text-gray-900 text-center">{match.invoice.amount.toLocaleString('fr-FR')} €</p>
                   {/* Supprimer uniquement */}
                   <div className="flex items-center justify-end">
-                    <button onClick={() => rejectMutation.mutate(match.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Supprimer la correspondance">
+                    <button onClick={() => rejectMutation.mutate(match.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md" title="Supprimer la correspondance">
                       <XCircle className="w-4 h-4" />
                     </button>
                   </div>
@@ -261,17 +261,17 @@ const Reconciliation = () => {
           {activeTab === 'unmatched' && (
             <div className="space-y-2">
               {unmatchedInvoices.map((match) => (
-                <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 bg-white rounded-lg border border-gray-200">
+                <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 rounded-md border border-white/30 bg-white/50 backdrop-blur-sm">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{match.invoice.supplier || '—'}</p>
                     <p className="text-xs text-gray-400">{match.invoice.number} · {match.invoice.date ? new Date(match.invoice.date).toLocaleDateString('fr-FR') : '—'}</p>
                   </div>
                   <p className="font-bold text-gray-900 text-center">{match.invoice.amount.toLocaleString('fr-FR')} €</p>
                   <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => runMutation.mutate()} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
+                    <button onClick={() => runMutation.mutate()} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
                       Relancer
                     </button>
-                    <button onClick={handleBankImportClick} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
+                    <button onClick={handleBankImportClick} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
                       Import relevé
                     </button>
                   </div>
@@ -287,7 +287,7 @@ const Reconciliation = () => {
                 <div className="text-sm text-gray-500">Aucune transaction pour cette période.</div>
               )}
               {allTransactions.map((tx) => (
-                <div key={tx.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                <div key={tx.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-md border hover:bg-gray-100 transition-colors">
                   <CreditCard className="w-5 h-5 text-gray-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{tx.description || '—'}</p>
@@ -311,17 +311,17 @@ const Reconciliation = () => {
           {activeTab === 'bankonly' && (
             <div className="space-y-2">
               {bankOnly.map((tx) => (
-                <div key={tx.id} className="grid grid-cols-3 items-center px-4 py-3 bg-white rounded-lg border border-gray-200">
+                <div key={tx.id} className="grid grid-cols-3 items-center px-4 py-3 rounded-md border border-white/30 bg-white/50 backdrop-blur-sm">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{tx.description || '—'}</p>
                     <p className="text-xs text-gray-400">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</p>
                   </div>
                   <p className="font-bold text-gray-900 text-center">{tx.amount.toLocaleString('fr-FR')} €</p>
                   <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => handleManualLink(tx.db_id || tx.id, tx.description)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
+                    <button onClick={() => handleManualLink(tx.db_id || tx.id, tx.description)} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
                       Lier
                     </button>
-                    <button onClick={() => navigate('/invoices')} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50">
+                    <button onClick={() => navigate('/invoices')} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
                       Créer facture
                     </button>
                   </div>
@@ -335,7 +335,7 @@ const Reconciliation = () => {
       {/* Modal lien manuel */}
       {linkModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+          <div className="bg-white rounded-md shadow-xl p-6 w-full max-w-sm mx-4">
             <h3 className="font-semibold text-gray-900 mb-1">Lier à une facture</h3>
             <p className="text-xs text-gray-500 mb-4 truncate">{linkModal.txDescription}</p>
             <label className="block text-xs font-medium text-gray-600 mb-1">ID de la facture</label>
@@ -346,11 +346,11 @@ const Reconciliation = () => {
               onChange={e => setLinkInvoiceId(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submitManualLink()}
               placeholder="ex: 3"
-              className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setLinkModal(null)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Annuler</button>
-              <button onClick={submitManualLink} disabled={!linkInvoiceId} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40">Lier</button>
+              <button onClick={() => setLinkModal(null)} className="px-4 py-2 text-sm text-gray-600 border rounded-md hover:bg-gray-50">Annuler</button>
+              <button onClick={submitManualLink} disabled={!linkInvoiceId} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-40">Lier</button>
             </div>
           </div>
         </div>
@@ -369,13 +369,13 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-4">
+    <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600">{title}</p>
           <p className="text-xl font-bold text-gray-900">{value}</p>
         </div>
-        <div className={`p-2 rounded-lg ${colors[color]}`}>
+        <div className={`p-2 rounded-md ${colors[color]}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>

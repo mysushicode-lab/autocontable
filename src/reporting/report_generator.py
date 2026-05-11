@@ -14,8 +14,9 @@ import calendar
 class ReportGenerator:
     """Generate accounting reports"""
     
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, org_id: int = None):
         self.session = session
+        self.org_id = org_id
     
     def monthly_totals(self, year: int, month: int) -> Dict:
         """
@@ -33,10 +34,13 @@ class ReportGenerator:
         last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
         
         # Get invoices for the month
-        invoices = self.session.query(Invoice).filter(
+        inv_q = self.session.query(Invoice).filter(
             Invoice.date >= first_day,
             Invoice.date <= last_day
-        ).all()
+        )
+        if self.org_id:
+            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
+        invoices = inv_q.all()
         
         # Calculate totals
         total_amount = sum(i.amount for i in invoices)

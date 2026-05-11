@@ -1,16 +1,16 @@
 """
 FastAPI REST API for invoice processing system
 """
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Header, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from pydantic import BaseModel
 from src.storage.database import db
-from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base, Supplier, ProcessedFileHash
+from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, Settings, User, UserRole, Base, Supplier, ProcessedFileHash, Organization, UserToken
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.exporter import Exporter
 from src.invoice_processor import InvoiceProcessor
@@ -33,29 +33,177 @@ app.mount("/api/uploads", StaticFiles(directory="data/uploads"), name="uploads")
 
 @app.on_event("startup")
 def startup_event():
-    """Create database tables on startup"""
+    """Create database tables on startup and run migrations"""
     Base.metadata.create_all(bind=db.engine)
-    # Create default admin user if not exists
+
+    conn = db.engine.connect()
+
+    # Recreate settings table without UNIQUE(key) constraint if needed
+    try:
+        idx_info = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='settings' AND sql LIKE '%UNIQUE%key%'")).fetchall()
+        if idx_info:
+            conn.execute(text("ALTER TABLE settings RENAME TO settings_old"))
+            conn.execute(text("""CREATE TABLE settings (
+                id INTEGER PRIMARY KEY,
+                key VARCHAR(100) NOT NULL,
+                value TEXT,
+                category VARCHAR(50) NOT NULL DEFAULT 'general',
+                description TEXT,
+                organization_id INTEGER REFERENCES organizations(id),
+                updated_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO settings SELECT id,key,value,category,description,NULL,updated_at FROM settings_old"))
+            conn.execute(text("DROP TABLE settings_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"Settings migration: {e}")
+
+    # Recreate suppliers table without global UNIQUE constraints if needed
+    try:
+        sup_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='suppliers'")).fetchone()
+        if sup_sql and 'UNIQUE' in (sup_sql[0] or ''):
+            conn.execute(text("ALTER TABLE suppliers RENAME TO suppliers_old"))
+            conn.execute(text("""CREATE TABLE suppliers (
+                id INTEGER PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                normalized_name VARCHAR(200) NOT NULL,
+                organization_id INTEGER REFERENCES organizations(id),
+                email VARCHAR(200),
+                email_domain VARCHAR(100),
+                category VARCHAR(100),
+                vat_number VARCHAR(50),
+                address TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO suppliers SELECT id,name,normalized_name,NULL,email,email_domain,category,vat_number,address,created_at,updated_at FROM suppliers_old"))
+            conn.execute(text("DROP TABLE suppliers_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"Suppliers migration: {e}")
+
+    # Recreate invoices table without global UNIQUE on invoice_number if needed
+    try:
+        inv_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='invoices' AND sql LIKE '%UNIQUE%invoice_number%'")).fetchall()
+        if inv_sql:
+            conn.execute(text("ALTER TABLE invoices RENAME TO invoices_old"))
+            conn.execute(text("""CREATE TABLE invoices (
+                id INTEGER PRIMARY KEY,
+                invoice_number VARCHAR(100) NOT NULL,
+                supplier_id INTEGER REFERENCES suppliers(id),
+                organization_id INTEGER REFERENCES organizations(id),
+                amount FLOAT NOT NULL,
+                amount_ht FLOAT,
+                amount_tax FLOAT,
+                date DATETIME NOT NULL,
+                due_date DATETIME,
+                category VARCHAR(100),
+                status VARCHAR(50),
+                purchase_order VARCHAR(100),
+                delivery_note VARCHAR(100),
+                vehicle_registration VARCHAR(20),
+                work_order_reference VARCHAR(100),
+                payment_method VARCHAR(50),
+                file_path VARCHAR(500),
+                email_subject VARCHAR(500),
+                email_from VARCHAR(500),
+                email_date DATETIME,
+                message_id VARCHAR(200),
+                content_hash VARCHAR(32),
+                extracted_data TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO invoices SELECT id,invoice_number,supplier_id,NULL,amount,amount_ht,amount_tax,date,due_date,category,status,purchase_order,delivery_note,vehicle_registration,work_order_reference,payment_method,file_path,email_subject,email_from,email_date,message_id,content_hash,extracted_data,created_at,updated_at FROM invoices_old"))
+            conn.execute(text("DROP TABLE invoices_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"Invoices migration: {e}")
+
+    # Recreate bank_transactions without global UNIQUE on transaction_id if needed
+    try:
+        bt_sql = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='bank_transactions' AND sql LIKE '%UNIQUE%transaction_id%'")).fetchall()
+        if bt_sql:
+            conn.execute(text("ALTER TABLE bank_transactions RENAME TO bank_transactions_old"))
+            conn.execute(text("""CREATE TABLE bank_transactions (
+                id INTEGER PRIMARY KEY,
+                transaction_id VARCHAR(100) NOT NULL,
+                organization_id INTEGER REFERENCES organizations(id),
+                date DATETIME NOT NULL,
+                amount FLOAT NOT NULL,
+                description TEXT NOT NULL,
+                reference VARCHAR(200),
+                account_number VARCHAR(50),
+                category VARCHAR(100),
+                source_file VARCHAR(500),
+                created_at DATETIME
+            )"""))
+            conn.execute(text("INSERT INTO bank_transactions SELECT id,transaction_id,NULL,date,amount,description,reference,account_number,category,source_file,created_at FROM bank_transactions_old"))
+            conn.execute(text("DROP TABLE bank_transactions_old"))
+            conn.commit()
+    except Exception as e:
+        print(f"BankTransactions migration: {e}")
+
+    # Add organization_id columns to remaining tables
+    add_col_migrations = [
+        "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE reconciliation_matches ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE processed_file_hashes ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+    ]
+    for stmt in add_col_migrations:
+        try:
+            conn.execute(text(stmt))
+            conn.commit()
+        except Exception:
+            pass
+
+    conn.close()
+
     session = db.get_session()
     try:
-        # Check if users table exists and admin user exists
+        # Create default organization for existing data
+        default_org = session.query(Organization).filter(Organization.id == 1).first()
+        if not default_org:
+            default_org = Organization(name="Organisation par défaut")
+            session.add(default_org)
+            session.flush()
+            default_org_id = default_org.id
+            session.commit()
+        else:
+            default_org_id = default_org.id
+
+        # Assign existing users without org to default org
+        session.execute(text(f"UPDATE users SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE invoices SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE suppliers SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE bank_transactions SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE reconciliation_matches SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE settings SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.execute(text(f"UPDATE processed_file_hashes SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        session.commit()
+
+        # Create default admin user if not exists
         try:
-            admin_exists = session.query(User).filter(User.username == 'admin').first()
+            default_admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+            default_admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+            default_admin_email = os.environ.get('ADMIN_EMAIL', '')
+            admin_exists = session.query(User).filter(User.username == default_admin_username).first()
             if not admin_exists:
-                default_password = 'admin123'
-                password_hash = hashlib.sha256(default_password.encode()).hexdigest()
+                password_hash = hashlib.sha256(default_admin_password.encode()).hexdigest()
                 admin = User(
-                    username='admin',
+                    username=default_admin_username,
                     password_hash=password_hash,
                     role=UserRole.ADMIN,
                     name='Administrateur',
-                    email='admin@carrosserie-erik.fr'
+                    email=default_admin_email or None,
+                    organization_id=default_org_id
                 )
                 session.add(admin)
                 session.commit()
         except Exception as e:
             print(f"Warning: Could not check/create admin user: {e}")
             session.rollback()
+
         # Insert default settings if not already set
         try:
             default_settings = [
@@ -67,9 +215,11 @@ def startup_event():
                 ('company_name', '', 'general', 'Nom de votre entreprise (ignoré comme fournisseur par l\'IA)'),
             ]
             for key, value, category, description in default_settings:
-                exists = session.query(Settings).filter(Settings.key == key).first()
+                exists = session.query(Settings).filter(
+                    Settings.key == key, Settings.organization_id == default_org_id
+                ).first()
                 if not exists:
-                    session.add(Settings(key=key, value=value, category=category, description=description))
+                    session.add(Settings(key=key, value=value, category=category, description=description, organization_id=default_org_id))
             session.commit()
         except Exception as e:
             print(f"Warning: Could not insert default settings: {e}")
@@ -80,6 +230,32 @@ def startup_event():
 UPLOAD_ROOT = os.path.join("data", "uploads")
 INVOICE_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "invoices")
 BANK_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "bank_statements")
+
+
+def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """Validate Bearer token and return user info dict."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token manquant")
+    token = authorization[7:]
+    session = db.get_session()
+    try:
+        user_token = session.query(UserToken).filter(UserToken.token == token).first()
+        if not user_token:
+            raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+        user = session.query(User).filter(User.id == user_token.user_id).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+        return {
+            "id": user.id,
+            "username": user.username,
+            "name": user.name,
+            "role": user.role.value,
+            "organization_id": user.organization_id,
+            "email": user.email,
+            "profile_photo": user.profile_photo,
+        }
+    finally:
+        session.close()
 
 
 class ManualLinkPayload(BaseModel):
@@ -193,7 +369,7 @@ class UpdateInvoiceRequest(BaseModel):
 
 
 @app.post("/api/invoices/upload")
-async def upload_invoice(file: UploadFile = File(...)):
+async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """Import a supplier invoice manually."""
     allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
     extension = os.path.splitext(file.filename or "")[1].lower()
@@ -233,8 +409,11 @@ async def upload_invoice(file: UploadFile = File(...)):
         extracted_data = processor.process_invoice(saved_path)
         invoice = _create_or_update_invoice(session, saved_path, extracted_data)
         invoice.content_hash = content_hash
+        invoice.organization_id = current_user["organization_id"]
+        if invoice.supplier:
+            invoice.supplier.organization_id = current_user["organization_id"]
         if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
-            session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename))
+            session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename, organization_id=current_user["organization_id"]))
         session.commit()
         session.refresh(invoice)
         return {
@@ -255,7 +434,7 @@ async def upload_invoice(file: UploadFile = File(...)):
 
 
 @app.post("/api/transactions/import")
-async def import_bank_statement(file: UploadFile = File(...)):
+async def import_bank_statement(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """Import a bank statement from CSV/OFX/QFX/PDF."""
     allowed_extensions = {".csv", ".ofx", ".qfx", ".pdf"}
     extension = os.path.splitext(file.filename or "")[1].lower()
@@ -290,6 +469,7 @@ async def import_bank_statement(file: UploadFile = File(...)):
                 account_number=tx.get("account_number"),
                 category=tx.get("category"),
                 source_file=saved_path,
+                organization_id=current_user["organization_id"],
             ))
             imported_count += 1
 
@@ -307,14 +487,16 @@ async def import_bank_statement(file: UploadFile = File(...)):
 
 
 @app.post("/api/reconciliation/run")
-def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None):
+def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, current_user: dict = Depends(get_current_user)):
     """Run reconciliation automatically on current invoices and transactions."""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
         invoice_query = session.query(Invoice).filter(
-            Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED])
+            Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED]),
+            Invoice.organization_id == org_id
         )
-        transaction_query = session.query(BankTransaction)
+        transaction_query = session.query(BankTransaction).filter(BankTransaction.organization_id == org_id)
 
 
         engine = ReconciliationEngine(session)
@@ -333,7 +515,7 @@ def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None):
 
 
 @app.post("/api/reconciliation/{match_id}/confirm")
-def confirm_match(match_id: int):
+def confirm_match(match_id: int, current_user: dict = Depends(get_current_user)):
     """Confirm a proposed reconciliation match."""
     session = db.get_session()
     try:
@@ -352,7 +534,7 @@ def confirm_match(match_id: int):
 
 
 @app.post("/api/reconciliation/{match_id}/reject")
-def reject_match(match_id: int):
+def reject_match(match_id: int, current_user: dict = Depends(get_current_user)):
     """Reject a proposed reconciliation match."""
     session = db.get_session()
     try:
@@ -371,7 +553,7 @@ def reject_match(match_id: int):
 
 
 @app.post("/api/reconciliation/manual-link")
-def create_manual_link(payload: ManualLinkPayload):
+def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(get_current_user)):
     """Create a manual invoice to bank transaction link."""
     session = db.get_session()
     try:
@@ -426,14 +608,16 @@ def create_manual_link(payload: ManualLinkPayload):
 @app.get("/api/reconciliation/details")
 def get_reconciliation_details(
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """Get detailed reconciliation payload for the UI."""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
-        invoice_query = session.query(Invoice)
-        match_query = session.query(ReconciliationMatch).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
-        transaction_query = session.query(BankTransaction)
+        invoice_query = session.query(Invoice).filter(Invoice.organization_id == org_id)
+        match_query = session.query(ReconciliationMatch).filter(ReconciliationMatch.organization_id == org_id).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
+        transaction_query = session.query(BankTransaction).filter(BankTransaction.organization_id == org_id)
 
         if month and year:
             last_day_num = calendar.monthrange(year, month)[1]
@@ -505,13 +689,14 @@ def get_reconciliation_details(
 
 
 @app.get("/api/vehicles/{registration}/history")
-def get_vehicle_history(registration: str):
+def get_vehicle_history(registration: str, current_user: dict = Depends(get_current_user)):
     """Get invoice history aggregated by vehicle registration."""
     session = db.get_session()
     try:
         normalized_registration = registration.upper()
         invoices = session.query(Invoice).filter(
-            Invoice.vehicle_registration == normalized_registration
+            Invoice.vehicle_registration == normalized_registration,
+            Invoice.organization_id == current_user["organization_id"]
         ).order_by(Invoice.date.desc()).all()
 
         if not invoices:
@@ -563,12 +748,13 @@ def list_invoices(
     search: Optional[str] = None,
     vehicle_registration: Optional[str] = None,
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """List all invoices with optional filters"""
     session = db.get_session()
     try:
-        query = session.query(Invoice)
+        query = session.query(Invoice).filter(Invoice.organization_id == current_user["organization_id"])
         
         if status:
             query = query.filter(Invoice.status == InvoiceStatus(status))
@@ -628,11 +814,11 @@ def list_invoices(
 
 
 @app.delete("/api/invoices/{invoice_id}")
-def delete_invoice(invoice_id: int):
+def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_user)):
     """Delete an invoice and its reconciliation matches"""
     session = db.get_session()
     try:
-        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
         session.query(ReconciliationMatch).filter(ReconciliationMatch.invoice_id == invoice_id).delete()
@@ -649,11 +835,11 @@ def delete_invoice(invoice_id: int):
 
 
 @app.put("/api/invoices/{invoice_id}")
-def update_invoice(invoice_id: int, request: UpdateInvoiceRequest):
+def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user: dict = Depends(get_current_user)):
     """Update invoice fields and propagate changes"""
     session = db.get_session()
     try:
-        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
         if request.invoice_number is not None:
@@ -720,11 +906,11 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest):
 
 
 @app.get("/api/invoices/{invoice_id}")
-def get_invoice(invoice_id: int):
+def get_invoice(invoice_id: int, current_user: dict = Depends(get_current_user)):
     """Get single invoice by ID"""
     session = db.get_session()
     try:
-        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
@@ -753,11 +939,11 @@ def get_invoice(invoice_id: int):
 
 
 @app.get("/api/invoices/{invoice_id}/download")
-def download_invoice_pdf(invoice_id: int):
+def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_user)):
     """Download invoice PDF file"""
     session = db.get_session()
     try:
-        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
         
@@ -776,12 +962,13 @@ def download_invoice_pdf(invoice_id: int):
 @app.get("/api/transactions")
 def list_transactions(
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """List all bank transactions"""
     session = db.get_session()
     try:
-        query = session.query(BankTransaction)
+        query = session.query(BankTransaction).filter(BankTransaction.organization_id == current_user["organization_id"])
         
         if month and year:
             last_day_num = calendar.monthrange(year, month)[1]
@@ -813,12 +1000,13 @@ def list_transactions(
 @app.get("/api/reconciliation")
 def get_reconciliation_status(
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """Get reconciliation status"""
     session = db.get_session()
     try:
-        query = session.query(ReconciliationMatch).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
+        query = session.query(ReconciliationMatch).filter(ReconciliationMatch.organization_id == current_user["organization_id"]).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
         
         if month and year:
             last_day_num = calendar.monthrange(year, month)[1]
@@ -846,29 +1034,29 @@ def get_reconciliation_status(
 
 
 @app.get("/api/reports/monthly")
-def get_monthly_report(year: int, month: int):
+def get_monthly_report(year: int, month: int, current_user: dict = Depends(get_current_user)):
     """Get monthly totals report"""
     session = db.get_session()
     try:
-        report_gen = ReportGenerator(session)
+        report_gen = ReportGenerator(session, org_id=current_user["organization_id"])
         return report_gen.monthly_totals(year, month)
     finally:
         session.close()
 
 
 @app.get("/api/reports/trends")
-def get_trends_report(months: int = 12):
+def get_trends_report(months: int = 12, current_user: dict = Depends(get_current_user)):
     """Get N-month trends for evolution chart (1, 2, 3, 6, 12, 24, etc.)"""
     session = db.get_session()
     try:
-        report_gen = ReportGenerator(session)
+        report_gen = ReportGenerator(session, org_id=current_user["organization_id"])
         return report_gen.monthly_trends(months=months)
     finally:
         session.close()
 
 
 @app.post("/api/emails/fetch")
-def trigger_email_fetch(since_days: int = 30):
+def trigger_email_fetch(since_days: int = 30, current_user: dict = Depends(get_current_user)):
     """
     Trigger immediate email fetching and processing.
     Called on frontend startup or on demand.
@@ -905,7 +1093,8 @@ def trigger_email_fetch(since_days: int = 30):
 @app.get("/api/export/invoices")
 def export_invoices_csv(
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """Export invoices to CSV"""
     session = db.get_session()
@@ -922,7 +1111,8 @@ def export_invoices_csv(
 @app.get("/api/export/transactions")
 def export_transactions_csv(
     month: Optional[int] = None,
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """Export transactions to CSV"""
     session = db.get_session()
@@ -937,7 +1127,7 @@ def export_transactions_csv(
 
 
 @app.get("/api/export/monthly-report")
-def export_monthly_report_excel(year: int, month: int):
+def export_monthly_report_excel(year: int, month: int, current_user: dict = Depends(get_current_user)):
     """Export monthly report to Excel"""
     session = db.get_session()
     try:
@@ -956,11 +1146,11 @@ class SettingUpdate(BaseModel):
 
 
 @app.get("/api/settings")
-def get_settings(category: Optional[str] = None):
+def get_settings(category: Optional[str] = None, current_user: dict = Depends(get_current_user)):
     """Get all settings or filtered by category"""
     session = db.get_session()
     try:
-        query = session.query(Settings)
+        query = session.query(Settings).filter(Settings.organization_id == current_user["organization_id"])
         if category:
             query = query.filter(Settings.category == category)
         settings = query.all()
@@ -981,13 +1171,14 @@ def get_settings(category: Optional[str] = None):
 
 
 @app.put("/api/settings/{key}")
-def update_setting(key: str, update: SettingUpdate):
+def update_setting(key: str, update: SettingUpdate, current_user: dict = Depends(get_current_user)):
     """Update a setting value"""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
-        setting = session.query(Settings).filter(Settings.key == key).first()
+        setting = session.query(Settings).filter(Settings.key == key, Settings.organization_id == org_id).first()
         if not setting:
-            setting = Settings(key=key, value=update.value, category="general")
+            setting = Settings(key=key, value=update.value, category="general", organization_id=org_id)
             session.add(setting)
         else:
             setting.value = update.value
@@ -1041,28 +1232,89 @@ class CreateUserRequest(BaseModel):
     role: str = "accountant"
 
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    name: str
+    email: Optional[str] = None
+
+
+@app.post("/api/auth/register")
+def register(request: RegisterRequest):
+    """Public registration — creates a new organization and admin account."""
+    session = db.get_session()
+    try:
+        if session.query(User).filter(User.username == request.username).first():
+            raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris.")
+        org = Organization(name=request.name)
+        session.add(org)
+        session.flush()
+        org_id = org.id
+        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+        user = User(
+            username=request.username,
+            password_hash=password_hash,
+            name=request.name,
+            email=request.email,
+            role=UserRole.ADMIN,
+            organization_id=org_id
+        )
+        session.add(user)
+        session.flush()
+        user_id = user.id
+        default_settings = [
+            ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
+            ('imap_port', '993', 'email', 'Port IMAP'),
+            ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
+            ('scheduler_interval', '0.166', 'scheduler', 'Intervalle en minutes'),
+            ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
+            ('company_name', request.name, 'general', 'Nom de votre entreprise'),
+        ]
+        for key, value, category, description in default_settings:
+            session.add(Settings(key=key, value=value, category=category, description=description, organization_id=org_id))
+        token_value = secrets.token_hex(32)
+        user_token = UserToken(token=token_value, user_id=user_id)
+        session.add(user_token)
+        session.commit()
+        return {
+            "token": token_value,
+            "user": {
+                "id": user_id,
+                "username": request.username,
+                "name": request.name,
+                "role": UserRole.ADMIN.value,
+                "organization_id": org_id,
+                "email": request.email,
+                "profile_photo": None
+            }
+        }
+    finally:
+        session.close()
+
+
 @app.post("/api/auth/login")
 def login(request: LoginRequest):
-    """Simple login - returns user info if credentials valid"""
+    """Login - validates credentials and returns stored token"""
     session = db.get_session()
     try:
         user = session.query(User).filter(User.username == request.username).first()
         if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
+            raise HTTPException(status_code=401, detail="Identifiants invalides")
         password_hash = hashlib.sha256(request.password.encode()).hexdigest()
         if user.password_hash != password_hash:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        # Simple token (in production, use JWT)
-        token = secrets.token_hex(16)
+            raise HTTPException(status_code=401, detail="Identifiants invalides")
+        token_value = secrets.token_hex(32)
+        user_token = UserToken(token=token_value, user_id=user.id)
+        session.add(user_token)
+        session.commit()
         return {
-            "token": token,
+            "token": token_value,
             "user": {
                 "id": user.id,
                 "username": user.username,
                 "name": user.name,
                 "role": user.role.value,
+                "organization_id": user.organization_id,
                 "email": user.email,
                 "profile_photo": user.profile_photo
             }
@@ -1071,12 +1323,28 @@ def login(request: LoginRequest):
         session.close()
 
 
-@app.get("/api/users")
-def list_users():
-    """List all users"""
+@app.delete("/api/auth/delete-account")
+def delete_own_account(current_user: dict = Depends(get_current_user)):
+    """Delete the authenticated user's own account"""
     session = db.get_session()
     try:
-        users = session.query(User).all()
+        user = session.query(User).filter(User.id == current_user["id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Compte introuvable")
+        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
+        session.delete(user)
+        session.commit()
+        return {"message": "Compte supprimé"}
+    finally:
+        session.close()
+
+
+@app.get("/api/users")
+def list_users(current_user: dict = Depends(get_current_user)):
+    """List all users in the same organization"""
+    session = db.get_session()
+    try:
+        users = session.query(User).filter(User.organization_id == current_user["organization_id"]).all()
         return {
             "users": [
                 {
@@ -1095,11 +1363,10 @@ def list_users():
 
 
 @app.post("/api/users")
-def create_user(request: CreateUserRequest):
-    """Create a new user (admin only in production)"""
+def create_user(request: CreateUserRequest, current_user: dict = Depends(get_current_user)):
+    """Create a new user in the same organization"""
     session = db.get_session()
     try:
-        # Check if username exists
         if session.query(User).filter(User.username == request.username).first():
             raise HTTPException(status_code=400, detail="Username already exists")
 
@@ -1109,7 +1376,8 @@ def create_user(request: CreateUserRequest):
             password_hash=password_hash,
             name=request.name,
             email=request.email,
-            role=UserRole.ADMIN if request.role == "admin" else UserRole.ACCOUNTANT
+            role=UserRole.ADMIN if request.role == "admin" else UserRole.ACCOUNTANT,
+            organization_id=current_user["organization_id"]
         )
         session.add(user)
         session.commit()
@@ -1119,15 +1387,15 @@ def create_user(request: CreateUserRequest):
 
 
 @app.delete("/api/users/{user_id}")
-def delete_user(user_id: int):
+def delete_user(user_id: int, current_user: dict = Depends(get_current_user)):
     """Delete a user"""
     session = db.get_session()
     try:
-        user = session.query(User).filter(User.id == user_id).first()
+        user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        if user.username == 'admin':
-            raise HTTPException(status_code=400, detail="Cannot delete admin user")
+        if user.id == current_user["id"]:
+            raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
         session.delete(user)
         session.commit()
         return {"message": "User deleted"}
@@ -1141,11 +1409,11 @@ class UpdateUserRequest(BaseModel):
 
 
 @app.put("/api/users/{user_id}")
-def update_user(user_id: int, request: UpdateUserRequest):
+def update_user(user_id: int, request: UpdateUserRequest, current_user: dict = Depends(get_current_user)):
     """Update user name and email"""
     session = db.get_session()
     try:
-        user = session.query(User).filter(User.id == user_id).first()
+        user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -1172,11 +1440,11 @@ def update_user(user_id: int, request: UpdateUserRequest):
 
 
 @app.post("/api/users/{user_id}/profile-photo")
-def upload_profile_photo(user_id: int, file: UploadFile = File(...)):
+def upload_profile_photo(user_id: int, file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """Upload profile photo for a user"""
     session = db.get_session()
     try:
-        user = session.query(User).filter(User.id == user_id).first()
+        user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 

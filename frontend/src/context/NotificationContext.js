@@ -48,6 +48,7 @@ export const NotificationProvider = ({ children }) => {
   // Poll for new invoices added by scheduler (every 60s)
   useEffect(() => {
     const check = async () => {
+      if (!localStorage.getItem('auth_token')) return;
       try {
         const data = await fetchInvoices({});
         const count = data?.count ?? 0;

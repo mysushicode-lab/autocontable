@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
@@ -13,10 +13,13 @@ import {
   Info,
   AlertTriangle,
   X,
-  Trash2
+  Trash2,
+  LogOut
 } from 'lucide-react';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
+import { GlassDock } from './glass-dock';
+import { PoweredByMysushicode } from './powered-by-mysushicode';
 
 const TYPE_CONFIG = {
   [NOTIF_TYPES.SUCCESS]: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50' },
@@ -36,7 +39,13 @@ const timeAgo = (date) => {
 const Layout = ({ children }) => {
   const location = useLocation();
   const { notifications, unreadCount, markRead, markAllRead, remove, clearAll } = useNotifications();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef(null);
 
@@ -48,7 +57,7 @@ const Layout = ({ children }) => {
     { path: '/reconciliation', icon: CreditCard, label: 'Rapprochement' },
     { path: '/vehicles', icon: Car, label: 'Par Véhicule' },
     { path: '/reports', icon: BarChart3, label: 'Rapports' },
-    ...(user?.role === 'admin' ? [{ path: '/settings', icon: Settings, label: 'Paramètres' }] : []),
+    { path: '/settings', icon: Settings, label: 'Paramètres' },
   ];
 
   // Close panel on outside click
@@ -71,41 +80,21 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="p-6 border-b border-slate-700">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Car className="w-6 h-6 text-blue-400" />
-            contamail
+          <h1 className="text-xl font-bold">
+            MAILFACT
           </h1>
           <p className="text-sm text-slate-400 mt-1">Gestion Comptable</p>
         </div>
         
-        <nav className="flex-1 p-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
-                  isActive 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        
-        
+        <div className="p-4">
+          <GlassDock items={menuItems} activePath={location.pathname} orientation="vertical" />
+        </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <header className="bg-white border-gray-200 border-b px-6 py-4 flex items-center justify-between">
           <div className="flex-1" />
           
           <div className="flex items-center gap-4">
@@ -124,7 +113,7 @@ const Layout = ({ children }) => {
               </button>
 
               {panelOpen && (
-                <div className="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-xl border z-50 flex flex-col max-h-[520px]">
+                <div className="absolute right-0 top-12 w-96 bg-white rounded-lg shadow-xl border z-50 flex flex-col max-h-[520px]">
                   {/* Panel header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b">
                     <h3 className="font-semibold text-gray-900">
@@ -217,6 +206,9 @@ const Layout = ({ children }) => {
         <main className="flex-1 overflow-auto p-6">
           {children}
         </main>
+      </div>
+      <div className="fixed bottom-4 left-4 z-40">
+        <PoweredByMysushicode />
       </div>
     </div>
   );

@@ -191,12 +191,12 @@ const Invoices = () => {
           <a
             href={exportUrl}
             download
-            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+            className="px-4 py-2 border rounded-md hover:bg-gray-50 flex items-center gap-2 text-gray-700"
           >
             <FileDown className="w-4 h-4" />
             Exporter
           </a>
-          <button onClick={handleUploadClick} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <button onClick={handleUploadClick} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
             <FileText className="w-4 h-4" />
             {uploadMutation.isLoading ? 'Import...' : 'Nouvelle Facture'}
           </button>
@@ -213,7 +213,7 @@ const Invoices = () => {
       {isLoading && <div className="text-sm text-gray-500">Chargement des factures...</div>}
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border p-4">
+      <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md p-4">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[300px]">
             <div className="relative">
@@ -221,15 +221,15 @@ const Invoices = () => {
               <input 
                 type="text"
                 placeholder="Rechercher par fournisseur, N° facture, immatriculation..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                className="w-full pl-10 pr-4 py-2 border rounded-md"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
           
-          <select 
-            className="px-4 py-2 border rounded-lg"
+          <select
+            className="px-4 py-2 bg-white rounded-md focus:ring-1 focus:ring-blue-500 outline-none"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
           >
@@ -242,7 +242,7 @@ const Invoices = () => {
           </select>
           
           <select 
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2 border rounded-md"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -254,7 +254,7 @@ const Invoices = () => {
           </select>
           
           <select 
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2 border rounded-md"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
@@ -268,7 +268,7 @@ const Invoices = () => {
           
           <button
             onClick={() => setShowAdvancedFilters(true)}
-            className={`px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 ${hasActiveAdvancedFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : ''}`}
+            className={`px-4 py-2 border rounded-md hover:bg-gray-50 flex items-center gap-2 ${hasActiveAdvancedFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : ''}`}
           >
             <Filter className="w-4 h-4" />
             Filtres avancés
@@ -282,12 +282,12 @@ const Invoices = () => {
       {/* Advanced Filters Modal */}
       {showAdvancedFilters && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4">
+          <div className="bg-white rounded-md shadow-xl w-full max-w-2xl mx-4">
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-lg font-semibold text-gray-900">Filtres avancés</h3>
               <button
                 onClick={() => setShowAdvancedFilters(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 rounded-md"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -302,7 +302,7 @@ const Invoices = () => {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-md"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                 />
@@ -315,7 +315,7 @@ const Invoices = () => {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-md"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                 />
@@ -327,7 +327,7 @@ const Invoices = () => {
                 <input
                   type="number"
                   placeholder="0"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-md"
                   value={amountMin}
                   onChange={(e) => setAmountMin(e.target.value)}
                 />
@@ -338,7 +338,7 @@ const Invoices = () => {
                 <input
                   type="number"
                   placeholder="999999"
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-md"
                   value={amountMax}
                   onChange={(e) => setAmountMax(e.target.value)}
                 />
@@ -350,7 +350,7 @@ const Invoices = () => {
                 <input
                   type="text"
                   placeholder="Nom du fournisseur..."
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border rounded-md"
                   value={supplierFilter}
                   onChange={(e) => setSupplierFilter(e.target.value)}
                 />
@@ -365,7 +365,7 @@ const Invoices = () => {
                 <input
                   type="text"
                   placeholder="AB-123-CD"
-                  className="w-full px-3 py-2 border rounded-lg uppercase"
+                  className="w-full px-3 py-2 border rounded-md uppercase"
                   value={vehicleFilter}
                   onChange={(e) => setVehicleFilter(e.target.value)}
                   maxLength={9}
@@ -383,13 +383,13 @@ const Invoices = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowAdvancedFilters(false)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                  className="px-4 py-2 border rounded-md hover:bg-gray-100"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={() => setShowAdvancedFilters(false)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Appliquer ({invoices.length} résultat{invoices.length > 1 ? 's' : ''})
                 </button>
@@ -400,7 +400,7 @@ const Invoices = () => {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md overflow-hidden">
         <table className="w-full table-fixed">
           <thead className="bg-gray-50 border-b">
             <tr>
@@ -472,21 +472,21 @@ const Invoices = () => {
                         href={getInvoicePdfUrl(invoice.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg inline-flex items-center justify-center"
+                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md inline-flex items-center justify-center"
                         title="Télécharger PDF"
                       >
                         <FileDown className="w-4 h-4" />
                       </a>
                       <button
                         onClick={() => handleEditOpen(invoice)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md"
                         title="Modifier"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(invoice)}
-                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                        className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md"
                         title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -516,17 +516,17 @@ const Invoices = () => {
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+          <div className="bg-white rounded-md shadow-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Supprimer la facture</h3>
             <p className="text-gray-600 mb-1">Facture : <strong>{deleteConfirm.invoice_number}</strong></p>
             <p className="text-gray-600 mb-4">Fournisseur : <strong>{deleteConfirm.supplier || '—'}</strong></p>
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3 mb-6">Cette action supprimera la facture, ses rapprochements bancaires associés et le fichier PDF. Cette action est irréversible.</p>
+            <p className="text-sm text-red-600 bg-red-50 rounded-md p-3 mb-6">Cette action supprimera la facture, ses rapprochements bancaires associés et le fichier PDF. Cette action est irréversible.</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Annuler</button>
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-md hover:bg-gray-50">Annuler</button>
               <button
                 onClick={() => deleteMutation.mutate(deleteConfirm.id)}
                 disabled={deleteMutation.isLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
               >
                 {deleteMutation.isLoading ? 'Suppression...' : 'Supprimer'}
               </button>
@@ -538,59 +538,59 @@ const Invoices = () => {
       {/* Edit Modal */}
       {editingInvoice && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-md shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-lg font-semibold text-gray-900">Modifier la facture</h3>
-              <button onClick={() => setEditingInvoice(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+              <button onClick={() => setEditingInvoice(null)} className="p-1 hover:bg-gray-100 rounded-md"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 overflow-y-auto grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">N° Facture</label>
-                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.invoice_number} onChange={e => setEditForm(f => ({ ...f, invoice_number: e.target.value }))} />
+                <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.invoice_number} onChange={e => setEditForm(f => ({ ...f, invoice_number: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Fournisseur</label>
-                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.supplier_name} onChange={e => setEditForm(f => ({ ...f, supplier_name: e.target.value }))} />
+                <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.supplier_name} onChange={e => setEditForm(f => ({ ...f, supplier_name: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Montant TTC (€)</label>
-                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} />
+                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Montant HT (€)</label>
-                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.amount_ht} onChange={e => setEditForm(f => ({ ...f, amount_ht: e.target.value }))} />
+                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.amount_ht} onChange={e => setEditForm(f => ({ ...f, amount_ht: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">TVA (€)</label>
-                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.amount_tax} onChange={e => setEditForm(f => ({ ...f, amount_tax: e.target.value }))} />
+                <input type="number" step="0.01" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.amount_tax} onChange={e => setEditForm(f => ({ ...f, amount_tax: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Catégorie</label>
-                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} />
+                <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Date facture</label>
-                <input type="date" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
+                <input type="date" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Date échéance</label>
-                <input type="date" className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} />
+                <input type="date" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Immatriculation</label>
-                <input className="w-full px-3 py-2 border rounded-lg text-sm uppercase" value={editForm.vehicle_registration} onChange={e => setEditForm(f => ({ ...f, vehicle_registration: e.target.value }))} />
+                <input className="w-full px-3 py-2 border rounded-md text-sm uppercase" value={editForm.vehicle_registration} onChange={e => setEditForm(f => ({ ...f, vehicle_registration: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">N° Dossier / OT</label>
-                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.work_order_reference} onChange={e => setEditForm(f => ({ ...f, work_order_reference: e.target.value }))} />
+                <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.work_order_reference} onChange={e => setEditForm(f => ({ ...f, work_order_reference: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Bon de commande</label>
-                <input className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.purchase_order} onChange={e => setEditForm(f => ({ ...f, purchase_order: e.target.value }))} />
+                <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.purchase_order} onChange={e => setEditForm(f => ({ ...f, purchase_order: e.target.value }))} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">Mode de paiement</label>
-                <select className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.payment_method} onChange={e => setEditForm(f => ({ ...f, payment_method: e.target.value }))}>
+                <select className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.payment_method} onChange={e => setEditForm(f => ({ ...f, payment_method: e.target.value }))}>
                   <option value="">—</option>
                   <option value="virement">Virement</option>
                   <option value="cheque">Chèque</option>
@@ -601,7 +601,7 @@ const Invoices = () => {
               </div>
               <div className="space-y-1 col-span-2">
                 <label className="text-xs font-medium text-gray-600">Statut</label>
-                <select className="w-full px-3 py-2 border rounded-lg text-sm" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
+                <select className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
                   <option value="pending">En attente</option>
                   <option value="processed">Traitée</option>
                   <option value="matched">Rapprochée</option>
@@ -610,11 +610,11 @@ const Invoices = () => {
               </div>
             </div>
             <div className="flex gap-3 justify-end p-6 border-t bg-gray-50">
-              <button onClick={() => setEditingInvoice(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+              <button onClick={() => setEditingInvoice(null)} className="px-4 py-2 border rounded-md hover:bg-gray-100">Annuler</button>
               <button
                 onClick={handleEditSave}
                 disabled={updateMutation.isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
                 <Save className="w-4 h-4" />
                 {updateMutation.isLoading ? 'Enregistrement...' : 'Enregistrer'}

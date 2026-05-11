@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Mail, RefreshCw, Clock, Save, CheckCircle, AlertCircle, Users, UserPlus, Trash2, Shield, Camera, Edit, X, LogOut, Wifi, WifiOff } from 'lucide-react';
-import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser as apiUpdateUser, uploadProfilePhoto, testImap } from '../api';
+import { Mail, RefreshCw, Clock, Save, CheckCircle, AlertCircle, AlertTriangle, Users, UserPlus, Trash2, Shield, Camera, Edit, X, LogOut, Wifi, WifiOff, CreditCard, Zap, ChevronRight, UserCircle } from 'lucide-react';
+import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser as apiUpdateUser, uploadProfilePhoto, testImap, deleteAccount } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = '';
@@ -20,16 +19,20 @@ const SCHEDULER_FIELDS = [
   { key: 'auto_reconciliation', label: 'Rapprochement automatique', placeholder: 'true/false', type: 'select', options: ['true', 'false'] },
 ];
 
+const SECTIONS = [
+  { id: 'profil', label: 'Profil', icon: UserCircle, color: 'blue' },
+  { id: 'email', label: 'Configuration Email', icon: Mail, color: 'blue' },
+  { id: 'scheduler', label: 'Planificateur', icon: Clock, color: 'purple' },
+  { id: 'collaborations', label: 'Collaborations', icon: Users, color: 'green' },
+  { id: 'billing', label: 'Facturation', icon: CreditCard, color: 'orange' },
+  { id: 'plan', label: 'Plan', icon: Zap, color: 'yellow' },
+];
+
 const Settings = () => {
   const { user, updateUserPhoto, updateUser, logout } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeSection, setActiveSection] = useState('profil');
 
-  // Redirect non-admin users
-  if (user && user.role !== 'admin') {
-    navigate('/');
-    return null;
-  }
   const [emailForm, setEmailForm] = useState({});
   const [schedulerForm, setSchedulerForm] = useState({});
   const [saveStatus, setSaveStatus] = useState(null);
@@ -39,8 +42,8 @@ const Settings = () => {
   const [editForm, setEditForm] = useState({ name: '', email: '' });
   const [imapTestResult, setImapTestResult] = useState(null);
 
-  const { data: settingsData, isLoading } = useQuery('settings', fetchSettings);
-  const { data: usersData } = useQuery('users', fetchUsers);
+  const { data: settingsData, isLoading } = useQuery('settings', () => fetchSettings());
+  const { data: usersData } = useQuery('users', () => fetchUsers());
   const settings = settingsData?.settings || [];
   const users = usersData?.users || [];
 
@@ -137,7 +140,6 @@ const Settings = () => {
   };
 
   const handleDeleteUser = (userId, username) => {
-    if (username === 'admin') return;
     if (confirm(`Supprimer l'utilisateur ${username} ?`)) {
       deleteUserMutation.mutate(userId);
     }
@@ -208,385 +210,326 @@ const Settings = () => {
     return <div className="text-center py-12 text-gray-500">Chargement des paramètres...</div>;
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
-        <p className="text-gray-500">Configuration de l'application</p>
-      </div>
-
-      {/* Save status banner */}
-      {saveStatus && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
-          saveStatus.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-        }`}>
-          {saveStatus.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          {saveStatus.message}
-        </div>
-      )}
-
-      {/* Profile Photo */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Camera className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Photo de Profil</h2>
-            <p className="text-sm text-gray-500">Photo affichée dans le header</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            {user?.profile_photo ? (
-              <img
-                src={`${API_BASE_URL}${user.profile_photo}`}
-                alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-2 border-blue-600"
-              />
-            ) : (
-              <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-semibold">
-                {user?.name?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
-            )}
-          </div>
-          <div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              className="hidden"
-              id="photo-upload"
-            />
-            <label
-              htmlFor="photo-upload"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer inline-flex items-center gap-2"
-            >
-              <Camera className="w-4 h-4" />
-              {photoMutation.isLoading ? 'Upload...' : 'Changer la photo'}
-            </label>
-            <p className="text-xs text-gray-500 mt-2">JPG, PNG - Max 2MB</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Logout */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Déconnexion</h2>
-            <p className="text-sm text-gray-500">Se déconnecter de l'application</p>
-          </div>
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Se déconnecter
-          </button>
-        </div>
-      </div>
-
-      {/* Email Configuration */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Mail className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Configuration Email</h2>
-            <p className="text-sm text-gray-500">Paramètres de récupération des factures par email</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
-          {EMAIL_FIELDS.map((field) => (
-            <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-              {field.type === 'select' ? (
-                <select
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={emailForm[field.key] || ''}
-                  onChange={(e) => handleChange(emailForm, setEmailForm, field.key, e.target.value)}
-                >
-                  {field.options.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={emailForm[field.key] || ''}
-                  onChange={(e) => handleChange(emailForm, setEmailForm, field.key, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
-          {/* IMAP Test Result */}
-          {imapTestResult && (
-            <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${imapTestResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-              {imapTestResult.success ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-              {imapTestResult.message}
-            </div>
-          )}
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={updateMutation.isLoading}
-              className="px-4 py-2 bg-transparent text-gray-900 border-2 border-gray-900 rounded-lg hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
-            >
-              {updateMutation.isLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Test et sauvegarde...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Sauvegarder
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Scheduler Configuration */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <Clock className="w-5 h-5 text-purple-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Planificateur</h2>
-            <p className="text-sm text-gray-500">Paramètres du scheduler automatique</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSchedulerSubmit} className="space-y-4">
-          {SCHEDULER_FIELDS.map((field) => (
-            <div key={field.key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-              {field.type === 'select' ? (
-                <select
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={schedulerForm[field.key] || ''}
-                  onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
-                >
-                  {field.options.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={schedulerForm[field.key] || ''}
-                  onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={updateMutation.isLoading}
-              className="px-4 py-2 bg-transparent text-gray-900 border-2 border-gray-900 rounded-lg hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50"
-            >
-              {updateMutation.isLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Sauvegarde...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Sauvegarder
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Collaborators */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Users className="w-5 h-5 text-green-600" />
-            </div>
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'profil':
+        return (
+          <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Collaborateurs</h2>
-              <p className="text-sm text-gray-500">Gestion des accès à l'application</p>
+              <h2 className="text-xl font-semibold text-gray-900">Profil</h2>
+              <p className="text-sm text-gray-500 mt-1">Vos informations personnelles et photo de profil</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                {user?.profile_photo ? (
+                  <img src={`${API_BASE_URL}${user.profile_photo}`} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-blue-600" />
+                ) : (
+                  <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-semibold">
+                    {user?.name?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 text-lg">{user?.name || user?.username}</p>
+                <p className="text-sm text-gray-500">{user?.email || '—'}</p>
+                <p className="text-xs mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full inline-block font-medium">{user?.role === 'admin' ? 'Administrateur' : 'Comptable'}</p>
+              </div>
+            </div>
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Photo de profil</p>
+              <div className="flex items-center gap-4">
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" id="photo-upload" />
+                <label htmlFor="photo-upload" className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer flex items-center gap-2 text-sm font-medium">
+                  <Camera className="w-4 h-4" />{photoMutation.isLoading ? 'Upload...' : 'Changer la photo'}
+                </label>
+                <p className="text-xs text-gray-400">JPG, PNG — Max 2MB</p>
+              </div>
+            </div>
+            <div className="border-t border-red-100 pt-4 mt-2">
+              <button
+                onClick={async () => {
+                  if (confirm('Supprimer votre compte ? Cette action est irréversible.')) {
+                    await deleteAccount();
+                    logout();
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 text-sm font-medium transition-colors"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Supprimer mon compte
+              </button>
+              <p className="text-xs text-gray-400 mt-2">Cette action est définitive et supprime toutes vos données.</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowAddUser(true)}
-            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm"
-          >
-            <UserPlus className="w-4 h-4" />
-            Ajouter
-          </button>
-        </div>
+        );
 
-        {/* User list */}
-        <div className="space-y-2">
-          {users.map((user) => (
-            <div key={user.id}>
-              {editingUser === user.id ? (
-                <form onSubmit={handleSaveEdit} className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nom"
-                      className="px-2 py-1 border rounded text-sm"
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      className="px-2 py-1 border rounded text-sm"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      type="submit"
-                      disabled={updateUserMutation.isLoading}
-                      className="p-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                      title="Sauvegarder"
-                    >
-                      <Save className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      className="p-1.5 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
-                      title="Annuler"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {user.name?.charAt(0).toUpperCase() || user.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{user.name || user.username}</p>
-                      <p className="text-xs text-gray-500">{user.email || user.username} • {user.role === 'admin' ? 'Administrateur' : 'Comptable'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {user.role === 'admin' && (
-                      <div className="p-1.5 bg-yellow-100 rounded-lg" title="Administrateur">
-                        <Shield className="w-4 h-4 text-yellow-600" />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                      title="Modifier"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    {user.username !== 'admin' && (
-                      <button
-                        onClick={() => handleDeleteUser(user.id, user.username)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+      case 'email':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Configuration Email</h2>
+              <p className="text-sm text-gray-500 mt-1">Paramètres de récupération des factures par email (IMAP)</p>
+            </div>
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              {EMAIL_FIELDS.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                  <input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    value={emailForm[field.key] || ''}
+                    onChange={(e) => handleChange(emailForm, setEmailForm, field.key, e.target.value)}
+                  />
+                </div>
+              ))}
+              {imapTestResult && (
+                <div className={`flex items-center gap-2 px-4 py-3 rounded-md text-sm ${imapTestResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                  {imapTestResult.success ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                  {imapTestResult.message}
                 </div>
               )}
-            </div>
-          ))}
-        </div>
-
-        {/* Add user form */}
-        {showAddUser && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-            <h3 className="font-medium text-gray-900 mb-3">Nouveau collaborateur</h3>
-            <form onSubmit={handleAddUser} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  placeholder="Nom"
-                  className="px-3 py-2 border rounded-lg text-sm"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Nom d'utilisateur"
-                  className="px-3 py-2 border rounded-lg text-sm"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="px-3 py-2 border rounded-lg text-sm"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                />
-                <select
-                  className="px-3 py-2 border rounded-lg text-sm"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                >
-                  <option value="accountant">Comptable</option>
-                  <option value="admin">Administrateur</option>
-                </select>
-              </div>
-              <input
-                type="password"
-                placeholder="Mot de passe"
-                className="px-3 py-2 border rounded-lg text-sm"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                required
-              />
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={createUserMutation.isLoading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50"
-                >
-                  {createUserMutation.isLoading ? 'Création...' : 'Créer'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowAddUser(false); setNewUser({ username: '', password: '', name: '', email: '', role: 'accountant' }); }}
-                  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-100"
-                >
-                  Annuler
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={updateMutation.isLoading}
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 font-medium">
+                  {updateMutation.isLoading ? <><RefreshCw className="w-4 h-4 animate-spin" />Test et sauvegarde...</> : <><Save className="w-4 h-4" />Sauvegarder</>}
                 </button>
               </div>
             </form>
           </div>
-        )}
+        );
+
+      case 'scheduler':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Planificateur</h2>
+              <p className="text-sm text-gray-500 mt-1">Paramètres du scheduler automatique de récupération</p>
+            </div>
+            <form onSubmit={handleSchedulerSubmit} className="space-y-4">
+              {SCHEDULER_FIELDS.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
+                  {field.type === 'select' ? (
+                    <select
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={schedulerForm[field.key] || ''}
+                      onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
+                    >
+                      {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={schedulerForm[field.key] || ''}
+                      onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={updateMutation.isLoading}
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 font-medium">
+                  {updateMutation.isLoading ? <><RefreshCw className="w-4 h-4 animate-spin" />Sauvegarde...</> : <><Save className="w-4 h-4" />Sauvegarder</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        );
+
+      case 'collaborations':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Collaborations</h2>
+                <p className="text-sm text-gray-500 mt-1">Gérez les accès à votre espace de travail</p>
+              </div>
+              <button onClick={() => setShowAddUser(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 text-sm font-medium">
+                <UserPlus className="w-4 h-4" />Inviter
+              </button>
+            </div>
+
+            {/* Team list */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Membres ({users.length})</p>
+              <div className="space-y-2">
+                {users.map((u) => (
+                  <div key={u.id}>
+                    {editingUser === u.id ? (
+                      <form onSubmit={handleSaveEdit} className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                        <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                          {u.name?.charAt(0).toUpperCase() || u.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          <input type="text" placeholder="Nom" className="px-2.5 py-1.5 border rounded-md text-sm" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                          <input type="email" placeholder="Email" className="px-2.5 py-1.5 border rounded-md text-sm" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                        </div>
+                        <div className="flex gap-1">
+                          <button type="submit" disabled={updateUserMutation.isLoading} className="p-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"><Save className="w-3.5 h-3.5" /></button>
+                          <button type="button" onClick={handleCancelEdit} className="p-1.5 bg-gray-400 text-white rounded-md hover:bg-gray-500"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                            {u.name?.charAt(0).toUpperCase() || u.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm">{u.name || u.username}</p>
+                            <p className="text-xs text-gray-400">{u.email || u.username} • {u.role === 'admin' ? 'Administrateur' : 'Comptable'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {u.role === 'admin' && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Admin</span>}
+                          <button onClick={() => handleEditUser(u)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"><Edit className="w-3.5 h-3.5" /></button>
+                          {u.id !== user?.id && (
+                            <button onClick={() => handleDeleteUser(u.id, u.username)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"><Trash2 className="w-3.5 h-3.5" /></button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {showAddUser && (
+              <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-4">Nouveau collaborateur</h3>
+                <form onSubmit={handleAddUser} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" placeholder="Nom complet" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} required />
+                    <input type="text" placeholder="Nom d'utilisateur" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="email" placeholder="Email (optionnel)" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+                    <select className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
+                      <option value="accountant">Comptable</option>
+                      <option value="admin">Administrateur</option>
+                    </select>
+                  </div>
+                  <input type="password" placeholder="Mot de passe" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
+                  <div className="flex gap-2 pt-1">
+                    <button type="submit" disabled={createUserMutation.isLoading} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium disabled:opacity-50">
+                      {createUserMutation.isLoading ? 'Création...' : 'Créer le compte'}
+                    </button>
+                    <button type="button" onClick={() => { setShowAddUser(false); setNewUser({ username: '', password: '', name: '', email: '', role: 'accountant' }); }} className="px-4 py-2 border border-gray-200 rounded-md text-sm hover:bg-gray-100">Annuler</button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'billing':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Facturation</h2>
+              <p className="text-sm text-gray-500 mt-1">Gérez vos informations de paiement et vos factures</p>
+            </div>
+            <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
+              <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 font-medium">Facturation non configurée</p>
+              <p className="text-sm text-gray-400 mt-1">Cette section sera disponible prochainement</p>
+            </div>
+          </div>
+        );
+
+      case 'plan':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Plan</h2>
+              <p className="text-sm text-gray-500 mt-1">Votre abonnement et vos limites d'utilisation</p>
+            </div>
+            <div className="p-5 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-3 mb-2">
+                <Zap className="w-6 h-6 text-blue-600" />
+                <span className="font-semibold text-blue-900 text-lg">Plan Gratuit</span>
+                <span className="px-2.5 py-0.5 bg-blue-600 text-white text-xs rounded-full font-medium">Actif</span>
+              </div>
+              <p className="text-sm text-blue-700">Accès complet à toutes les fonctionnalités en phase de développement</p>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Factures', value: 'Illimité' },
+                { label: 'Collaborateurs', value: 'Illimité' },
+                { label: 'Stockage', value: 'Illimité' },
+              ].map(item => (
+                <div key={item.label} className="p-4 bg-white rounded-xl border border-gray-200 text-center">
+                  <p className="text-2xl font-bold text-gray-900">{item.value}</p>
+                  <p className="text-sm text-gray-500 mt-1">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+        <p className="text-gray-500 text-sm">Configurez votre espace de travail</p>
+      </div>
+
+      {/* Save status */}
+      {saveStatus && (
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-md text-sm ${saveStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {saveStatus.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {saveStatus.message}
+        </div>
+      )}
+
+      {/* Layout: sidebar + content */}
+      <div className="flex gap-6 min-h-[520px]">
+        {/* Sidebar */}
+        <div className="w-56 shrink-0 pt-[3.25rem]">
+          <nav className="border border-white/30 bg-white/50 backdrop-blur-md overflow-hidden">
+            {SECTIONS.map((section, i) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium transition-colors text-left rounded-md ${
+                    i < SECTIONS.length - 1 ? 'border-b border-gray-100' : ''
+                  } ${isActive ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">{section.label}</span>
+                  {isActive && <ChevronRight className="w-3 h-3 shrink-0" />}
+                </button>
+              );
+            })}
+            <div className="border-t border-gray-200">
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left rounded-md"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                <span>Se déconnecter</span>
+              </button>
+            </div>
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 rounded-xl border border-white/30 bg-white/50 p-6 backdrop-blur-md shadow-sm">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

@@ -49,7 +49,7 @@ const VehicleHistory = () => {
           <h1 className="text-2xl font-bold text-gray-900">Historique par Véhicule</h1>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
+        <div className="rounded-md border border-white/30 bg-white/50 p-8 text-center shadow-sm backdrop-blur-md">
           <Car className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Rechercher un véhicule
@@ -62,14 +62,14 @@ const VehicleHistory = () => {
             <input 
               type="text"
               placeholder="AB-123-CD"
-              className="flex-1 px-4 py-3 border rounded-lg text-center uppercase text-lg tracking-wider"
+              className="flex-1 px-4 py-3 border rounded-md text-center uppercase text-lg tracking-wider"
               value={searchPlate}
               onChange={(e) => setSearchPlate(e.target.value)}
               maxLength={9}
             />
             <button 
               onClick={handleSearch}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
             >
               <Search className="w-5 h-5" />
               Rechercher
@@ -98,7 +98,7 @@ const VehicleHistory = () => {
               setActiveRegistration('');
               setSearchPlate('');
             }}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-gray-100 rounded-md"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -115,7 +115,7 @@ const VehicleHistory = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Dépenses</p>
@@ -123,13 +123,13 @@ const VehicleHistory = () => {
                 {currentVehicle.total_spent.toLocaleString('fr-FR')} €
               </p>
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
+            <div className="p-3 bg-blue-50 rounded-md">
               <DollarSign className="w-5 h-5 text-blue-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Interventions</p>
@@ -137,13 +137,13 @@ const VehicleHistory = () => {
                 {currentVehicle.intervention_count}
               </p>
             </div>
-            <div className="p-3 bg-green-50 rounded-lg">
+            <div className="p-3 bg-green-50 rounded-md">
               <Wrench className="w-5 h-5 text-green-600" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Dernière visite</p>
@@ -151,7 +151,7 @@ const VehicleHistory = () => {
                 {currentVehicle.last_visit ? new Date(currentVehicle.last_visit).toLocaleDateString('fr-FR') : '-'}
               </p>
             </div>
-            <div className="p-3 bg-yellow-50 rounded-lg">
+            <div className="p-3 bg-yellow-50 rounded-md">
               <Calendar className="w-5 h-5 text-yellow-600" />
             </div>
           </div>
@@ -160,7 +160,7 @@ const VehicleHistory = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Dépenses sur le temps */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <h3 className="font-semibold text-gray-900 mb-4">Évolution des Dépenses</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -181,12 +181,12 @@ const VehicleHistory = () => {
         </div>
 
         {/* Historique des factures */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <h3 className="font-semibold text-gray-900 mb-4">Historique des Interventions</h3>
           <div className="space-y-4">
             {currentVehicle.history.map((invoice, index) => (
-              <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <div className="p-2 bg-blue-100 rounded-lg">
+              <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-md">
+                <div className="p-2 bg-blue-100 rounded-md">
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
@@ -209,11 +209,11 @@ const VehicleHistory = () => {
       </div>
 
       {/* Récapitulatif par catégorie */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
         <h3 className="font-semibold text-gray-900 mb-4">Répartition des Coûts</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categorySummary.map(([cat, values]) => (
-            <div key={cat} className="p-4 bg-gray-50 rounded-lg text-center">
+            <div key={cat} className="p-4 bg-gray-50 rounded-md text-center">
               <p className="text-sm text-gray-600">{cat}</p>
               <p className="text-lg font-semibold text-gray-900 mt-1">
                 {values.amount.toLocaleString('fr-FR')} €
@@ -243,7 +243,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
 
       // Header
       doc.setFontSize(20);
-      doc.text('contamail - Historique Véhicule', 14, 20);
+      doc.text('MAILFACT - Historique Véhicule', 14, 20);
 
       doc.setFontSize(12);
       doc.text(`Immatriculation: ${currentVehicle.registration}`, 14, 35);
@@ -319,7 +319,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
     <button
       onClick={generatePDF}
       disabled={isGenerating}
-      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
     >
       <Download className="w-4 h-4" />
       {isGenerating ? 'Génération...' : 'Export PDF'}

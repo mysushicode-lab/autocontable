@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { 
-  BarChart3, 
   Download, 
   FileText,
   TrendingUp,
   TrendingDown,
-  Users,
-  Car
+  Wallet,
+  Building2,
+  CheckCircle,
+  BarChart3
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
@@ -219,7 +220,7 @@ const Reports = () => {
         </div>
         <div className="flex gap-3 items-center">
           <select
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2 bg-white rounded-md focus:ring-1 focus:ring-blue-500 outline-none"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
           >
@@ -242,7 +243,7 @@ const Reports = () => {
           change={`${(trendsData?.month_over_month_change || 0).toFixed(1)}%`}
           trend={trendsData?.trend_direction || 'stable'}
           invertTrend
-          icon={BarChart3}
+          icon={Wallet}
         />
         <KpiCard 
           title="Nombre de Factures"
@@ -252,12 +253,12 @@ const Reports = () => {
         <KpiCard 
           title="Fournisseurs Actifs"
           value={topSuppliers.length}
-          icon={Users}
+          icon={Building2}
         />
         <KpiCard 
           title="Factures rapprochées"
           value={data?.matched_invoices || 0}
-          icon={Car}
+          icon={CheckCircle}
           trend="up"
         />
       </div>
@@ -265,11 +266,11 @@ const Reports = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Dépenses mensuelles */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Évolution des Dépenses</h3>
             <select
-              className="px-3 py-1.5 border rounded-lg text-sm"
+              className="px-3 py-1.5 border rounded-md text-sm"
               value={trendMonths}
               onChange={(e) => setTrendMonths(Number(e.target.value))}
             >
@@ -291,7 +292,7 @@ const Reports = () => {
         </div>
 
         {/* Répartition par catégorie */}
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Répartition par Catégorie</h3>
             <span className="text-sm text-gray-400">{periodDisplay}</span>
@@ -338,7 +339,7 @@ const Reports = () => {
       </div>
 
       {/* Top Fournisseurs */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900">Top Fournisseurs</h3>
           <span className="text-sm text-gray-400">{periodDisplay}</span>
@@ -387,17 +388,17 @@ const Reports = () => {
       </div>
 
       {/* Export Options */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-md p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-semibold mb-2">Export pour Expert-Comptable</h3>
             <p className="text-blue-100">Générez un fichier Excel complet avec toutes les données du mois</p>
           </div>
           <div className="flex gap-3">
-            <a href={exportCsvUrl} className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50">
+            <a href={exportCsvUrl} className="px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:bg-blue-50">
               Export CSV
             </a>
-            <a href={exportExcelUrl} className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-400 border border-blue-400">
+            <a href={exportExcelUrl} className="px-4 py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-400 border border-blue-400">
               Export Excel
             </a>
           </div>
@@ -437,7 +438,7 @@ const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend }) => {
   const isNegative = invertTrend ? isUp : isDown;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
+    <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600">{title}</p>
@@ -451,7 +452,7 @@ const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend }) => {
             </div>
           )}
         </div>
-        <div className="p-3 bg-blue-50 rounded-lg">
+        <div className="p-3 bg-blue-50 rounded-md">
           <Icon className="w-5 h-5 text-blue-600" />
         </div>
       </div>
@@ -462,10 +463,10 @@ const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend }) => {
 const DocumentCard = ({ title, description, icon: Icon, onExport }) => (
   <button
     onClick={onExport}
-    className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow text-left w-full"
+    className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md hover:shadow-md transition-shadow text-left w-full"
   >
     <div className="flex items-start gap-4">
-      <div className="p-3 bg-blue-100 rounded-lg">
+      <div className="p-3 bg-blue-100 rounded-md">
         <Icon className="w-5 h-5 text-blue-600" />
       </div>
       <div className="flex-1">

@@ -25,6 +25,13 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const loginFromData = (data) => {
+    localStorage.setItem('auth_token', data.token);
+    localStorage.setItem('auth_user', JSON.stringify(data.user));
+    setToken(data.token);
+    setUser(data.user);
+  };
+
   const updateUserPhoto = (photoUrl) => {
     setUser(prev => ({ ...prev, profile_photo: photoUrl }));
     localStorage.setItem('auth_user', JSON.stringify({ ...user, profile_photo: photoUrl }));
@@ -46,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login: loginUser, logout: logoutUser, updateUserPhoto, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login: loginUser, loginFromData, logout: logoutUser, updateUserPhoto, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

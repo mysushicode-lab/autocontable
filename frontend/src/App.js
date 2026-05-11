@@ -11,6 +11,7 @@ import Reports from './pages/Reports';
 import VehicleHistory from './pages/VehicleHistory';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 const queryClient = new QueryClient();
 
@@ -24,11 +25,12 @@ function ProtectedRoute({ children }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <NotificationProvider>
       <AuthProvider>
-      <Router>
+      <NotificationProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/*" element={
             <ProtectedRoute>
               <Layout>
@@ -45,8 +47,8 @@ function App() {
           } />
         </Routes>
       </Router>
-      </AuthProvider>
       </NotificationProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
