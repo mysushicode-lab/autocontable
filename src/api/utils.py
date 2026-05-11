@@ -59,8 +59,9 @@ def serialize_match(match: ReconciliationMatch) -> dict:
 
 def create_or_update_invoice(session: Session, file_path: str, extracted_data: dict, organization_id: int) -> Invoice:
     """Create or update invoice with extracted data"""
-    print(f"[DEBUG _create_or_update_invoice] Input extracted_data: {extracted_data}")
-    print(f"[DEBUG _create_or_update_invoice] Input organization_id: {organization_id}")
+    # Security check: organization_id must be provided
+    if not organization_id:
+        raise ValueError("organization_id is required for invoice creation")
     
     supplier_classifier = SupplierClassifier(session)
     category_classifier = CategoryClassifier()
@@ -80,19 +81,16 @@ def create_or_update_invoice(session: Session, file_path: str, extracted_data: d
     extraction_confidence = extracted_data.get("extraction_confidence", "low")
 
     invoice = session.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
-    print(f"[DEBUG] Query result: invoice found = {invoice is not None}")
     
     # Disable autoflush to prevent premature INSERT before all fields are set
     with session.no_autoflush:
         if invoice is None:
-            print(f"[DEBUG] Creating new invoice with number: {invoice_number}, org_id: {organization_id}")
             invoice = Invoice(invoice_number=invoice_number, organization_id=organization_id)
             session.add(invoice)
         else:
-            print(f"[DEBUG] Updating existing invoice ID: {invoice.id}")
+            # Security: ensure organization_id is updated to current user's org
             invoice.organization_id = organization_id
 
-        print(f"[DEBUG] Setting invoice fields...")
         invoice.supplier_id = supplier.id if supplier else None
         invoice.amount = extracted_data.get("amount") or 0.0
         invoice.amount_ht = extracted_data.get("amount_ht")
@@ -102,7 +100,6 @@ def create_or_update_invoice(session: Session, file_path: str, extracted_data: d
         invoice.category = extracted_data.get("category") or category_classifier.classify(extracted_data)
         from src.storage.models import InvoiceStatus
         invoice.status = InvoiceStatus.PROCESSED if extraction_confidence in {"high", "medium"} else InvoiceStatus.PENDING
-        print(f"[DEBUG] Invoice fields set - amount: {invoice.amount}, date: {invoice.date}")
     invoice.purchase_order = extracted_data.get("purchase_order")
     invoice.delivery_note = extracted_data.get("delivery_note")
     invoice.vehicle_registration = extracted_data.get("vehicle_registration")
