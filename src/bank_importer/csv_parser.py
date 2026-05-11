@@ -1,5 +1,5 @@
 """
-CSV bank statement parser
+CSV bank statement parser using AI
 """
 import pandas as pd
 from datetime import datetime
@@ -7,144 +7,101 @@ from typing import List, Dict
 from dotenv import load_dotenv
 import os
 
-# Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
-
-BANK_DATE_FORMAT = os.getenv('BANK_DATE_FORMAT', '%d/%m/%Y')
 
 
 class CSVParser:
-    """Parse CSV bank statements"""
+    """Parse CSV bank statements using AI"""
     
-    def __init__(self, date_format: str = None):
-        self.date_format = date_format or BANK_DATE_FORMAT
-    
-    def parse(self, file_path: str, column_mapping: Dict = None) -> List[Dict]:
+    def parse(self, file_path: str) -> List[Dict]:
         """
-        Parse CSV bank statement
+        Parse CSV bank statement using AI
         
         Args:
             file_path: Path to CSV file
-            column_mapping: Dictionary mapping expected columns to CSV columns
-                Expected columns: 'date', 'amount', 'description', 'reference'
-                
+            
         Returns:
             List of transaction dictionaries
         """
-        # Default column mapping (common French bank formats)
-        if column_mapping is None:
-            column_mapping = {
-                'date': ['Date', 'date', 'DATE', 'Opération', 'Date opération'],
-                'amount': ['Montant', 'montant', 'Amount', 'amount', 'Montant (€)', 'Valeur'],
-                'debit': ['Débit', 'debit', 'Debit', 'DEBIT'],
-                'credit': ['Crédit', 'credit', 'Credit', 'CREDIT'],
-                'description': ['Description', 'description', 'Libellé', 'Libelle', 'Détail'],
-                'reference': ['Référence', 'reference', 'Ref', 'REF']
-            }
+        # Read CSV as text
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+        except:
+            with open(file_path, 'r', encoding='latin-1') as f:
+                text = f.read()
+        
+        return self._ai_extract(text, os.path.basename(file_path))
+    
+    def _ai_extract(self, text: str, filename: str) -> List[Dict]:
+        """Use OpenAI to extract transactions from CSV text"""
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not configured. Please set it in your .env file.")
         
         try:
-            df = pd.read_csv(file_path, encoding='utf-8', sep=';', decimal=',')
-        except:
-            try:
-                df = pd.read_csv(file_path, encoding='latin-1', sep=';', decimal=',')
-            except:
-                df = pd.read_csv(file_path, encoding='utf-8', sep=',', decimal='.')
-        
-        transactions = []
-        
-        for _, row in df.iterrows():
-            transaction = self._parse_row(row, column_mapping)
-            if transaction:
-                transactions.append(transaction)
-        
-        return transactions
+            from pydantic import BaseModel
+            from openai import OpenAI
+
+            class _Transaction(BaseModel):
+                date: str
+                amount: float
+                description: str
+                reference: str = None
+
+            class _BankStatementExtraction(BaseModel):
+                transactions: List[_Transaction]
+
+            client = OpenAI(api_key=api_key)
+            model = os.getenv('OPENAI_MODEL', 'gpt-4o')
+
+            prompt = (
+                f"File: {filename}\n\n"
+                "Extract ALL transactions from this French bank statement CSV.\n"
+                "Rules:\n"
+                "- date: DD/MM/YYYY format\n"
+                "- amount: negative for debits/payments, positive for credits/receipts\n"
+                "- description: transaction label (libellé)\n"
+                "- reference: transaction reference if present, else null\n"
+                "Handle both single 'amount' column and separate 'debit'/'credit' columns.\n\n"
+                f"CSV content:\n{text}"
+            )
+
+            completion = client.beta.chat.completions.parse(
+                model=model,
+                messages=[
+                    {'role': 'system', 'content': 'You are a French bank statement CSV parser. Extract structured transaction data.'},
+                    {'role': 'user', 'content': prompt},
+                ],
+                response_format=_BankStatementExtraction,
+                temperature=0,
+                max_tokens=16000,
+            )
+            msg = completion.choices[0].message
+            if msg.refusal or msg.parsed is None:
+                raise ValueError("AI failed to extract transactions from CSV")
+
+            result = []
+            for tx in msg.parsed.transactions:
+                date = self._parse_date(tx.date)
+                if date is not None and tx.amount is not None:
+                    result.append({
+                        'date': date,
+                        'amount': tx.amount,
+                        'description': tx.description or '',
+                        'reference': tx.reference,
+                    })
+            return result if result else []
+
+        except Exception as e:
+            raise Exception(f"AI extraction failed: {e}")
     
-    def _parse_row(self, row: pd.Series, column_mapping: Dict) -> Dict:
-        """Parse a single CSV row"""
-        transaction = {
-            'date': None,
-            'amount': None,
-            'description': '',
-            'reference': None
-        }
-        
-        # Map columns
-        for field, possible_names in column_mapping.items():
-            for name in possible_names:
-                if name in row.index:
-                    value = row[name]
-                    
-                    if field == 'date':
-                        transaction[field] = self._parse_date(value)
-                    elif field == 'amount':
-                        transaction[field] = self._parse_amount(value)
-                    elif field == 'debit':
-                        debit_amount = self._parse_amount(value)
-                        if debit_amount is not None and debit_amount != 0:
-                            transaction['amount'] = -abs(debit_amount)
-                    elif field == 'credit':
-                        credit_amount = self._parse_amount(value)
-                        if credit_amount is not None and credit_amount != 0:
-                            transaction['amount'] = abs(credit_amount)
-                    elif field == 'description':
-                        transaction[field] = str(value) if pd.notna(value) else ''
-                    elif field == 'reference':
-                        transaction[field] = str(value) if pd.notna(value) else None
-                    
-                    if transaction[field] is not None and field not in ['debit', 'credit']:
-                        break
-        
-        # Generate transaction ID if not present
-        if not transaction['reference']:
-            transaction['reference'] = self._generate_transaction_id(transaction)
-        
-        # Validate required fields
-        if transaction['date'] and transaction['amount'] is not None:
-            return transaction
-        
-        return None
-    
-    def _parse_date(self, value) -> datetime:
-        """Parse date from various formats"""
-        if pd.isna(value):
+    def _parse_date(self, value: str) -> datetime:
+        if not value:
             return None
-        
-        if isinstance(value, datetime):
-            return value
-        
-        # Try string parsing
-        value_str = str(value).strip()
-        
-        for fmt in [self.date_format, '%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%m/%d/%Y']:
+        for fmt in ('%d/%m/%Y', '%d/%m/%y', '%d-%m-%Y', '%Y-%m-%d'):
             try:
-                return datetime.strptime(value_str, fmt)
-            except:
+                return datetime.strptime(value.strip(), fmt)
+            except ValueError:
                 continue
-        
         return None
-    
-    def _parse_amount(self, value) -> float:
-        """Parse amount from various formats"""
-        if pd.isna(value):
-            return None
-        
-        if isinstance(value, (int, float)):
-            return float(value)
-        
-        # Clean string
-        value_str = str(value).strip()
-        value_str = value_str.replace(' ', '').replace('€', '').replace('$', '').replace('£', '')
-        value_str = value_str.replace(',', '.')
-        
-        try:
-            return float(value_str)
-        except:
-            return None
-    
-    def _generate_transaction_id(self, transaction: Dict) -> str:
-        """Generate unique transaction ID"""
-        date_str = transaction['date'].strftime('%Y%m%d') if transaction['date'] else ''
-        amount_str = str(abs(transaction['amount'])) if transaction['amount'] else '0'
-        desc_str = transaction['description'][:20] if transaction['description'] else ''
-        
-        return f"{date_str}_{amount_str}_{desc_str}"

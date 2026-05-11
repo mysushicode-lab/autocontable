@@ -9,10 +9,8 @@ import {
   AlertTriangle,
   Link,
   Unlink,
-  FileText,
+  Search,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight
 } from 'lucide-react';
 import {
   confirmReconciliationMatch,
@@ -32,6 +30,7 @@ const Reconciliation = () => {
   const [linkModal, setLinkModal] = useState(null); // { txDbId, txDescription }
   const [linkInvoiceId, setLinkInvoiceId] = useState('');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -132,6 +131,65 @@ const Reconciliation = () => {
     bankOnly: bankOnly.length,
     successRate: statsData?.total_matches ? Math.round((statsData.confirmed / statsData.total_matches) * 100) : 0,
   };
+
+  // Filter helper function
+  const matchesSearch = (term, item) => {
+    if (!term) return true;
+    const lowerTerm = term.toLowerCase();
+    
+    // Helper for amount matching
+    const matchAmount = (amount) => {
+      if (amount === null || amount === undefined) return false;
+      const amountStr = amount.toString().replace(/[\s,.]/g, '');
+      const termClean = term.replace(/[\s,.]/g, '');
+      return amountStr.includes(termClean);
+    };
+    
+    const amountMatch = matchAmount(item.transaction?.amount);
+    const descMatch = item.transaction?.description?.toLowerCase().includes(lowerTerm);
+    const invoiceAmountMatch = matchAmount(item.invoice?.amount);
+    const supplierMatch = item.invoice?.supplier?.toLowerCase().includes(lowerTerm);
+    return amountMatch || descMatch || invoiceAmountMatch || supplierMatch;
+  };
+
+  const invoiceSearch = (term, item) => {
+    if (!term) return true;
+    const lowerTerm = term.toLowerCase();
+    
+    const matchAmount = (amount) => {
+      if (amount === null || amount === undefined) return false;
+      const amountStr = amount.toString().replace(/[\s,.]/g, '');
+      const termClean = term.replace(/[\s,.]/g, '');
+      return amountStr.includes(termClean);
+    };
+    
+    const amountMatch = matchAmount(item.invoice?.amount);
+    const supplierMatch = item.invoice?.supplier?.toLowerCase().includes(lowerTerm);
+    const numberMatch = item.invoice?.number?.toLowerCase().includes(lowerTerm);
+    return amountMatch || supplierMatch || numberMatch;
+  };
+
+  const transactionSearch = (term, item) => {
+    if (!term) return true;
+    const lowerTerm = term.toLowerCase();
+    
+    const matchAmount = (amount) => {
+      if (amount === null || amount === undefined) return false;
+      const amountStr = amount.toString().replace(/[\s,.]/g, '');
+      const termClean = term.replace(/[\s,.]/g, '');
+      return amountStr.includes(termClean);
+    };
+    
+    const amountMatch = matchAmount(item.amount);
+    const descMatch = item.description?.toLowerCase().includes(lowerTerm);
+    return amountMatch || descMatch;
+  };
+
+  // Filtered data
+  const filteredMatches = matches.filter(m => matchesSearch(searchTerm, m));
+  const filteredUnmatchedInvoices = unmatchedInvoices.filter(i => invoiceSearch(searchTerm, i));
+  const filteredBankOnly = bankOnly.filter(t => transactionSearch(searchTerm, t));
+  const filteredTransactions = allTransactions.filter(t => transactionSearch(searchTerm, t));
 
   const handleBankImportClick = () => {
     bankFileInputRef.current?.click();
@@ -254,11 +312,25 @@ const Reconciliation = () => {
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="px-6 py-4 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par montant ou description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
         <div className="p-6">
           {isLoading && <div className="text-sm text-gray-500 mb-4">Chargement du rapprochement...</div>}
           {activeTab === 'matches' && (
             <div className="space-y-2">
-              {matches.map((match) => (
+              {filteredMatches.map((match) => (
                 <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 rounded-md border border-white/30 bg-white/50 backdrop-blur-sm">
                   {/* Fournisseur + N° facture + score */}
                   <div className="min-w-0">
@@ -281,7 +353,7 @@ const Reconciliation = () => {
 
           {activeTab === 'unmatched' && (
             <div className="space-y-2">
-              {unmatchedInvoices.map((match) => (
+              {filteredUnmatchedInvoices.map((match) => (
                 <div key={match.id} className="grid grid-cols-3 items-center px-4 py-3 rounded-md border border-white/30 bg-white/50 backdrop-blur-sm">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{match.invoice.supplier || '—'}</p>
@@ -307,7 +379,7 @@ const Reconciliation = () => {
               {allTransactions.length === 0 && (
                 <div className="text-sm text-gray-500">Aucune transaction pour cette période.</div>
               )}
-              {allTransactions.map((tx) => (
+              {filteredTransactions.map((tx) => (
                 <div key={tx.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-md border hover:bg-gray-100 transition-colors">
                   <CreditCard className="w-5 h-5 text-gray-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -338,7 +410,7 @@ const Reconciliation = () => {
 
           {activeTab === 'bankonly' && (
             <div className="space-y-2">
-              {bankOnly.map((tx) => (
+              {filteredBankOnly.map((tx) => (
                 <div key={tx.id} className="grid grid-cols-3 items-center px-4 py-3 rounded-md border border-white/30 bg-white/50 backdrop-blur-sm">
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{tx.description || '—'}</p>

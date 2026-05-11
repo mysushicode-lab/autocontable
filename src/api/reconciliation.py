@@ -153,10 +153,7 @@ def get_reconciliation_details(
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
             invoice_query = invoice_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
-            match_query = match_query.filter(
-                or_(Invoice.date >= first_day, BankTransaction.date >= first_day),
-                or_(Invoice.date <= last_day, BankTransaction.date <= last_day),
-            )
+            match_query = match_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
             transaction_query = transaction_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
 
         matches = match_query.all()
@@ -233,10 +230,7 @@ def get_reconciliation_status(
             last_day_num = calendar.monthrange(year, month)[1]
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
-            query = query.filter(
-                or_(Invoice.date >= first_day, BankTransaction.date >= first_day),
-                or_(Invoice.date <= last_day, BankTransaction.date <= last_day),
-            )
+            query = query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
         
         matches = query.all()
         

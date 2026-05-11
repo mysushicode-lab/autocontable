@@ -15,6 +15,7 @@ from src.invoice_processor import InvoiceProcessor
 from src.api.utils import save_uploaded_file, create_or_update_invoice
 from src.api.schemas import UpdateInvoiceRequest
 from src.api.auth import get_current_user
+from src.reconciliation.reconciliation_engine import ReconciliationEngine
 
 router = APIRouter()
 
@@ -69,6 +70,12 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
             session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename, organization_id=current_user["organization_id"]))
         session.commit()
+        
+        # Run automatic reconciliation after manual import
+        engine = ReconciliationEngine(session)
+        engine.reconcile(organization_id=current_user["organization_id"])
+        session.commit()
+        
         session.refresh(invoice)
         return {
             "message": "Invoice imported successfully",
@@ -174,6 +181,12 @@ def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_use
                 os.remove(invoice.file_path)
             except Exception:
                 pass
+        # Delete the processed file hash to allow re-import
+        if invoice.content_hash:
+            session.query(ProcessedFileHash).filter(
+                ProcessedFileHash.content_hash == invoice.content_hash,
+                ProcessedFileHash.organization_id == current_user["organization_id"]
+            ).delete()
         session.delete(invoice)
         session.commit()
         return {"message": "Invoice deleted"}

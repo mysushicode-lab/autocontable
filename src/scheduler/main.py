@@ -3,12 +3,12 @@ Automated scheduler for periodic invoice processing
 """
 import os
 from datetime import datetime
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
 
 from src.email_ingestion import EmailClient
-from src.storage.models import Settings
+from src.storage.models import Settings, Organization
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
@@ -58,29 +58,48 @@ def get_scheduler_settings():
         session.close()
 
 
+def get_organization_id():
+    """Get the organization ID to use for scheduler operations"""
+    session = db.get_session()
+    try:
+        # Try to get from settings first
+        setting = session.query(Settings).filter(Settings.key == 'scheduler_organization_id').first()
+        if setting and setting.value:
+            return int(setting.value)
+        # Fallback to first organization
+        org = session.query(Organization).first()
+        return org.id if org else 1
+    finally:
+        session.close()
+
+
 class InvoiceScheduler:
     """Scheduler for automated invoice processing"""
     
     def __init__(self):
-        self.scheduler = BlockingScheduler()
+        self.scheduler = BackgroundScheduler()
         self.interval_minutes = SCHEDULER_INTERVAL_MINUTES
     
-    def _is_already_processed(self, session, content_hash: str) -> bool:
+    def _is_already_processed(self, session, content_hash: str, organization_id: int) -> bool:
         """Check permanent hash registry — returns True if file was ever processed, even if invoice was later deleted."""
         if not content_hash:
             return False
         return session.query(ProcessedFileHash).filter(
-            ProcessedFileHash.content_hash == content_hash
+            ProcessedFileHash.content_hash == content_hash,
+            ProcessedFileHash.organization_id == organization_id
         ).first() is not None
 
-    def _register_hash(self, session, content_hash: str, filename: str):
+    def _register_hash(self, session, content_hash: str, filename: str, organization_id: int):
         """Permanently register a file hash so it is never re-processed."""
         if not content_hash:
             return
-        if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
-            session.add(ProcessedFileHash(content_hash=content_hash, filename=filename))
+        if not session.query(ProcessedFileHash).filter(
+            ProcessedFileHash.content_hash == content_hash,
+            ProcessedFileHash.organization_id == organization_id
+        ).first():
+            session.add(ProcessedFileHash(content_hash=content_hash, filename=filename, organization_id=organization_id))
 
-    def _build_invoice(self, invoice_data: dict) -> Invoice:
+    def _build_invoice(self, invoice_data: dict, organization_id: int) -> Invoice:
         extraction_confidence = invoice_data.get('extraction_confidence', 'low')
         
         # AI is fully responsible for invoice number extraction (from PDF or email subject)
@@ -101,6 +120,7 @@ class InvoiceScheduler:
             vehicle_registration=invoice_data.get('vehicle_registration'),
             work_order_reference=invoice_data.get('work_order_reference'),
             payment_method=invoice_data.get('payment_method'),
+            organization_id=organization_id,
             file_path=invoice_data.get('file_path'),
             email_subject=invoice_data.get('email_subject'),
             email_from=invoice_data.get('email_from'),
@@ -123,6 +143,10 @@ class InvoiceScheduler:
         session = db.get_session()
         
         try:
+            # Get organization ID
+            organization_id = get_organization_id()
+            print(f"[{datetime.now()}] Using organization_id: {organization_id}")
+            
             # Fetch emails (with optional date filter for startup)
             imap_settings = get_imap_settings()
             email_client = EmailClient(**imap_settings)
@@ -148,7 +172,7 @@ class InvoiceScheduler:
                     content_hash = attachment.get('content_hash', '')
                     filename = attachment.get('filename', '')
 
-                    if self._is_already_processed(session, content_hash):
+                    if self._is_already_processed(session, content_hash, organization_id):
                         print(f"[{datetime.now()}] Skipping already-processed file: {filename} (hash: {content_hash[:8]}...)")
                         continue
                     
@@ -181,6 +205,8 @@ class InvoiceScheduler:
                     supplier = supplier_classifier.detect_supplier(invoice_data)
                     if supplier:
                         invoice_data['supplier_id'] = supplier.id
+                        # Also set organization_id on supplier
+                        supplier.organization_id = organization_id
                     
                     # Classify category — AI provides directly; keyword classifier as fallback only
                     if not invoice_data.get('category'):
@@ -188,9 +214,9 @@ class InvoiceScheduler:
                         if category:
                             invoice_data['category'] = category
 
-                    invoice = self._build_invoice(invoice_data)
+                    invoice = self._build_invoice(invoice_data, organization_id)
                     session.add(invoice)
-                    self._register_hash(session, content_hash, filename)
+                    self._register_hash(session, content_hash, filename, organization_id)
                     processed_count += 1
             
             session.commit()

@@ -37,6 +37,24 @@ app.mount("/api/uploads", StaticFiles(directory="data/uploads"), name="uploads")
 def startup_event_wrapper():
     """Database startup and migrations"""
     startup_event()
+    
+    # Start scheduler in background
+    try:
+        from src.scheduler.main import InvoiceScheduler
+        import threading
+        
+        def start_scheduler_bg():
+            try:
+                scheduler = InvoiceScheduler()
+                scheduler.start()
+            except Exception as e:
+                print(f"[Scheduler] Failed to start: {e}")
+        
+        thread = threading.Thread(target=start_scheduler_bg, daemon=True)
+        thread.start()
+        print("[Scheduler] Starting in background thread...")
+    except Exception as e:
+        print(f"[Scheduler] Failed to initialize: {e}")
 
 
 @app.get("/")
