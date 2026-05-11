@@ -307,7 +307,7 @@ def _serialize_match(match: ReconciliationMatch) -> dict:
     }
 
 
-def _create_or_update_invoice(session: Session, file_path: str, extracted_data: dict) -> Invoice:
+def _create_or_update_invoice(session: Session, file_path: str, extracted_data: dict, organization_id: int) -> Invoice:
     supplier_classifier = SupplierClassifier(session)
     category_classifier = CategoryClassifier()
     supplier = supplier_classifier.detect_supplier(extracted_data)
@@ -316,8 +316,10 @@ def _create_or_update_invoice(session: Session, file_path: str, extracted_data: 
 
     invoice = session.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
     if invoice is None:
-        invoice = Invoice(invoice_number=invoice_number)
+        invoice = Invoice(invoice_number=invoice_number, organization_id=organization_id)
         session.add(invoice)
+    else:
+        invoice.organization_id = organization_id
 
     invoice.supplier_id = supplier.id if supplier else None
     invoice.amount = extracted_data.get("amount") or 0.0
@@ -407,9 +409,8 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
 
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
-        invoice = _create_or_update_invoice(session, saved_path, extracted_data)
+        invoice = _create_or_update_invoice(session, saved_path, extracted_data, current_user["organization_id"])
         invoice.content_hash = content_hash
-        invoice.organization_id = current_user["organization_id"]
         if invoice.supplier:
             invoice.supplier.organization_id = current_user["organization_id"]
         if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
