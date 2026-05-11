@@ -311,7 +311,18 @@ def _create_or_update_invoice(session: Session, file_path: str, extracted_data: 
     supplier_classifier = SupplierClassifier(session)
     category_classifier = CategoryClassifier()
     supplier = supplier_classifier.detect_supplier(extracted_data)
-    invoice_number = extracted_data.get("invoice_number") or _build_invoice_number(file_path)
+    
+    # Try invoice_number first, then fallback to PO/BC/SO/OR numbers, then timestamp
+    invoice_number = extracted_data.get("invoice_number")
+    if not invoice_number:
+        invoice_number = extracted_data.get("purchase_order")
+    if not invoice_number:
+        invoice_number = extracted_data.get("delivery_note")
+    if not invoice_number:
+        invoice_number = extracted_data.get("work_order_reference")
+    if not invoice_number:
+        invoice_number = _build_invoice_number(file_path)
+    
     extraction_confidence = extracted_data.get("extraction_confidence", "low")
 
     invoice = session.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
