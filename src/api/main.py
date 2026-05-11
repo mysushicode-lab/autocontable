@@ -307,6 +307,9 @@ def _serialize_match(match: ReconciliationMatch) -> dict:
 
 
 def _create_or_update_invoice(session: Session, file_path: str, extracted_data: dict, organization_id: int) -> Invoice:
+    print(f"[DEBUG _create_or_update_invoice] Input extracted_data: {extracted_data}")
+    print(f"[DEBUG _create_or_update_invoice] Input organization_id: {organization_id}")
+    
     supplier_classifier = SupplierClassifier(session)
     category_classifier = CategoryClassifier()
     supplier = supplier_classifier.detect_supplier(extracted_data)
