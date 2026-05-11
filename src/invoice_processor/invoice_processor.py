@@ -64,8 +64,12 @@ class InvoiceProcessor:
             )
             print(f"[AI] Vision result: is_invoice={ai_result.get('is_invoice')}, confidence={ai_result.get('confidence')}, reason={ai_result.get('reason', '')}")
 
-            if ai_result.get('is_invoice') and ai_result.get('fields'):
-                fields = ai_result['fields']
+            # Accept document if it has valid fields, even if is_invoice=False (classification may be wrong)
+            fields = ai_result.get('fields') or {}
+            has_valid_data = fields.get('amount') and fields.get('date')
+
+            if (ai_result.get('is_invoice') and ai_result.get('fields')) or has_valid_data:
+                fields = ai_result['fields'] if ai_result.get('fields') else fields
                 return {
                     'invoice_number': fields.get('invoice_number'),
                     'date': fields.get('date'),
@@ -89,7 +93,7 @@ class InvoiceProcessor:
                     'raw_text': text
                 }
 
-            if ai_result.get('is_invoice') is False:
+            if ai_result.get('is_invoice') is False and not has_valid_data:
                 return {
                     'invoice_number': None,
                     'date': None,
