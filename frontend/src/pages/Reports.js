@@ -8,7 +8,8 @@ import {
   Wallet,
   Building2,
   CheckCircle,
-  BarChart3
+  BarChart3,
+  Archive
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
@@ -137,9 +138,9 @@ const Reports = () => {
     invoices.forEach((inv) => {
       const compte = COMPTE_CHARGES[inv.category] || '608000';
       const label = inv.category || 'Achats divers';
-      const ht = inv.amount_ht ?? 0;
       const tva = inv.amount_tax ?? 0;
       const ttc = inv.amount ?? 0;
+      const ht = (inv.amount_ht != null && inv.amount_ht !== 0) ? inv.amount_ht : (ttc - tva);
       if (!chargeMap[compte]) chargeMap[compte] = { label, debit: 0 };
       chargeMap[compte].debit += ht;
       totalHT += ht; totalTVA += tva; totalTTC += ttc;
@@ -170,9 +171,9 @@ const Reports = () => {
       const compte = COMPTE_CHARGES[inv.category] || '608000';
       const supplier = inv.supplier || 'Fournisseur inconnu';
       const date = inv.date ? new Date(inv.date).toLocaleDateString('fr-FR') : '-';
-      const ht  = inv.amount_ht  ?? 0;
       const tva = inv.amount_tax ?? 0;
       const ttc = inv.amount     ?? 0;
+      const ht  = (inv.amount_ht != null && inv.amount_ht !== 0) ? inv.amount_ht : (ttc - tva);
       const isAvoir = ttc < 0;
       const libelleBase = `${isAvoir ? 'Avoir' : 'Facture'} ${supplier} — ${inv.invoice_number}`;
 
@@ -240,6 +241,26 @@ const Reports = () => {
     }
   };
 
+  const handleDossierExport = async () => {
+    const token = localStorage.getItem('auth_token');
+    const url = `${getExportUrl('/api/reports/export/dossier', { year, month })}`;
+    try {
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!response.ok) throw new Error('Export dossier failed');
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `dossier_comptable_${year}_${String(month).padStart(2,'0')}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error exporting dossier:', error);
+    }
+  };
+
   const handleExcelExport = async () => {
     const token = localStorage.getItem('auth_token');
     const url = getExportUrl('/api/reports/export/monthly-report', { year, month });
@@ -282,7 +303,7 @@ const Reports = () => {
         </div>
         <div className="flex gap-3 items-center">
           <DropdownButton
-            label={monthOptions[0].label.charAt(0).toUpperCase() + monthOptions[0].label.slice(1)}
+            label={periodDisplay}
             value={period}
             options={monthOptions.map(opt => ({ ...opt, label: opt.label.charAt(0).toUpperCase() + opt.label.slice(1) }))}
             onChange={setPeriod}
@@ -299,7 +320,7 @@ const Reports = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <KpiCard 
-          title="Total Dépenses"
+          title="Total Dépenses TTC"
           value={`${(data?.total_amount || 0).toLocaleString('fr-FR')} €`}
           change={`${(trendsData?.month_over_month_change || 0).toFixed(1)}%`}
           trend={trendsData?.trend_direction || 'stable'}
@@ -320,7 +341,7 @@ const Reports = () => {
           title="Factures rapprochées"
           value={data?.matched_invoices || 0}
           icon={CheckCircle}
-          trend="up"
+          trend={data?.total_invoices > 0 ? (data.matched_invoices / data.total_invoices >= 0.8 ? 'up' : 'down') : 'stable'}
         />
       </div>
 
@@ -456,12 +477,16 @@ const Reports = () => {
             <h3 className="text-xl font-semibold mb-2">Export pour Expert-Comptable</h3>
             <p className="text-blue-100">Générez un fichier Excel complet avec toutes les données du mois</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <button onClick={handleCsvExport} className="px-4 py-2 bg-white text-blue-600 rounded-md font-medium hover:bg-blue-50">
               Export CSV
             </button>
             <button onClick={handleExcelExport} className="px-4 py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-400 border border-blue-400">
               Export Excel
+            </button>
+            <button onClick={handleDossierExport} className="flex items-center gap-2 px-4 py-2 text-white rounded-md font-medium border border-white hover:bg-white/10">
+              <Archive className="w-4 h-4" />
+              Dossier complet (ZIP)
             </button>
           </div>
         </div>

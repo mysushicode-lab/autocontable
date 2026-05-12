@@ -163,7 +163,7 @@ class ReconciliationMatch(Base):
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     match_score = Column(Float, nullable=True)
     match_type = Column(String(50), default='automatic')
-    status = Column(String(50), default='pending')
+    status = Column(String(50), default='confirmed')
     notes = Column(Text, nullable=True)
     matched_at = Column(DateTime, default=datetime.utcnow)
     matched_by = Column(String(100), nullable=True)

@@ -23,13 +23,15 @@ def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, 
     org_id = current_user["organization_id"]
     try:
         invoice_query = session.query(Invoice).filter(
-            Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED]),
+            Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
             Invoice.organization_id == org_id
         )
+        
+        invoices = invoice_query.all()
         transaction_query = session.query(BankTransaction).filter(BankTransaction.organization_id == org_id)
 
         engine = ReconciliationEngine(session)
-        matches = engine.reconcile(invoice_query.all(), transaction_query.all())
+        matches = engine.reconcile(invoices, transaction_query.all(), org_id)
         serialized_matches = [serialize_match(match) for match in matches]
         return {
             "message": "Reconciliation completed",
@@ -42,24 +44,6 @@ def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, 
     finally:
         session.close()
 
-
-@router.post("/{match_id}/confirm")
-def confirm_match(match_id: int, current_user: dict = Depends(get_current_user)):
-    """Confirm a proposed reconciliation match."""
-    session = db.get_session()
-    try:
-        match = session.query(ReconciliationMatch).filter(ReconciliationMatch.id == match_id).first()
-        if not match:
-            raise HTTPException(status_code=404, detail="Match not found")
-
-        match.status = "confirmed"
-        match.matched_by = "user"
-        match.invoice.status = InvoiceStatus.MATCHED
-        session.commit()
-        session.refresh(match)
-        return {"message": "Match confirmed", "match": serialize_match(match)}
-    finally:
-        session.close()
 
 
 @router.post("/{match_id}/reject")
@@ -145,7 +129,10 @@ def get_reconciliation_details(
     org_id = current_user["organization_id"]
     try:
         invoice_query = session.query(Invoice).filter(Invoice.organization_id == org_id)
-        match_query = session.query(ReconciliationMatch).filter(ReconciliationMatch.organization_id == org_id).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
+        match_query = session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.organization_id == org_id,
+            ReconciliationMatch.status != 'rejected'
+        ).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
         transaction_query = session.query(BankTransaction).filter(BankTransaction.organization_id == org_id)
 
         if month and year:
@@ -158,7 +145,8 @@ def get_reconciliation_details(
 
         matches = match_query.all()
         matched_transaction_ids = {match.transaction_id for match in matches}
-        unmatched_invoices = invoice_query.filter(Invoice.status == InvoiceStatus.UNMATCHED).all()
+
+        unmatched_invoices = invoice_query.filter(Invoice.status.in_([InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING])).all()
         bank_only_transactions = transaction_query.filter(
             ~BankTransaction.id.in_(matched_transaction_ids) if matched_transaction_ids else True
         ).all()
@@ -221,28 +209,38 @@ def get_reconciliation_status(
     year: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get reconciliation status"""
+    """Get reconciliation statistics (excludes rejected matches)."""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
-        query = session.query(ReconciliationMatch).filter(ReconciliationMatch.organization_id == current_user["organization_id"]).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
-        
+        invoice_q = session.query(Invoice).filter(Invoice.organization_id == org_id)
+        match_q = session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.organization_id == org_id
+        ).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
+
         if month and year:
             last_day_num = calendar.monthrange(year, month)[1]
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
-            query = query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
-        
-        matches = query.all()
-        
-        confirmed = sum(1 for m in matches if m.status == 'confirmed')
-        pending = sum(1 for m in matches if m.status == 'pending')
-        rejected = sum(1 for m in matches if m.status == 'rejected')
-        
+            invoice_q = invoice_q.filter(Invoice.date >= first_day, Invoice.date <= last_day)
+            match_q = match_q.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
+
+        all_matches = match_q.all()
+        active = [m for m in all_matches if m.status != 'rejected']
+
+        all_invoices = invoice_q.all()
+        total_invoices   = len(all_invoices)
+        matched_invoices = sum(1 for inv in all_invoices if inv.status == InvoiceStatus.MATCHED)
+
+        success_rate = round((matched_invoices / total_invoices) * 100) if total_invoices else 0
+
         return {
-            "total_matches": len(matches),
-            "confirmed": confirmed,
-            "pending": pending,
-            "rejected": rejected
+            "total_matches":     len(active),
+            "confirmed":         len(active),
+            "total_invoices":    total_invoices,
+            "matched_invoices":  matched_invoices,
+            "unmatched_invoices": total_invoices - matched_invoices,
+            "success_rate":      success_rate,
         }
     finally:
         session.close()

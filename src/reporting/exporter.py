@@ -13,8 +13,9 @@ import calendar
 class Exporter:
     """Export data to various formats"""
     
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, org_id: int = None):
         self.session = session
+        self.org_id = org_id
     
     def export_invoices_to_csv(self, output_path: str, month: int = None, year: int = None) -> str:
         """
@@ -29,7 +30,8 @@ class Exporter:
             Path to exported file
         """
         query = self.session.query(Invoice)
-        
+        if self.org_id:
+            query = query.filter(Invoice.organization_id == self.org_id)
         if month and year:
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
@@ -62,7 +64,7 @@ class Exporter:
         # Create directory if needed
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        df.to_csv(output_path, index=False, encoding='utf-8')
+        df.to_csv(output_path, index=False, encoding='utf-8-sig', sep=';')
         return output_path
     
     def export_transactions_to_csv(self, output_path: str, month: int = None, year: int = None) -> str:
@@ -78,7 +80,8 @@ class Exporter:
             Path to exported file
         """
         query = self.session.query(BankTransaction)
-        
+        if self.org_id:
+            query = query.filter(BankTransaction.organization_id == self.org_id)
         if month and year:
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
@@ -101,7 +104,7 @@ class Exporter:
         
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        df.to_csv(output_path, index=False, encoding='utf-8')
+        df.to_csv(output_path, index=False, encoding='utf-8-sig', sep=';')
         return output_path
     
     def export_reconciliation_to_csv(self, output_path: str, month: int = None, year: int = None) -> str:
@@ -117,7 +120,8 @@ class Exporter:
             Path to exported file
         """
         query = self.session.query(ReconciliationMatch).join(Invoice)
-        
+        if self.org_id:
+            query = query.filter(Invoice.organization_id == self.org_id)
         if month and year:
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
@@ -125,8 +129,8 @@ class Exporter:
         
         matches = query.all()
         
-        _MATCH_TYPE_FR = {'automatic': 'Automatique', 'manual': 'Manuel', 'review': 'À vérifier'}
-        _MATCH_STATUS_FR = {'confirmed': 'Confirmé', 'pending': 'En attente', 'rejected': 'Rejeté'}
+        _MATCH_TYPE_FR = {'automatic': 'Automatique', 'manual': 'Manuel'}
+        _MATCH_STATUS_FR = {'confirmed': 'Confirmé', 'rejected': 'Rejeté'}
         data = []
         for match in matches:
             data.append({
@@ -150,7 +154,7 @@ class Exporter:
         
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        df.to_csv(output_path, index=False, encoding='utf-8')
+        df.to_csv(output_path, index=False, encoding='utf-8-sig', sep=';')
         return output_path
     
     def export_monthly_report_to_excel(self, output_path: str, year: int, month: int) -> str:
@@ -167,7 +171,7 @@ class Exporter:
         """
         from src.reporting.report_generator import ReportGenerator
         
-        report_gen = ReportGenerator(self.session)
+        report_gen = ReportGenerator(self.session, org_id=self.org_id)
         
         # Get data
         monthly_totals = report_gen.monthly_totals(year, month)
@@ -193,9 +197,12 @@ class Exporter:
         # Fetch invoices for the period
         first_day = datetime(year, month, 1)
         last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
-        invoices  = self.session.query(Invoice).filter(
+        inv_q = self.session.query(Invoice).filter(
             Invoice.date >= first_day, Invoice.date <= last_day
-        ).all()
+        )
+        if self.org_id:
+            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
+        invoices = inv_q.all()
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -237,9 +244,9 @@ class Exporter:
                 supplier  = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
                 piece     = inv.invoice_number
                 date_str  = inv.date.strftime('%d/%m/%Y') if inv.date else ''
-                ht        = round(inv.amount_ht  or 0, 2)
                 tva       = round(inv.amount_tax or 0, 2)
                 ttc       = round(inv.amount     or 0, 2)
+                ht        = round(inv.amount_ht  or 0, 2) or round(ttc - tva, 2)
                 is_avoir  = ttc < 0
 
                 libelle_base = f"{'Avoir' if is_avoir else 'Facture'} {supplier} — {piece}"
@@ -294,6 +301,7 @@ class Exporter:
                     'Libellé PCG': libelle,
                     'Nb factures': data['count'],
                     'Total HT': round(data.get('amount_ht', 0), 2),
+                    'Total TVA': round(data.get('tax', 0), 2),
                     'Total TTC': round(data['amount'], 2),
                 })
             pd.DataFrame(category_data).to_excel(writer, sheet_name='Par catégorie', index=False)

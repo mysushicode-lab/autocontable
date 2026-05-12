@@ -93,14 +93,12 @@ export const importBankStatementFile = async (file) => {
 };
 
 export const runAutomaticReconciliation = async (filters = {}) => {
+  console.log('runAutomaticReconciliation called with filters:', filters);
   const response = await api.post('/api/reconciliation/run', null, { params: filters });
+  console.log('runAutomaticReconciliation response:', response.data);
   return response.data;
 };
 
-export const confirmReconciliationMatch = async (matchId) => {
-  const response = await api.post(`/api/reconciliation/${matchId}/confirm`);
-  return response.data;
-};
 
 export const rejectReconciliationMatch = async (matchId) => {
   const response = await api.post(`/api/reconciliation/${matchId}/reject`);

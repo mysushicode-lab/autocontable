@@ -238,13 +238,28 @@ class InvoiceScheduler:
         session = db.get_session()
         
         try:
+            organization_id = get_organization_id()
+            print(f"[{datetime.now()}] Using organization_id: {organization_id}")
+            
+            # Get invoices and transactions for this organization
+            invoices = session.query(Invoice).filter(
+                Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
+                Invoice.organization_id == organization_id
+            ).all()
+            
+            from src.storage.models import BankTransaction
+            transactions = session.query(BankTransaction).filter(
+                BankTransaction.organization_id == organization_id
+            ).all()
+            
             engine = ReconciliationEngine(session)
-            matches = engine.reconcile()
+            matches = engine.reconcile(invoices, transactions, organization_id)
             
             print(f"[{datetime.now()}] Created {len(matches)} reconciliation matches")
             
         except Exception as e:
             print(f"[{datetime.now()}] Error during reconciliation: {e}")
+            session.rollback()
         finally:
             session.close()
     

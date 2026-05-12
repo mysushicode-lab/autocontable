@@ -79,7 +79,7 @@ const Dashboard = () => {
   // Use real month-over-month change from trends API instead of match_rate
   const stats = {
     totalInvoices: reportData?.total_invoices || invoices.length,
-    pendingReconciliation: reconciliationStatus?.pending || (reportData ? reportData.total_invoices - reportData.matched_invoices : 0),
+    pendingReconciliation: reconciliationStatus?.unmatched_invoices ?? (reportData ? reportData.total_invoices - reportData.matched_invoices : 0),
     unmatchedBank: reconciliationDetails?.bank_only?.length || 0,
     totalAmount: reportData?.total_amount || 0,
     monthlyChange: trendsData?.month_over_month_change || 0,

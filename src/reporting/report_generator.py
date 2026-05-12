@@ -49,22 +49,21 @@ class ReportGenerator:
         # Group by supplier (using email_domain for better consolidation)
         supplier_totals = {}
         for invoice in invoices:
-            # Use email_domain if available, otherwise fallback to name
-            if invoice.supplier and invoice.supplier.email_domain:
-                supplier_key = invoice.supplier.email_domain
-            elif invoice.supplier:
+            if invoice.supplier:
                 supplier_key = invoice.supplier.name
             else:
-                supplier_key = "Unknown"
+                supplier_key = "Fournisseur inconnu"
             
             if supplier_key not in supplier_totals:
                 supplier_totals[supplier_key] = {
                     'count': 0,
                     'amount': 0,
+                    'amount_ht': 0,
                     'tax': 0
                 }
             supplier_totals[supplier_key]['count'] += 1
             supplier_totals[supplier_key]['amount'] += invoice.amount
+            supplier_totals[supplier_key]['amount_ht'] += invoice.amount_ht or 0
             supplier_totals[supplier_key]['tax'] += invoice.amount_tax or 0
         
         # Group by category
@@ -74,10 +73,14 @@ class ReportGenerator:
             if category not in category_totals:
                 category_totals[category] = {
                     'count': 0,
-                    'amount': 0
+                    'amount': 0,
+                    'amount_ht': 0,
+                    'tax': 0
                 }
             category_totals[category]['count'] += 1
             category_totals[category]['amount'] += invoice.amount
+            category_totals[category]['amount_ht'] += invoice.amount_ht or 0
+            category_totals[category]['tax'] += invoice.amount_tax or 0
         
         # Reconciliation status
         matched_count = sum(1 for i in invoices if i.status == InvoiceStatus.MATCHED)
@@ -178,9 +181,9 @@ class ReportGenerator:
         ).all()
         
         # Calculate statistics
-        confirmed = sum(1 for m in matches if m.status == 'confirmed')
-        pending = sum(1 for m in matches if m.status == 'pending')
-        rejected = sum(1 for m in matches if m.status == 'rejected')
+        active   = [m for m in matches if m.status != 'rejected']
+        confirmed = len(active)
+        rejected = len(matches) - confirmed
         
         # Average match score
         avg_score = sum(m.match_score or 0 for m in matches) / len(matches) if matches else 0
@@ -189,7 +192,6 @@ class ReportGenerator:
             'period': f"{year}-{month:02d}",
             'total_matches': len(matches),
             'confirmed': confirmed,
-            'pending': pending,
             'rejected': rejected,
             'average_match_score': avg_score
         }

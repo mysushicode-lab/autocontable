@@ -72,9 +72,19 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         session.commit()
         
         # Run automatic reconciliation after manual import
-        engine = ReconciliationEngine(session)
-        engine.reconcile(organization_id=current_user["organization_id"])
-        session.commit()
+        try:
+            from src.storage.models import BankTransaction
+            recon_invoices = session.query(Invoice).filter(
+                Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
+                Invoice.organization_id == current_user["organization_id"]
+            ).all()
+            recon_transactions = session.query(BankTransaction).filter(
+                BankTransaction.organization_id == current_user["organization_id"]
+            ).all()
+            engine = ReconciliationEngine(session)
+            engine.reconcile(recon_invoices, recon_transactions, current_user["organization_id"])
+        except Exception as recon_err:
+            print(f"[Reconciliation] Auto-reconcile after upload failed: {recon_err}")
         
         session.refresh(invoice)
         return {
@@ -101,6 +111,7 @@ def list_invoices(
     category: Optional[str] = None,
     search: Optional[str] = None,
     vehicle_registration: Optional[str] = None,
+    supplier: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
