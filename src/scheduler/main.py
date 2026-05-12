@@ -202,6 +202,12 @@ class InvoiceScheduler:
                         print(f"[{datetime.now()}] Skipping non-invoice document: {filename} (type: {invoice_data.get('ai_document_type', 'unknown')})")
                         continue
                     
+                    # Skip if AI extraction failed (confidence=low or error) — don't register hash to allow retry
+                    extraction_confidence = invoice_data.get('extraction_confidence', 'low')
+                    if extraction_confidence == 'low' or invoice_data.get('is_invoice') is None:
+                        print(f"[{datetime.now()}] Skipping file due to AI extraction failure: {filename} (confidence={extraction_confidence})")
+                        continue
+                    
                     supplier = supplier_classifier.detect_supplier(invoice_data)
                     if supplier:
                         invoice_data['supplier_id'] = supplier.id
