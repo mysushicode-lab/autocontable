@@ -20,7 +20,11 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
         setTimeout(() => setSaveStatus(null), 3000);
       },
       onError: (error) => {
-        setSaveStatus({ type: 'error', message: error?.response?.data?.detail || 'Erreur lors de la création' });
+        const errorMessage = error?.response?.data?.detail || 
+                           (Array.isArray(error?.response?.data) ? error?.response?.data[0]?.msg : null) ||
+                           error?.message ||
+                           'Erreur lors de la création';
+        setSaveStatus({ type: 'error', message: errorMessage });
         setTimeout(() => setSaveStatus(null), 3000);
       },
     });
