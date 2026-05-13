@@ -199,55 +199,56 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
               </div>
             )}
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Mot de passe</p>
-              <p className="text-xs text-gray-500">••••••••</p>
-            </div>
-            <button onClick={() => setShowPasswordChange(true)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+          <div className="p-3 bg-gray-50 rounded-md transition-all duration-200">
+            <p className="text-sm font-medium text-gray-700 mb-1">Mot de passe</p>
+            {showPasswordChange ? (
+              <form onSubmit={handleChangePassword} className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <input
+                  type="password"
+                  placeholder="Mot de passe actuel"
+                  value={passwordForm.current}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
+                  style={{ outline: 'none', boxShadow: 'none' }}
+                  required
+                  autoFocus
+                />
+                <input
+                  type="password"
+                  placeholder="Nouveau mot de passe"
+                  value={passwordForm.new}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
+                  style={{ outline: 'none', boxShadow: 'none' }}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Confirmer le nouveau mot de passe"
+                  value={passwordForm.confirm}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
+                  style={{ outline: 'none', boxShadow: 'none' }}
+                  required
+                />
+                <div className="flex gap-2">
+                  <button type="submit" disabled={changePasswordMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-all duration-200">
+                    {changePasswordMutation.isLoading ? '...' : 'OK'}
+                  </button>
+                  <button type="button" onClick={() => { setShowPasswordChange(false); setPasswordForm({ current: '', new: '', confirm: '' }); }} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium transition-all duration-200">
+                    ✕
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-xs text-gray-500">••••••••</p>
+                <button onClick={() => { setEditingUsername(false); setEditingEmail(false); setShowPasswordChange(true); }} className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-200">Modifier</button>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {showPasswordChange && (
-        <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Changer le mot de passe</h3>
-          <form onSubmit={handleChangePassword} className="space-y-3">
-            <input
-              type="password"
-              placeholder="Mot de passe actuel"
-              value={passwordForm.current}
-              onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Nouveau mot de passe"
-              value={passwordForm.new}
-              onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Confirmer le nouveau mot de passe"
-              value={passwordForm.confirm}
-              onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-            <div className="flex gap-2">
-              <button type="submit" disabled={changePasswordMutation.isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
-                {changePasswordMutation.isLoading ? 'Changement...' : 'Changer'}
-              </button>
-              <button type="button" onClick={() => { setShowPasswordChange(false); setPasswordForm({ current: '', new: '', confirm: '' }); }} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
       <div className="border-t border-red-100 pt-4 mt-2">
         <button
           onClick={async () => {
