@@ -1,5 +1,6 @@
 import React from 'react';
 import { RefreshCw, Save, Wifi, WifiOff } from 'lucide-react';
+import { handleChange } from '../../utils/formHelpers';
 
 const EMAIL_FIELDS = [
   { key: 'imap_server', label: 'Serveur IMAP', placeholder: 'imap.gmail.com', type: 'text' },
@@ -10,9 +11,6 @@ const EMAIL_FIELDS = [
 ];
 
 export const SettingsEmail = ({ emailForm, setEmailForm, updateMutation, imapTestResult, setImapTestResult, testImap, setSaveStatus }) => {
-  const handleChange = (form, setForm, key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
-  };
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();

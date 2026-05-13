@@ -12,12 +12,12 @@ import { SettingsBilling } from '../components/settings/SettingsBilling';
 import { SettingsPlan } from '../components/settings/SettingsPlan';
 
 const SECTIONS = [
-  { id: 'profil', label: 'Profil', icon: UserCircle, color: 'blue' },
-  { id: 'email', label: 'Configuration Email', icon: Mail, color: 'blue' },
-  { id: 'scheduler', label: 'Planificateur', icon: Clock, color: 'purple' },
-  { id: 'collaborations', label: 'Collaborations', icon: Users, color: 'green' },
-  { id: 'billing', label: 'Facturation', icon: CreditCard, color: 'orange' },
-  { id: 'plan', label: 'Plan', icon: Zap, color: 'yellow' },
+  { id: 'profil', label: 'Profil', icon: UserCircle, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700' },
+  { id: 'email', label: 'Configuration Email', icon: Mail, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700' },
+  { id: 'scheduler', label: 'Planificateur', icon: Clock, color: 'purple', bgClass: 'bg-purple-50', textClass: 'text-purple-700' },
+  { id: 'collaborations', label: 'Collaborations', icon: Users, color: 'green', bgClass: 'bg-green-50', textClass: 'text-green-700' },
+  { id: 'billing', label: 'Facturation', icon: CreditCard, color: 'orange', bgClass: 'bg-orange-50', textClass: 'text-orange-700' },
+  { id: 'plan', label: 'Plan', icon: Zap, color: 'yellow', bgClass: 'bg-yellow-50', textClass: 'text-yellow-700' },
 ];
 
 const Settings = () => {
@@ -127,7 +127,7 @@ const Settings = () => {
               onClick={() => setActiveSection(section.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 activeSection === section.id
-                  ? `bg-${section.color}-50 text-${section.color}-700`
+                  ? `${section.bgClass} ${section.textClass}`
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >

@@ -1,5 +1,6 @@
 import React from 'react';
 import { RefreshCw, Save } from 'lucide-react';
+import { handleChange } from '../../utils/formHelpers';
 
 const SCHEDULER_FIELDS = [
   { key: 'scheduler_interval', label: 'Intervalle de vérification (minutes, ex: 0.166 = 10 secondes)', placeholder: '0.166', type: 'number' },
@@ -7,9 +8,6 @@ const SCHEDULER_FIELDS = [
 ];
 
 export const SettingsScheduler = ({ schedulerForm, setSchedulerForm, updateMutation, setSaveStatus }) => {
-  const handleChange = (form, setForm, key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
-  };
 
   const handleSchedulerSubmit = (e) => {
     e.preventDefault();
