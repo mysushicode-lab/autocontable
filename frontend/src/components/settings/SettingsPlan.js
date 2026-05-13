@@ -126,15 +126,6 @@ export const SettingsPlan = () => {
                 Collaboration d'équipe
               </li>
             </ul>
-            {isStandardPlan ? (
-              <button className="w-full px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium cursor-default">
-                Plan actuel
-              </button>
-            ) : (
-              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors">
-                Choisir
-              </button>
-            )}
           </div>
           <div className={`p-5 rounded-xl border transition-colors cursor-pointer ${isProPlan ? 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-300 border-2' : 'bg-purple-50 border-purple-200 hover:border-purple-300'}`}>
             <div className="bg-purple-600 text-white text-xs text-center py-1 rounded-t-lg -mt-5 -mx-5 mb-4 font-medium">
