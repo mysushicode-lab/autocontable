@@ -15,6 +15,7 @@ router = APIRouter()
 
 
 @router.get("")
+@router.get("/")
 def list_users(current_user: dict = Depends(get_current_user)):
     """List all users in the same organization"""
     session = db.get_session()
