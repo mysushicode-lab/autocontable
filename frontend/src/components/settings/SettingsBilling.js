@@ -1,17 +1,105 @@
-import React from 'react';
-import { CreditCard } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CreditCard, FileText, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { fetchPlanStatus } from '../../api';
 
 export const SettingsBilling = () => {
+  const [planStatus, setPlanStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+
+  useEffect(() => {
+    const loadBillingData = async () => {
+      try {
+        const data = await fetchPlanStatus();
+        setPlanStatus(data);
+      } catch (error) {
+        console.error('Failed to load billing data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBillingData();
+  }, []);
+
+  if (loading) {
+    return <div className="text-sm text-gray-500">Chargement...</div>;
+  }
+
+  const isTrial = planStatus?.plan_type === 'trial' && planStatus?.is_trial_active;
+  const daysRemaining = planStatus?.days_remaining || 0;
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-gray-900">Facturation</h2>
         <p className="text-sm text-gray-500 mt-1">Gérez vos informations de paiement et vos factures</p>
       </div>
-      <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
-        <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">Facturation non configurée</p>
-        <p className="text-sm text-gray-400 mt-1">Cette section sera disponible prochainement</p>
+
+      {/* Current Plan */}
+      <div className="p-5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200">
+        <h3 className="font-semibold text-gray-900 mb-3">Abonnement actuel</h3>
+        {isTrial ? (
+          <div className="flex items-center gap-2 text-orange-600">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">Essai gratuit — {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}</span>
+          </div>
+        ) : (
+          <div className="text-gray-600">
+            <span className="font-medium">Plan Standard</span>
+          </div>
+        )}
+      </div>
+
+      {/* Payment Methods */}
+      <div className="p-5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900">Méthodes de paiement</h3>
+          <button className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700">
+            <Plus className="w-4 h-4" />
+            Ajouter
+          </button>
+        </div>
+        {paymentMethods.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucune méthode de paiement enregistrée</p>
+        ) : (
+          <div className="space-y-2">
+            {paymentMethods.map((method) => (
+              <div key={method.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm text-gray-700">•••• {method.last4}</span>
+                </div>
+                <button className="text-red-500 hover:text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Invoices */}
+      <div className="p-5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200">
+        <h3 className="font-semibold text-gray-900 mb-3">Factures</h3>
+        {invoices.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucune facture disponible</p>
+        ) : (
+          <div className="space-y-2">
+            {invoices.map((invoice) => (
+              <div key={invoice.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <span className="text-sm text-gray-700">{invoice.number}</span>
+                    <p className="text-xs text-gray-500">{invoice.date}</p>
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-gray-900">{invoice.amount}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
