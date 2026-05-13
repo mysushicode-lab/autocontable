@@ -72,6 +72,11 @@ def delete_user(user_id: int, current_user: dict = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="User not found")
         if user.id == current_user["id"]:
             raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
+        
+        # Delete associated user tokens first
+        from src.storage.models import UserToken
+        session.query(UserToken).filter(UserToken.user_id == user_id).delete()
+        
         session.delete(user)
         session.commit()
         return {"message": "User deleted"}
