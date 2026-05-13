@@ -101,6 +101,12 @@ const Login = () => {
                 Créer un compte
               </Link>
             </p>
+
+            <p className="mt-2 text-center text-sm">
+              <Link to="/forgot-password" className="text-blue-600 font-medium hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </p>
           </div>
         </div>
       </div>

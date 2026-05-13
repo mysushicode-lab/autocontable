@@ -131,6 +131,19 @@ def startup_event():
         except Exception:
             pass
 
+    # Create password_reset_tokens table if not exists
+    try:
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY,
+            token VARCHAR(64) NOT NULL UNIQUE,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME
+        )"""))
+        conn.commit()
+    except Exception as e:
+        print(f"Password reset tokens migration: {e}")
+
     conn.close()
 
     session = db.get_session()

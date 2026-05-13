@@ -43,6 +43,18 @@ class UserToken(Base):
     user = relationship("User", back_populates="tokens")
 
 
+class PasswordResetToken(Base):
+    __tablename__ = 'password_reset_tokens'
+
+    id = Column(Integer, primary_key=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
 class User(Base):
     __tablename__ = 'users'
 

@@ -53,9 +53,18 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
     name: str
-    email: Optional[str] = None
+    email: str
 
 
 class UpdateUserRequest(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str

@@ -15,7 +15,7 @@ const Signup = () => {
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
   const mutation = useMutation(
-    () => register(form.username, form.password, form.name, form.email || undefined),
+    () => register(form.username, form.password, form.name, form.email),
     {
       onSuccess: (data) => {
         loginFromData(data);
@@ -93,7 +93,7 @@ const Signup = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Email <span className="text-gray-400">(optionnel)</span></label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -102,6 +102,7 @@ const Signup = () => {
                     onChange={set('email')}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="jean@exemple.fr"
+                    required
                   />
                 </div>
               </div>

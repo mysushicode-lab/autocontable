@@ -1,10 +1,11 @@
 """Authentication endpoints"""
 from fastapi import APIRouter, HTTPException, Header, Depends
 from src.storage.database import db
-from src.storage.models import User, UserRole, Organization, UserToken, Settings
-from src.api.schemas import LoginRequest, RegisterRequest
+from src.storage.models import User, UserRole, Organization, UserToken, Settings, PasswordResetToken
+from src.api.schemas import LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest
 import hashlib
 import secrets
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -131,5 +132,67 @@ def delete_own_account(current_user: dict = Depends(get_current_user)):
         session.delete(user)
         session.commit()
         return {"message": "Compte supprimé"}
+    finally:
+        session.close()
+
+
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest):
+    """Generate password reset token and send email (for now, just returns token for testing)"""
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.email == request.email).first()
+        if not user:
+            # Don't reveal if email exists - return success anyway
+            return {"message": "Si l'email existe, un lien de réinitialisation a été envoyé"}
+        
+        # Delete any existing reset tokens for this user
+        session.query(PasswordResetToken).filter(PasswordResetToken.user_id == user.id).delete()
+        
+        # Generate new token (expires in 1 hour)
+        token = secrets.token_hex(32)
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        reset_token = PasswordResetToken(token=token, user_id=user.id, expires_at=expires_at)
+        session.add(reset_token)
+        session.commit()
+        
+        # TODO: Send email with reset link
+        # For now, return the token for testing
+        return {
+            "message": "Si l'email existe, un lien de réinitialisation a été envoyé",
+            "token": token  # Remove this in production
+        }
+    finally:
+        session.close()
+
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordRequest):
+    """Reset password using valid token"""
+    session = db.get_session()
+    try:
+        reset_token = session.query(PasswordResetToken).filter(
+            PasswordResetToken.token == request.token,
+            PasswordResetToken.expires_at > datetime.utcnow()
+        ).first()
+        
+        if not reset_token:
+            raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+        
+        user = session.query(User).filter(User.id == reset_token.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+        
+        # Update password
+        user.password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+        
+        # Delete the used token
+        session.delete(reset_token)
+        
+        # Delete all user tokens to force re-login
+        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
+        
+        session.commit()
+        return {"message": "Mot de passe réinitialisé avec succès"}
     finally:
         session.close()
