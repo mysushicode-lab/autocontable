@@ -63,7 +63,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.ACCOUNTANT)
     name = Column(String(100), nullable=True)
-    email = Column(String(100), nullable=True)
+    email = Column(String(100), nullable=True, unique=True, index=True)
     profile_photo = Column(String(255), nullable=True)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

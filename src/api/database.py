@@ -131,6 +131,13 @@ def startup_event():
         except Exception:
             pass
 
+    # Add unique index on email (global uniqueness)
+    try:
+        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users(email)"))
+        conn.commit()
+    except Exception as e:
+        print(f"Email unique index migration: {e}")
+
     # Create password_reset_tokens table if not exists
     try:
         conn.execute(text("""CREATE TABLE IF NOT EXISTS password_reset_tokens (

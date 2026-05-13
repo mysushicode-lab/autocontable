@@ -44,6 +44,8 @@ def register(request: RegisterRequest):
     try:
         if session.query(User).filter(User.username == request.username).first():
             raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris.")
+        if session.query(User).filter(User.email == request.email).first():
+            raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
         org = Organization(name=request.name)
         session.add(org)
         session.flush()
