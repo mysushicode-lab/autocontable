@@ -11,13 +11,13 @@ from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, In
 from src.reconciliation.reconciliation_engine import ReconciliationEngine
 from src.api.utils import serialize_match
 from src.api.schemas import ManualLinkPayload
-from src.api.auth import get_current_user
+from src.api.auth import get_current_user, check_trial_active
 
 router = APIRouter()
 
 
 @router.post("/run")
-def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, current_user: dict = Depends(get_current_user)):
+def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, current_user: dict = Depends(check_trial_active)):
     """Run reconciliation automatically on current invoices and transactions."""
     session = db.get_session()
     org_id = current_user["organization_id"]

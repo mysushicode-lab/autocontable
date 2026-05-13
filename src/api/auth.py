@@ -1,8 +1,8 @@
 """Authentication endpoints"""
 from fastapi import APIRouter, HTTPException, Header, Depends
 from src.storage.database import db
-from src.storage.models import User, UserRole, Organization, UserToken, Settings, PasswordResetToken
-from src.api.schemas import LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
+from src.storage.models import User, UserToken, Organization
+from src.api.schemas import RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.email_ingestion import SMTPClient
 import hashlib
 import secrets
@@ -37,6 +37,25 @@ def get_current_user(authorization: str = Header(None)) -> dict:
         session.close()
 
 
+def check_trial_active(current_user: dict = Depends(get_current_user)):
+    """Check if organization trial is still active. Raises 403 if trial expired."""
+    session = db.get_session()
+    try:
+        org = session.query(Organization).filter(Organization.id == current_user["organization_id"]).first()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+
+        now = datetime.utcnow()
+        if org.plan_type == 'trial' and org.trial_end_date and now > org.trial_end_date:
+            raise HTTPException(
+                status_code=403,
+                detail="Votre période d'essai est terminée. Veuillez mettre à niveau votre compte pour continuer."
+            )
+        return current_user
+    finally:
+        session.close()
+
+
 @router.post("/register")
 def register(request: RegisterRequest):
     """Public registration — creates a new organization and admin account."""
@@ -46,7 +65,16 @@ def register(request: RegisterRequest):
             raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris.")
         if session.query(User).filter(User.email == request.email).first():
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
-        org = Organization(name=request.name)
+        from datetime import timedelta
+        trial_start = datetime.utcnow()
+        trial_end = trial_start + timedelta(days=7)
+        org = Organization(
+            name=request.name,
+            plan_type='trial',
+            trial_start_date=trial_start,
+            trial_end_date=trial_end,
+            is_trial_active=True
+        )
         session.add(org)
         session.flush()
         org_id = org.id

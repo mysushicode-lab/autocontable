@@ -14,12 +14,14 @@ import {
   AlertTriangle,
   X,
   Trash2,
-  LogOut
+  LogOut,
+  Zap
 } from 'lucide-react';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { GlassDock } from './glass-dock';
 import { PoweredByMysushicode } from './powered-by-mysushicode';
+import { fetchPlanStatus } from '../api';
 
 const TYPE_CONFIG = {
   [NOTIF_TYPES.SUCCESS]: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50' },
@@ -41,6 +43,23 @@ const Layout = ({ children }) => {
   const { notifications, unreadCount, markRead, markAllRead, remove, clearAll } = useNotifications();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [planStatus, setPlanStatus] = useState(null);
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+
+  useEffect(() => {
+    const loadPlanStatus = async () => {
+      try {
+        const data = await fetchPlanStatus();
+        setPlanStatus(data);
+        if (data.is_trial_expired) {
+          setShowUpgradePopup(true);
+        }
+      } catch (error) {
+        console.error('Failed to load plan status:', error);
+      }
+    };
+    loadPlanStatus();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -210,6 +229,37 @@ const Layout = ({ children }) => {
       <div className="fixed bottom-4 left-4 z-40">
         <PoweredByMysushicode />
       </div>
+
+      {showUpgradePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <Zap className="w-8 h-8 text-red-600" />
+              <h3 className="text-xl font-semibold text-gray-900">Période d'essai terminée</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Votre période d'essai de 7 jours est terminée. Toutes les fonctionnalités sont maintenant bloquées.
+            </p>
+            <p className="text-xs text-gray-500 mb-6">
+              Pour continuer à utiliser MAILFACT, veuillez mettre à niveau vers un plan payant.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowUpgradePopup(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium transition-colors"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors"
+              >
+                Voir les plans
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

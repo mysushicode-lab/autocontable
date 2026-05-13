@@ -14,7 +14,7 @@ from src.storage.models import Invoice, Supplier, ReconciliationMatch, InvoiceSt
 from src.invoice_processor import InvoiceProcessor
 from src.api.utils import save_uploaded_file, create_or_update_invoice
 from src.api.schemas import UpdateInvoiceRequest
-from src.api.auth import get_current_user
+from src.api.auth import get_current_user, check_trial_active
 from src.reconciliation.reconciliation_engine import ReconciliationEngine
 
 router = APIRouter()
@@ -24,7 +24,7 @@ INVOICE_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "invoices")
 
 
 @router.post("/upload")
-async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depends(check_trial_active)):
     """Import a supplier invoice manually."""
     allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
     extension = os.path.splitext(file.filename or "")[1].lower()

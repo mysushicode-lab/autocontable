@@ -27,6 +27,10 @@ class Organization(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
+    plan_type = Column(String(50), default='trial')  # 'trial', 'free', 'paid'
+    trial_start_date = Column(DateTime, nullable=True)
+    trial_end_date = Column(DateTime, nullable=True)
+    is_trial_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     users = relationship("User", back_populates="organization")

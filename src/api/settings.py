@@ -1,11 +1,12 @@
 """Settings endpoints"""
 from fastapi import APIRouter, Depends
 from typing import Optional
+from datetime import datetime
 
 from src.storage.database import db
-from src.storage.models import Settings
+from src.storage.models import Settings, Organization
 from src.api.schemas import SettingUpdate, TestImapRequest
-from src.api.auth import get_current_user
+from src.api.auth import get_current_user, check_trial_active
 
 router = APIRouter()
 
@@ -37,7 +38,7 @@ def get_settings(category: Optional[str] = None, current_user: dict = Depends(ge
 
 
 @router.put("/{key}")
-def update_setting(key: str, update: SettingUpdate, current_user: dict = Depends(get_current_user)):
+def update_setting(key: str, update: SettingUpdate, current_user: dict = Depends(check_trial_active)):
     """Update a setting value"""
     session = db.get_session()
     org_id = current_user["organization_id"]
@@ -75,3 +76,39 @@ def test_imap_connection(request: TestImapRequest):
         return {"success": False, "message": f"Serveur introuvable : {str(e)}"}
     except Exception as e:
         return {"success": False, "message": f"Erreur : {str(e)}"}
+
+
+@router.get("/plan")
+def get_plan_status(current_user: dict = Depends(get_current_user)):
+    """Get current organization plan status and trial information"""
+    session = db.get_session()
+    try:
+        org = session.query(Organization).filter(Organization.id == current_user["organization_id"]).first()
+        if not org:
+            return {"error": "Organization not found"}, 404
+
+        now = datetime.utcnow()
+        is_trial_expired = False
+        days_remaining = 0
+
+        if org.plan_type == 'trial' and org.trial_end_date:
+            if now > org.trial_end_date:
+                is_trial_expired = True
+                org.is_trial_active = False
+                org.plan_type = 'free'
+                session.commit()
+            else:
+                days_remaining = (org.trial_end_date - now).days
+                if days_remaining < 0:
+                    days_remaining = 0
+
+        return {
+            "plan_type": org.plan_type,
+            "is_trial_active": org.is_trial_active,
+            "trial_start_date": org.trial_start_date.isoformat() if org.trial_start_date else None,
+            "trial_end_date": org.trial_end_date.isoformat() if org.trial_end_date else None,
+            "days_remaining": days_remaining,
+            "is_trial_expired": is_trial_expired
+        }
+    finally:
+        session.close()

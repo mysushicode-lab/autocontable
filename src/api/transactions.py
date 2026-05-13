@@ -11,7 +11,7 @@ from src.storage.database import db
 from src.storage.models import BankTransaction
 from src.bank_importer.bank_importer import BankImporter
 from src.api.utils import save_uploaded_file
-from src.api.auth import get_current_user
+from src.api.auth import get_current_user, check_trial_active
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ BANK_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "bank_statements")
 
 
 @router.post("/import")
-async def import_bank_statement(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def import_bank_statement(file: UploadFile = File(...), current_user: dict = Depends(check_trial_active)):
     """Import a bank statement from CSV/OFX/QFX/PDF."""
     import os
     allowed_extensions = {".csv", ".ofx", ".qfx", ".pdf"}

@@ -138,6 +138,20 @@ def startup_event():
     except Exception as e:
         print(f"Email unique index migration: {e}")
 
+    # Add plan tracking columns to organizations table
+    add_org_col_migrations = [
+        "ALTER TABLE organizations ADD COLUMN plan_type VARCHAR(50) DEFAULT 'trial'",
+        "ALTER TABLE organizations ADD COLUMN trial_start_date DATETIME",
+        "ALTER TABLE organizations ADD COLUMN trial_end_date DATETIME",
+        "ALTER TABLE organizations ADD COLUMN is_trial_active BOOLEAN DEFAULT 1",
+    ]
+    for stmt in add_org_col_migrations:
+        try:
+            conn.execute(text(stmt))
+            conn.commit()
+        except Exception as e:
+            print(f"Organization column migration: {e}")
+
     # Create password_reset_tokens table if not exists
     try:
         conn.execute(text("""CREATE TABLE IF NOT EXISTS password_reset_tokens (

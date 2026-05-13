@@ -216,6 +216,11 @@ export const testImap = async (data) => {
   return response.data;
 };
 
+export const fetchPlanStatus = async () => {
+  const response = await api.get('/api/settings/plan');
+  return response.data;
+};
+
 export const uploadProfilePhoto = async (userId, file) => {
   const formData = new FormData();
   formData.append('file', file);
