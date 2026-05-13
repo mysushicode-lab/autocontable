@@ -76,12 +76,13 @@ export const SettingsPlan = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-5 bg-blue-50 rounded-xl border border-blue-200 hover:border-blue-300 transition-colors cursor-pointer">
+          <div className="p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:border-blue-300 transition-colors cursor-pointer">
             <div className="flex items-center gap-3 mb-2">
               <Zap className="w-6 h-6 text-blue-600" />
               <h3 className="font-semibold text-gray-900">Plan Standard</h3>
             </div>
-            <p className="text-2xl font-bold text-gray-900 mb-2">29€<span className="text-sm font-normal text-gray-500">/mois</span></p>
+            <p className="text-2xl font-bold text-gray-900 mb-1">FREE<span className="text-sm font-normal text-gray-500"> / 7 jours</span></p>
+            <p className="text-xs text-blue-600 font-medium mb-4">Essai gratuit</p>
             <ul className="text-sm text-gray-600 space-y-1 mb-4">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
@@ -97,11 +98,15 @@ export const SettingsPlan = () => {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                Rapport comptable
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                 Collaboration d'équipe
               </li>
             </ul>
             <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium transition-colors">
-              Choisir
+              Commencer
             </button>
           </div>
           <div className="p-5 bg-purple-50 rounded-xl border border-purple-200 hover:border-purple-300 transition-colors cursor-pointer">
