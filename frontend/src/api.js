@@ -197,7 +197,7 @@ export const fetchUsers = async () => {
 };
 
 export const createUser = async (userData) => {
-  const response = await api.post('/api/users', userData);
+  const response = await api.post('/api/users/create', userData);
   return response.data;
 };
 

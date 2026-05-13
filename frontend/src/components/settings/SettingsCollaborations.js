@@ -6,6 +6,9 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
   const [newUser, setNewUser] = useState({ username: '', password: '', name: '', email: '', role: 'accountant' });
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [confirmText, setConfirmText] = useState('');
 
   const handleAddUser = (e) => {
     e.preventDefault();
@@ -24,9 +27,18 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
   };
 
   const handleDeleteUser = (userId, username) => {
-    if (confirm(`Supprimer l'utilisateur ${username} ?`)) {
-      deleteUserMutation.mutate(userId, {
+    setUserToDelete({ id: userId, username });
+    setConfirmText('');
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteUser = () => {
+    if (confirmText === userToDelete.username) {
+      deleteUserMutation.mutate(userToDelete.id, {
         onSuccess: () => {
+          setShowDeleteConfirm(false);
+          setUserToDelete(null);
+          setConfirmText('');
           setSaveStatus({ type: 'success', message: 'Collaborateur supprimé' });
           setTimeout(() => setSaveStatus(null), 3000);
         },
@@ -121,22 +133,58 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
         </div>
       </div>
 
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmer la suppression</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Pour supprimer l'utilisateur <span className="font-medium">{userToDelete?.username}</span>, tapez son nom d'utilisateur ci-dessous :
+            </p>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={userToDelete?.username}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setUserToDelete(null); setConfirmText(''); }}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                disabled={confirmText !== userToDelete?.username}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddUser && (
         <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
           <h3 className="font-semibold text-gray-900 mb-4">Nouveau collaborateur</h3>
           <form onSubmit={handleAddUser} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <input type="text" placeholder="Nom complet" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} required />
-              <input type="text" placeholder="Nom d'utilisateur" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
+              <input type="email" placeholder="Email (optionnel)" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <input type="email" placeholder="Email (optionnel)" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+              <input type="text" placeholder="Nom d'utilisateur" className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} required />
               <select className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}>
                 <option value="accountant">Comptable</option>
                 <option value="admin">Administrateur</option>
               </select>
             </div>
-            <input type="password" placeholder="Mot de passe" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
+            <div>
+              <input type="password" placeholder="Mot de passe" className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
+              <p className="text-xs text-gray-500 mt-1">8+ caractères, majuscule, minuscule, chiffre, caractère spécial</p>
+            </div>
             <div className="flex gap-2 pt-1">
               <button type="submit" disabled={createUserMutation.isLoading} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium disabled:opacity-50">
                 {createUserMutation.isLoading ? 'Création...' : 'Créer le compte'}

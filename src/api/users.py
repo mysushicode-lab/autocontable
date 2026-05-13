@@ -14,7 +14,6 @@ from src.api.auth import get_current_user
 router = APIRouter()
 
 
-@router.get("/")
 @router.get("")
 def list_users(current_user: dict = Depends(get_current_user)):
     """List all users in the same organization"""
@@ -38,7 +37,7 @@ def list_users(current_user: dict = Depends(get_current_user)):
         session.close()
 
 
-@router.post("/")
+@router.post("/create")
 def create_user(request: CreateUserRequest, current_user: dict = Depends(get_current_user)):
     """Create a new user in the same organization"""
     session = db.get_session()
