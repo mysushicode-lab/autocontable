@@ -45,6 +45,13 @@ export const SettingsPlan = () => {
         </div>
       );
     }
+    if (isStandardPlan) {
+      return (
+        <div className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
+          Actif
+        </div>
+      );
+    }
     return null;
   };
 
