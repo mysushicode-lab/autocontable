@@ -63,9 +63,10 @@ export const SettingsPlan = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className={`p-5 rounded-xl border transition-colors cursor-pointer ${isStandardPlan ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 border-2' : 'bg-blue-50 border-blue-200 hover:border-blue-300'}`}>
+        <div className="relative">
           {getExpiryBadge()}
-          <h3 className="font-semibold text-gray-900 mb-2">Plan Standard</h3>
+          <div className={`p-5 rounded-xl border transition-colors cursor-pointer bg-white/50 backdrop-blur-sm border-gray-200 hover:border-blue-300`}>
+            <h3 className="font-semibold text-gray-900 mb-2">Plan Standard</h3>
           <p className="text-2xl font-bold text-gray-900 mb-1">FREE<span className="text-sm font-normal text-gray-500"> / 7 jours</span></p>
           <p className="text-xs text-blue-600 font-medium mb-4">Essai gratuit</p>
           <ul className="text-sm text-gray-600 space-y-1 mb-4">
@@ -91,7 +92,8 @@ export const SettingsPlan = () => {
             </li>
           </ul>
         </div>
-        <div className={`p-5 rounded-xl border transition-colors cursor-pointer ${isProPlan ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 border-2' : 'bg-blue-50 border-blue-200 hover:border-blue-300'}`}>
+        </div>
+        <div className={`p-5 rounded-xl border transition-colors cursor-pointer bg-white/70 backdrop-blur-md border-gray-200 hover:border-blue-300 shadow-lg`}>
           <div className="bg-blue-600 text-white text-xs text-center py-1 rounded-t-lg -mt-5 -mx-5 mb-4 font-medium">
             Plus populaire
           </div>
