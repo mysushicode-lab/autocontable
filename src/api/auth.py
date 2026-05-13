@@ -1,7 +1,7 @@
 """Authentication endpoints"""
 from fastapi import APIRouter, HTTPException, Header, Depends
 from src.storage.database import db
-from src.storage.models import User, UserToken, Organization, UserRole
+from src.storage.models import User, UserToken, Organization, UserRole, Settings
 from src.api.schemas import RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.email_ingestion import SMTPClient
 import hashlib
