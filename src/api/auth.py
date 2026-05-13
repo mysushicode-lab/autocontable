@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Header, Depends
 from src.storage.database import db
 from src.storage.models import User, UserRole, Organization, UserToken, Settings, PasswordResetToken
 from src.api.schemas import LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest
+from src.email_ingestion import SMTPClient
 import hashlib
 import secrets
 from datetime import datetime, timedelta
@@ -138,7 +139,7 @@ def delete_own_account(current_user: dict = Depends(get_current_user)):
 
 @router.post("/forgot-password")
 def forgot_password(request: ForgotPasswordRequest):
-    """Generate password reset token and send email (for now, just returns token for testing)"""
+    """Generate password reset token and send email"""
     session = db.get_session()
     try:
         user = session.query(User).filter(User.email == request.email).first()
@@ -156,12 +157,11 @@ def forgot_password(request: ForgotPasswordRequest):
         session.add(reset_token)
         session.commit()
         
-        # TODO: Send email with reset link
-        # For now, return the token for testing
-        return {
-            "message": "Si l'email existe, un lien de réinitialisation a été envoyé",
-            "token": token  # Remove this in production
-        }
+        # Send email with reset link
+        smtp_client = SMTPClient()
+        smtp_client.send_password_reset(user.email, token)
+        
+        return {"message": "Si l'email existe, un lien de réinitialisation a été envoyé"}
     finally:
         session.close()
 
