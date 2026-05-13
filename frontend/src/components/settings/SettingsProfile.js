@@ -10,6 +10,8 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [usernameForm, setUsernameForm] = useState({ new: '' });
   const [emailFormChange, setEmailFormChange] = useState({ new: '' });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -107,6 +109,13 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
   const cancelEditEmail = () => {
     setEditingEmail(false);
     setEmailFormChange({ new: '' });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText === 'SUPPRIMER') {
+      await deleteAccount();
+      logout();
+    }
   };
 
   return (
@@ -251,12 +260,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
       </div>
       <div className="border-t border-red-100 pt-4 mt-2">
         <button
-          onClick={async () => {
-            if (confirm('Supprimer votre compte ? Cette action est irréversible.')) {
-              await deleteAccount();
-              logout();
-            }
-          }}
+          onClick={() => setShowDeleteModal(true)}
           className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-md hover:bg-red-50 text-sm font-medium transition-colors"
         >
           <AlertTriangle className="w-4 h-4" />
@@ -264,6 +268,39 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
         </button>
         <p className="text-xs text-gray-400 mt-2">Cette action est définitive et supprime toutes vos données.</p>
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Supprimer votre compte</h3>
+            <p className="text-sm text-gray-600 mb-4">Cette action est irréversible. Tapez <span className="font-bold text-red-600">SUPPRIMER</span> pour confirmer.</p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+              placeholder="Tapez SUPPRIMER"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-0 mb-4 text-sm"
+              style={{ outline: 'none', boxShadow: 'none' }}
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'SUPPRIMER'}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
