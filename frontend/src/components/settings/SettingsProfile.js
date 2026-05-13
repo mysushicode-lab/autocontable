@@ -143,53 +143,55 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
       <div className="border-t border-gray-100 pt-4">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Informations du compte</p>
         <div className="space-y-3">
-          <div className="p-3 bg-gray-50 rounded-md">
+          <div className="p-3 bg-gray-50 rounded-md transition-all duration-200">
             <p className="text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</p>
             {editingUsername ? (
-              <form onSubmit={handleChangeUsername} className="flex items-center gap-2">
+              <form onSubmit={handleChangeUsername} className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <input
                   type="text"
                   value={usernameForm.new}
                   onChange={(e) => setUsernameForm({ new: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200"
                   required
+                  autoFocus
                 />
-                <button type="submit" disabled={changeUsernameMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                <button type="submit" disabled={changeUsernameMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-all duration-200">
                   {changeUsernameMutation.isLoading ? '...' : 'OK'}
                 </button>
-                <button type="button" onClick={cancelEditUsername} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                <button type="button" onClick={cancelEditUsername} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium transition-all duration-200">
                   ✕
                 </button>
               </form>
             ) : (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
                 <p className="text-xs text-gray-500">{user?.username}</p>
-                <button onClick={startEditUsername} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+                <button onClick={startEditUsername} className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-200">Modifier</button>
               </div>
             )}
           </div>
-          <div className="p-3 bg-gray-50 rounded-md">
+          <div className="p-3 bg-gray-50 rounded-md transition-all duration-200">
             <p className="text-sm font-medium text-gray-700 mb-1">Email</p>
             {editingEmail ? (
-              <form onSubmit={handleChangeEmail} className="flex items-center gap-2">
+              <form onSubmit={handleChangeEmail} className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <input
                   type="email"
                   value={emailFormChange.new}
                   onChange={(e) => setEmailFormChange({ new: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm transition-all duration-200"
                   required
+                  autoFocus
                 />
-                <button type="submit" disabled={changeEmailMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                <button type="submit" disabled={changeEmailMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-all duration-200">
                   {changeEmailMutation.isLoading ? '...' : 'OK'}
                 </button>
-                <button type="button" onClick={cancelEditEmail} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                <button type="button" onClick={cancelEditEmail} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium transition-all duration-200">
                   ✕
                 </button>
               </form>
             ) : (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
                 <p className="text-xs text-gray-500">{user?.email || 'Non défini'}</p>
-                <button onClick={startEditEmail} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+                <button onClick={startEditEmail} className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-200">Modifier</button>
               </div>
             )}
           </div>
