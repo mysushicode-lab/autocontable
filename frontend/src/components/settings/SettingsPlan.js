@@ -65,10 +65,7 @@ export const SettingsPlan = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className={`p-5 rounded-xl border transition-colors cursor-pointer ${isStandardPlan ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 border-2' : 'bg-blue-50 border-blue-200 hover:border-blue-300'}`}>
           {getExpiryBadge()}
-          <div className="flex items-center gap-3 mb-2">
-            <Zap className="w-6 h-6 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Plan Standard</h3>
-          </div>
+          <h3 className="font-semibold text-gray-900 mb-2">Plan Standard</h3>
           <p className="text-2xl font-bold text-gray-900 mb-1">FREE<span className="text-sm font-normal text-gray-500"> / 7 jours</span></p>
           <p className="text-xs text-blue-600 font-medium mb-4">Essai gratuit</p>
           <ul className="text-sm text-gray-600 space-y-1 mb-4">
@@ -98,10 +95,7 @@ export const SettingsPlan = () => {
           <div className="bg-purple-600 text-white text-xs text-center py-1 rounded-t-lg -mt-5 -mx-5 mb-4 font-medium">
             Plus populaire
           </div>
-          <div className="flex items-center gap-3 mb-2">
-            <Zap className="w-6 h-6 text-purple-600" />
-            <h3 className="font-semibold text-gray-900">Plan Pro</h3>
-          </div>
+          <h3 className="font-semibold text-gray-900 mb-2">Plan Pro</h3>
           <p className="text-2xl font-bold text-gray-900 mb-2">85,99€<span className="text-sm font-normal text-gray-500">/mois</span></p>
           <ul className="text-sm text-gray-600 space-y-1 mb-4">
             <li className="flex items-center gap-2">
