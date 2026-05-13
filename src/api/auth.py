@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Header, Depends
 from src.storage.database import db
 from src.storage.models import User, UserRole, Organization, UserToken, Settings, PasswordResetToken
-from src.api.schemas import LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest
+from src.api.schemas import LoginRequest, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.email_ingestion import SMTPClient
 import hashlib
 import secrets
@@ -177,24 +177,92 @@ def reset_password(request: ResetPasswordRequest):
             PasswordResetToken.token == request.token,
             PasswordResetToken.expires_at > datetime.utcnow()
         ).first()
-        
+
         if not reset_token:
             raise HTTPException(status_code=400, detail="Token invalide ou expiré")
-        
+
         user = session.query(User).filter(User.id == reset_token.user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-        
+
         # Update password
         user.password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
-        
+
         # Delete the used token
         session.delete(reset_token)
-        
+
         # Delete all user tokens to force re-login
         session.query(UserToken).filter(UserToken.user_id == user.id).delete()
-        
+
         session.commit()
         return {"message": "Mot de passe réinitialisé avec succès"}
+    finally:
+        session.close()
+
+
+@router.post("/change-password")
+def change_password(request: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Change password (requires current password verification)"""
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.id == current_user["id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+        # Verify current password
+        current_hash = hashlib.sha256(request.current_password.encode()).hexdigest()
+        if user.password_hash != current_hash:
+            raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
+
+        # Update password
+        user.password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+
+        # Delete all user tokens to force re-login
+        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
+
+        session.commit()
+        return {"message": "Mot de passe changé avec succès"}
+    finally:
+        session.close()
+
+
+@router.post("/change-username")
+def change_username(request: ChangeUsernameRequest, current_user: dict = Depends(get_current_user)):
+    """Change username"""
+    session = db.get_session()
+    try:
+        # Check if username already exists
+        existing = session.query(User).filter(User.username == request.new_username).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris")
+
+        user = session.query(User).filter(User.id == current_user["id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+        user.username = request.new_username
+        session.commit()
+        return {"message": "Nom d'utilisateur changé avec succès"}
+    finally:
+        session.close()
+
+
+@router.post("/change-email")
+def change_email(request: ChangeEmailRequest, current_user: dict = Depends(get_current_user)):
+    """Change email"""
+    session = db.get_session()
+    try:
+        # Check if email already exists
+        existing = session.query(User).filter(User.email == request.new_email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+
+        user = session.query(User).filter(User.id == current_user["id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+        user.email = request.new_email
+        session.commit()
+        return {"message": "Email changé avec succès"}
     finally:
         session.close()

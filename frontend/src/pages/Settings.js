@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Mail, RefreshCw, Clock, Save, CheckCircle, AlertCircle, AlertTriangle, Users, UserPlus, Trash2, Shield, Camera, Edit, X, LogOut, Wifi, WifiOff, CreditCard, Zap, ChevronRight, UserCircle } from 'lucide-react';
-import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser as apiUpdateUser, uploadProfilePhoto, testImap, deleteAccount } from '../api';
+import { fetchSettings, updateSetting, fetchUsers, createUser, deleteUser, updateUser as apiUpdateUser, uploadProfilePhoto, testImap, deleteAccount, changePassword, changeUsername, changeEmail } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE_URL = '';
@@ -41,6 +41,12 @@ const Settings = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '' });
   const [imapTestResult, setImapTestResult] = useState(null);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showUsernameChange, setShowUsernameChange] = useState(false);
+  const [showEmailChange, setShowEmailChange] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [usernameForm, setUsernameForm] = useState({ new: '' });
+  const [emailFormChange, setEmailFormChange] = useState({ new: '' });
 
   const { data: settingsData, isLoading } = useQuery('settings', () => fetchSettings());
   const { data: usersData } = useQuery('users', () => fetchUsers());
@@ -206,6 +212,81 @@ const Settings = () => {
     }
   };
 
+  const changePasswordMutation = useMutation(
+    ({ current, new: newPass }) => changePassword(current, newPass),
+    {
+      onSuccess: () => {
+        setSaveStatus({ type: 'success', message: 'Mot de passe changé avec succès' });
+        setShowPasswordChange(false);
+        setPasswordForm({ current: '', new: '', confirm: '' });
+        setTimeout(() => setSaveStatus(null), 3000);
+      },
+      onError: (error) => {
+        setSaveStatus({ type: 'error', message: error?.response?.data?.detail || 'Erreur lors du changement' });
+        setTimeout(() => setSaveStatus(null), 3000);
+      },
+    }
+  );
+
+  const changeUsernameMutation = useMutation(
+    (newUsername) => changeUsername(newUsername),
+    {
+      onSuccess: () => {
+        setSaveStatus({ type: 'success', message: 'Nom d\'utilisateur changé avec succès' });
+        setShowUsernameChange(false);
+        setUsernameForm({ new: '' });
+        setTimeout(() => setSaveStatus(null), 3000);
+        window.location.reload();
+      },
+      onError: (error) => {
+        setSaveStatus({ type: 'error', message: error?.response?.data?.detail || 'Erreur lors du changement' });
+        setTimeout(() => setSaveStatus(null), 3000);
+      },
+    }
+  );
+
+  const changeEmailMutation = useMutation(
+    (newEmail) => changeEmail(newEmail),
+    {
+      onSuccess: () => {
+        setSaveStatus({ type: 'success', message: 'Email changé avec succès' });
+        setShowEmailChange(false);
+        setEmailFormChange({ new: '' });
+        setTimeout(() => setSaveStatus(null), 3000);
+        window.location.reload();
+      },
+      onError: (error) => {
+        setSaveStatus({ type: 'error', message: error?.response?.data?.detail || 'Erreur lors du changement' });
+        setTimeout(() => setSaveStatus(null), 3000);
+      },
+    }
+  );
+
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    if (passwordForm.new !== passwordForm.confirm) {
+      setSaveStatus({ type: 'error', message: 'Les mots de passe ne correspondent pas' });
+      setTimeout(() => setSaveStatus(null), 3000);
+      return;
+    }
+    if (passwordForm.new.length < 6) {
+      setSaveStatus({ type: 'error', message: 'Le mot de passe doit contenir au moins 6 caractères' });
+      setTimeout(() => setSaveStatus(null), 3000);
+      return;
+    }
+    changePasswordMutation.mutate({ current: passwordForm.current, new: passwordForm.new });
+  };
+
+  const handleChangeUsername = (e) => {
+    e.preventDefault();
+    changeUsernameMutation.mutate(usernameForm.new);
+  };
+
+  const handleChangeEmail = (e) => {
+    e.preventDefault();
+    changeEmailMutation.mutate(emailFormChange.new);
+  };
+
   if (isLoading) {
     return <div className="text-center py-12 text-gray-500">Chargement des paramètres...</div>;
   }
@@ -245,6 +326,121 @@ const Settings = () => {
                 <p className="text-xs text-gray-400">JPG, PNG — Max 2MB</p>
               </div>
             </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Informations du compte</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Nom d'utilisateur</p>
+                    <p className="text-xs text-gray-500">{user?.username}</p>
+                  </div>
+                  <button onClick={() => setShowUsernameChange(true)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Email</p>
+                    <p className="text-xs text-gray-500">{user?.email || 'Non défini'}</p>
+                  </div>
+                  <button onClick={() => setShowEmailChange(true)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Mot de passe</p>
+                    <p className="text-xs text-gray-500">••••••••</p>
+                  </div>
+                  <button onClick={() => setShowPasswordChange(true)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+                </div>
+              </div>
+            </div>
+
+            {showUsernameChange && (
+              <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Changer le nom d'utilisateur</h3>
+                <form onSubmit={handleChangeUsername} className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Nouveau nom d'utilisateur"
+                    value={usernameForm.new}
+                    onChange={(e) => setUsernameForm({ new: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={changeUsernameMutation.isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                      {changeUsernameMutation.isLoading ? 'Changement...' : 'Changer'}
+                    </button>
+                    <button type="button" onClick={() => { setShowUsernameChange(false); setUsernameForm({ new: '' }); }} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {showEmailChange && (
+              <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Changer l'email</h3>
+                <form onSubmit={handleChangeEmail} className="space-y-3">
+                  <input
+                    type="email"
+                    placeholder="Nouvel email"
+                    value={emailFormChange.new}
+                    onChange={(e) => setEmailFormChange({ new: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={changeEmailMutation.isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                      {changeEmailMutation.isLoading ? 'Changement...' : 'Changer'}
+                    </button>
+                    <button type="button" onClick={() => { setShowEmailChange(false); setEmailFormChange({ new: '' }); }} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {showPasswordChange && (
+              <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Changer le mot de passe</h3>
+                <form onSubmit={handleChangePassword} className="space-y-3">
+                  <input
+                    type="password"
+                    placeholder="Mot de passe actuel"
+                    value={passwordForm.current}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Nouveau mot de passe"
+                    value={passwordForm.new}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirmer le nouveau mot de passe"
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={changePasswordMutation.isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                      {changePasswordMutation.isLoading ? 'Changement...' : 'Changer'}
+                    </button>
+                    <button type="button" onClick={() => { setShowPasswordChange(false); setPasswordForm({ current: '', new: '', confirm: '' }); }} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
             <div className="border-t border-red-100 pt-4 mt-2">
               <button
                 onClick={async () => {
