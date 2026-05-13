@@ -151,7 +151,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
                   type="text"
                   value={usernameForm.new}
                   onChange={(e) => setUsernameForm({ new: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none text-sm transition-all duration-200"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
                   required
                   autoFocus
                 />
@@ -177,7 +177,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
                   type="email"
                   value={emailFormChange.new}
                   onChange={(e) => setEmailFormChange({ new: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none text-sm transition-all duration-200"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
                   required
                   autoFocus
                 />
