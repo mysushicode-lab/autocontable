@@ -5,8 +5,8 @@ const API_BASE_URL = 'https://carrosserie-erik.fr';
 
 export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, changeUsernameMutation, changeEmailMutation, deleteAccount, logout, setSaveStatus }) => {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [showUsernameChange, setShowUsernameChange] = useState(false);
-  const [showEmailChange, setShowEmailChange] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [usernameForm, setUsernameForm] = useState({ new: '' });
   const [emailFormChange, setEmailFormChange] = useState({ new: '' });
@@ -58,7 +58,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
     changeUsernameMutation.mutate(usernameForm.new, {
       onSuccess: () => {
         setSaveStatus({ type: 'success', message: "Nom d'utilisateur changé avec succès" });
-        setShowUsernameChange(false);
+        setEditingUsername(false);
         setUsernameForm({ new: '' });
         setTimeout(() => setSaveStatus(null), 3000);
         window.location.reload();
@@ -70,12 +70,22 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
     });
   };
 
+  const startEditUsername = () => {
+    setUsernameForm({ new: user?.username || '' });
+    setEditingUsername(true);
+  };
+
+  const cancelEditUsername = () => {
+    setEditingUsername(false);
+    setUsernameForm({ new: '' });
+  };
+
   const handleChangeEmail = (e) => {
     e.preventDefault();
     changeEmailMutation.mutate(emailFormChange.new, {
       onSuccess: () => {
         setSaveStatus({ type: 'success', message: 'Email changé avec succès' });
-        setShowEmailChange(false);
+        setEditingEmail(false);
         setEmailFormChange({ new: '' });
         setTimeout(() => setSaveStatus(null), 3000);
         window.location.reload();
@@ -85,6 +95,16 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
         setTimeout(() => setSaveStatus(null), 3000);
       },
     });
+  };
+
+  const startEditEmail = () => {
+    setEmailFormChange({ new: user?.email || '' });
+    setEditingEmail(true);
+  };
+
+  const cancelEditEmail = () => {
+    setEditingEmail(false);
+    setEmailFormChange({ new: '' });
   };
 
   return (
@@ -123,19 +143,55 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
       <div className="border-t border-gray-100 pt-4">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Informations du compte</p>
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Nom d'utilisateur</p>
-              <p className="text-xs text-gray-500">{user?.username}</p>
-            </div>
-            <button onClick={() => setShowUsernameChange(true)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+          <div className="p-3 bg-gray-50 rounded-md">
+            <p className="text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</p>
+            {editingUsername ? (
+              <form onSubmit={handleChangeUsername} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={usernameForm.new}
+                  onChange={(e) => setUsernameForm({ new: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  required
+                />
+                <button type="submit" disabled={changeUsernameMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                  {changeUsernameMutation.isLoading ? '...' : 'OK'}
+                </button>
+                <button type="button" onClick={cancelEditUsername} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                  ✕
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{user?.username}</p>
+                <button onClick={startEditUsername} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Email</p>
-              <p className="text-xs text-gray-500">{user?.email || 'Non défini'}</p>
-            </div>
-            <button onClick={() => setShowEmailChange(true)} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+          <div className="p-3 bg-gray-50 rounded-md">
+            <p className="text-sm font-medium text-gray-700 mb-1">Email</p>
+            {editingEmail ? (
+              <form onSubmit={handleChangeEmail} className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={emailFormChange.new}
+                  onChange={(e) => setEmailFormChange({ new: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  required
+                />
+                <button type="submit" disabled={changeEmailMutation.isLoading} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
+                  {changeEmailMutation.isLoading ? '...' : 'OK'}
+                </button>
+                <button type="button" onClick={cancelEditEmail} className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
+                  ✕
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">{user?.email || 'Non défini'}</p>
+                <button onClick={startEditEmail} className="text-blue-600 hover:text-blue-700 text-sm font-medium">Modifier</button>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
             <div>
@@ -146,54 +202,6 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
           </div>
         </div>
       </div>
-
-      {showUsernameChange && (
-        <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Changer le nom d'utilisateur</h3>
-          <form onSubmit={handleChangeUsername} className="space-y-3">
-            <input
-              type="text"
-              placeholder="Nouveau nom d'utilisateur"
-              value={usernameForm.new}
-              onChange={(e) => setUsernameForm({ new: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-            <div className="flex gap-2">
-              <button type="submit" disabled={changeUsernameMutation.isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
-                {changeUsernameMutation.isLoading ? 'Changement...' : 'Changer'}
-              </button>
-              <button type="button" onClick={() => { setShowUsernameChange(false); setUsernameForm({ new: '' }); }} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {showEmailChange && (
-        <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Changer l'email</h3>
-          <form onSubmit={handleChangeEmail} className="space-y-3">
-            <input
-              type="email"
-              placeholder="Nouvel email"
-              value={emailFormChange.new}
-              onChange={(e) => setEmailFormChange({ new: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-              required
-            />
-            <div className="flex gap-2">
-              <button type="submit" disabled={changeEmailMutation.isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium disabled:opacity-50">
-                {changeEmailMutation.isLoading ? 'Changement...' : 'Changer'}
-              </button>
-              <button type="button" onClick={() => { setShowEmailChange(false); setEmailFormChange({ new: '' }); }} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm font-medium">
-                Annuler
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {showPasswordChange && (
         <div className="border-t border-blue-100 pt-4 bg-blue-50 p-4 rounded-md">
