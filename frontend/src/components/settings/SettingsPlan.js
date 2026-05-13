@@ -33,21 +33,21 @@ export const SettingsPlan = () => {
   const getExpiryBadge = () => {
     if (isTrial && daysRemaining > 0) {
       return (
-        <div className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
+        <div className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
           Expire dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}
         </div>
       );
     }
     if (isExpired) {
       return (
-        <div className="bg-red-500 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
+        <div className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
           Expiré
         </div>
       );
     }
     if (isStandardPlan) {
       return (
-        <div className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
+        <div className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
           Actif
         </div>
       );
