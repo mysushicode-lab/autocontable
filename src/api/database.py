@@ -152,6 +152,23 @@ def startup_event():
         except Exception as e:
             print(f"Organization column migration: {e}")
 
+    # Set default plan values for existing organizations that don't have them
+    from datetime import datetime, timedelta
+    orgs_without_plan = conn.execute(text("SELECT id FROM organizations WHERE plan_type IS NULL")).fetchall()
+    if orgs_without_plan:
+        trial_start = datetime.utcnow()
+        trial_end = trial_start + timedelta(days=7)
+        conn.execute(text("""
+            UPDATE organizations 
+            SET plan_type = 'trial', 
+                trial_start_date = :trial_start, 
+                trial_end_date = :trial_end, 
+                is_trial_active = 1 
+            WHERE plan_type IS NULL
+        """), {"trial_start": trial_start, "trial_end": trial_end})
+        print(f"Initialized trial plan for {len(orgs_without_plan)} existing organizations")
+        conn.commit()
+
     # Create password_reset_tokens table if not exists
     try:
         conn.execute(text("""CREATE TABLE IF NOT EXISTS password_reset_tokens (
