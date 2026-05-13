@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://carrosserie-erik.fr/api';
+const API_BASE_URL = 'https://carrosserie-erik.fr';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
