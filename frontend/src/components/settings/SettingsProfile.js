@@ -72,6 +72,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
 
   const startEditUsername = () => {
     setUsernameForm({ new: user?.username || '' });
+    setEditingEmail(false); // Close email editing when opening username
     setEditingUsername(true);
   };
 
@@ -99,6 +100,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
 
   const startEditEmail = () => {
     setEmailFormChange({ new: user?.email || '' });
+    setEditingUsername(false); // Close username editing when opening email
     setEditingEmail(true);
   };
 
@@ -152,6 +154,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
                   value={usernameForm.new}
                   onChange={(e) => setUsernameForm({ new: e.target.value })}
                   className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
+                  style={{ outline: 'none', boxShadow: 'none' }}
                   required
                   autoFocus
                 />
@@ -178,6 +181,7 @@ export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, c
                   value={emailFormChange.new}
                   onChange={(e) => setEmailFormChange({ new: e.target.value })}
                   className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-0 text-sm transition-all duration-200"
+                  style={{ outline: 'none', boxShadow: 'none' }}
                   required
                   autoFocus
                 />
