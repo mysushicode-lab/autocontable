@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api.carrosserie-erik.fr';
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: '',
 });
 
 api.interceptors.request.use((config) => {
@@ -118,11 +116,11 @@ export const getExportUrl = (path, params = {}) => {
     }
   });
   const query = searchParams.toString();
-  return `${API_BASE_URL}${path}${query ? `?${query}` : ''}`;
+  return `${path}${query ? `?${query}` : ''}`;
 };
 
 export const getInvoicePdfUrl = (invoiceId) => {
-  return `${API_BASE_URL}/api/invoices/${invoiceId}/download`;
+  return `/api/invoices/${invoiceId}/download`;
 };
 
 export const deleteInvoice = async (invoiceId) => {
