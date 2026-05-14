@@ -2,7 +2,7 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 
-ARG REACT_APP_API_URL=http://localhost:8000
+ARG REACT_APP_API_URL=https://carrosserie-erik.fr/api
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 COPY package*.json ./
