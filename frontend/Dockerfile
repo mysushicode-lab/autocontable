@@ -10,6 +10,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+RUN sed -i "s|const API_BASE_URL = .*|const API_BASE_URL = 'https://api.carrosserie-erik.fr';|" src/api.js
+RUN cat src/api.js | head -5
 RUN npm run build
 
 FROM nginx:alpine
