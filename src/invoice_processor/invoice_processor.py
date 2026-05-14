@@ -150,6 +150,7 @@ class InvoiceProcessor:
                     'category': fields.get('category'),
                     'extraction_warnings': [],
                     'extraction_confidence': ai_result.get('confidence', 'medium'),
+                    'is_invoice': ai_result.get('is_invoice'),
                     'ocr_used': False,
                     'vision_used': True,
                     'ai_used': True,
