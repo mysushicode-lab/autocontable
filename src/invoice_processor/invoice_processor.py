@@ -87,6 +87,7 @@ class InvoiceProcessor:
                     'category': fields.get('category'),
                     'extraction_warnings': [],
                     'extraction_confidence': ai_result.get('confidence', 'medium'),
+                    'is_invoice': ai_result.get('is_invoice'),
                     'ai_used': True,
                     'vision_used': True,
                     'ai_document_type': ai_result.get('document_type'),
