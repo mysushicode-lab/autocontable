@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Zap, Clock } from 'lucide-react';
 import { fetchPlanStatus } from '../../api';
 
 export const SettingsPlan = () => {
@@ -31,28 +30,27 @@ export const SettingsPlan = () => {
   const isProPlan = planStatus?.plan_type === 'paid';
 
   const getExpiryBadge = () => {
-    if (isTrial && daysRemaining > 0) {
-      return (
-        <div className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
-          Expire dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}
+    const badgeContent = () => {
+      if (isTrial && daysRemaining > 0) {
+        return <>Expire dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</>;
+      }
+      if (isExpired) {
+        return <>Expiré</>;
+      }
+      if (isStandardPlan) {
+        return <>Actif</>;
+      }
+      return null;
+    };
+    const content = badgeContent();
+    if (!content) return null;
+    return (
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+        <div className="bg-white/40 backdrop-blur-md border-2 border-blue-700/60 text-blue-900 text-xs px-4 py-1.5 rounded-full font-semibold shadow-sm">
+          {content}
         </div>
-      );
-    }
-    if (isExpired) {
-      return (
-        <div className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
-          Expiré
-        </div>
-      );
-    }
-    if (isStandardPlan) {
-      return (
-        <div className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium mb-2">
-          Actif
-        </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   return (
@@ -64,8 +62,8 @@ export const SettingsPlan = () => {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="relative">
-          {getExpiryBadge()}
-          <div className={`p-5 rounded-xl border transition-colors cursor-pointer bg-white/50 backdrop-blur-sm border-gray-200 hover:border-blue-300`}>
+          <div className={`p-5 rounded-xl border transition-colors cursor-pointer bg-white/50 backdrop-blur-sm border-gray-200 hover:border-blue-300 overflow-hidden`}>
+            {getExpiryBadge()}
             <h3 className="font-semibold text-gray-900 mb-2">Plan Standard</h3>
           <p className="text-2xl font-bold text-gray-900 mb-1">FREE<span className="text-sm font-normal text-gray-500"> / 7 jours</span></p>
           <p className="text-xs text-blue-600 font-medium mb-4">Essai gratuit</p>

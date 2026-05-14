@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Camera, AlertTriangle } from 'lucide-react';
 
-const API_BASE_URL = 'https://carrosserie-erik.fr';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export const SettingsProfile = ({ user, photoMutation, changePasswordMutation, changeUsernameMutation, changeEmailMutation, deleteAccount, logout, setSaveStatus }) => {
   const [showPasswordChange, setShowPasswordChange] = useState(false);

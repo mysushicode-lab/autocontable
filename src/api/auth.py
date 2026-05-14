@@ -1,7 +1,7 @@
 """Authentication endpoints"""
 from fastapi import APIRouter, HTTPException, Header, Depends
 from src.storage.database import db
-from src.storage.models import User, UserToken, Organization, UserRole, Settings
+from src.storage.models import User, UserToken, Organization, UserRole, Settings, PasswordResetToken
 from src.api.schemas import RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.email_ingestion import SMTPClient
 import hashlib
@@ -65,7 +65,6 @@ def register(request: RegisterRequest):
             raise HTTPException(status_code=400, detail="Ce nom d'utilisateur est déjà pris.")
         if session.query(User).filter(User.email == request.email).first():
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
-        from datetime import timedelta
         trial_start = datetime.utcnow()
         trial_end = trial_start + timedelta(days=7)
         org = Organization(

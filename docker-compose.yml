@@ -30,6 +30,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=https://carrosserie-erik.fr/api
     restart: unless-stopped
     ports:
       - "3001:80"
