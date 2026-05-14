@@ -180,13 +180,13 @@ def list_invoices(
 
 @router.delete("/{invoice_id}")
 def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_user)):
-    """Delete an invoice and its reconciliation matches"""
+    """Delete an invoice and its file"""
     session = db.get_session()
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
-        session.query(ReconciliationMatch).filter(ReconciliationMatch.invoice_id == invoice_id).delete()
+        # Delete the file if it exists
         if invoice.file_path and os.path.exists(invoice.file_path):
             try:
                 os.remove(invoice.file_path)
@@ -198,9 +198,24 @@ def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_use
                 ProcessedFileHash.content_hash == invoice.content_hash,
                 ProcessedFileHash.organization_id == current_user["organization_id"]
             ).delete()
+        session.query(ReconciliationMatch).filter(ReconciliationMatch.invoice_id == invoice_id).delete()
         session.delete(invoice)
         session.commit()
         return {"message": "Invoice deleted"}
+    finally:
+        session.close()
+
+
+@router.delete("/clear-hashes")
+def clear_processed_hashes(current_user: dict = Depends(get_current_user)):
+    """Clear all processed file hashes for the organization to allow re-import of all files"""
+    session = db.get_session()
+    try:
+        deleted_count = session.query(ProcessedFileHash).filter(
+            ProcessedFileHash.organization_id == current_user["organization_id"]
+        ).delete()
+        session.commit()
+        return {"message": f"Cleared {deleted_count} processed file hashes"}
     finally:
         session.close()
 
