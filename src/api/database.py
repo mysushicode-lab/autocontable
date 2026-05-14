@@ -235,7 +235,7 @@ def startup_event():
                 ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
                 ('imap_port', '993', 'email', 'Port IMAP'),
                 ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
-                ('scheduler_interval', '0.166', 'scheduler', 'Intervalle en minutes (0.166 = toutes les 10 secondes)'),
+                ('scheduler_interval', '1', 'scheduler', 'Intervalle en minutes (1 = toutes les 1 minute)'),
                 ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
                 ('company_name', '', 'general', 'Nom de votre entreprise (ignoré comme fournisseur par l\'IA)'),
             ]

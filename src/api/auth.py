@@ -93,7 +93,7 @@ def register(request: RegisterRequest):
             ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
             ('imap_port', '993', 'email', 'Port IMAP'),
             ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
-            ('scheduler_interval', '0.166', 'scheduler', 'Intervalle en minutes'),
+            ('scheduler_interval', '1', 'scheduler', 'Intervalle en minutes'),
             ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
             ('company_name', request.name, 'general', 'Nom de votre entreprise'),
         ]
