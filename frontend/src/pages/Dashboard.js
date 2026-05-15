@@ -11,13 +11,16 @@ import {
   TrendingDown,
   Clock
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { fetchInvoices, fetchMonthlyReport, fetchReconciliationDetails, fetchReconciliationStatus, fetchTrends } from '../api';
-import { CHART_COLORS_ARRAY } from '../constants/colors';
+import { 
+  fetchInvoices, 
+  fetchMonthlyReport, 
+  fetchReconciliationDetails, 
+  fetchReconciliationStatus, 
+  fetchTrends,
+  fetchTransactions
+} from '../api';
 import { PoweredByMysushicode } from '../components/powered-by-mysushicode';
 import DropdownButton from '../components/DropdownButton';
-
-const COLORS = CHART_COLORS_ARRAY;
 
 // Period options for trend analysis
 const PERIOD_OPTIONS = [
@@ -80,6 +83,7 @@ const Dashboard = () => {
   const { data: reconciliationStatus } = useQuery(['dashboard-reconciliation-status', filters], () => fetchReconciliationStatus(filters));
   const { data: reconciliationDetails } = useQuery(['dashboard-reconciliation-details', filters], () => fetchReconciliationDetails(filters));
   const { data: trendsData } = useQuery(['dashboard-trends', trendMonths], () => fetchTrends(trendMonths));
+  const { data: transactionsData } = useQuery(['dashboard-transactions', filters], () => fetchTransactions(filters));
   
   // Auto-set month filter to most recent invoice date on initial load
   useEffect(() => {
@@ -134,11 +138,6 @@ const Dashboard = () => {
     monthlyChange: trendsData?.month_over_month_change || 0,
     trendDirection: trendsData?.trend_direction || 'stable',
   };
-  const categoryData = Object.entries(reportData?.by_category || {}).map(([name, values], index) => ({
-    name,
-    value: values.amount,
-    color: COLORS[index % COLORS.length],
-  }));
 
   return (
     <div className="space-y-6">
@@ -197,50 +196,50 @@ const Dashboard = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expenses by Category */}
+        {/* Import Statistics */}
         <div className="rounded-md border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-md">
-          <h3 className="font-semibold text-gray-900 mb-4">Dépenses par Catégorie</h3>
-          <div className="h-64">
-            {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="value"
-                    nameKey="name"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value) => `${Number(value).toLocaleString('fr-FR')} €`}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
-                Aucune donnée disponible
+          <h3 className="font-semibold text-gray-900 mb-4">Statistiques Import Bancaire</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-md bg-blue-50/50 border border-blue-200/50">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="w-5 h-5 text-blue-600" />
+                <span className="text-sm text-gray-600">Transactions</span>
               </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {categoryData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2 text-sm">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-gray-600">{item.name}</span>
-                <span className="font-medium ml-auto text-gray-900">
-                  {item.value.toLocaleString('fr-FR')} €
-                </span>
+              <p className="text-2xl font-bold text-gray-900">
+                {transactionsData?.count || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Importées ce mois</p>
+            </div>
+            <div className="p-4 rounded-md bg-green-50/50 border border-green-200/50">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+                <span className="text-sm text-gray-600">Montant Total</span>
               </div>
-            ))}
+              <p className="text-2xl font-bold text-gray-900">
+                {(transactionsData?.transactions?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0).toLocaleString('fr-FR')} €
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Volume transactions</p>
+            </div>
+            <div className="p-4 rounded-md bg-purple-50/50 border border-purple-200/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-purple-600" />
+                <span className="text-sm text-gray-600">Rapprochées</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {reconciliationStatus?.matched_invoices || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Factures matchées</p>
+            </div>
+            <div className="p-4 rounded-md bg-orange-50/50 border border-orange-200/50">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5 text-orange-600" />
+                <span className="text-sm text-gray-600">Non rapprochées</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900">
+                {reconciliationStatus?.unmatched_invoices || 0}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">En attente</p>
+            </div>
           </div>
         </div>
 
