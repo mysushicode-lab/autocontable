@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
+import { useFilters } from '../context/FilterContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   FileText,
@@ -24,19 +25,32 @@ const statusConfig = {
 
 const Invoices = () => {
   const { columnVisibility, handleColumnToggle } = useColumnVisibility();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState(''); // Format: YYYY-MM
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  // Advanced filters state
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [amountMin, setAmountMin] = useState('');
-  const [amountMax, setAmountMax] = useState('');
-  const [supplierFilter, setSupplierFilter] = useState('');
-  const [vehicleFilter, setVehicleFilter] = useState('');
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    selectedMonth,
+    setSelectedMonth,
+    showAdvancedFilters,
+    setShowAdvancedFilters,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    amountMin,
+    setAmountMin,
+    amountMax,
+    setAmountMax,
+    supplierFilter,
+    setSupplierFilter,
+    vehicleFilter,
+    setVehicleFilter,
+    resetAdvancedFilters,
+    hasActiveAdvancedFilters,
+  } = useFilters();
 
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -65,17 +79,6 @@ const Invoices = () => {
     supplier: supplierFilter || undefined,
     vehicle: vehicleFilter ? vehicleFilter.toUpperCase() : undefined,
   }), [searchTerm, statusFilter, categoryFilter, parsedMonth, dateFrom, dateTo, amountMin, amountMax, supplierFilter, vehicleFilter]);
-
-  const hasActiveAdvancedFilters = dateFrom || dateTo || amountMin || amountMax || supplierFilter || vehicleFilter;
-
-  const resetAdvancedFilters = () => {
-    setDateFrom('');
-    setDateTo('');
-    setAmountMin('');
-    setAmountMax('');
-    setSupplierFilter('');
-    setVehicleFilter('');
-  };
 
   const { add: addNotif } = useNotifications();
   const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));

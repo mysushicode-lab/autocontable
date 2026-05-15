@@ -1,5 +1,6 @@
 import React from 'react';
 import { NotificationProvider } from './context/NotificationContext';
+import { FilterProvider } from './context/FilterContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
@@ -29,6 +30,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
       <NotificationProvider>
+      <FilterProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -51,6 +53,7 @@ function App() {
           } />
         </Routes>
       </Router>
+      </FilterProvider>
       </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>

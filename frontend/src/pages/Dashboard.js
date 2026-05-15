@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
+import { useFilters } from '../context/FilterContext';
 import { 
   FileText, 
   CreditCard, 
@@ -36,12 +37,27 @@ const PERIOD_OPTIONS = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { selectedMonth, setSelectedMonth } = useFilters();
   const [vehicleSearch, setVehicleSearch] = useState('');
-  const [trendMonths, setTrendMonths] = useState(12);
-  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
-  const periodButtonRef = useRef(null);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const monthButtonRef = useRef(null);
+  const trendMonths = 12; // Default to 12 months for trends
   const today = new Date();
-  const filters = { month: today.getMonth() + 1, year: today.getFullYear() };
+  
+  // Use selectedMonth from FilterContext, default to current month if not set
+  const globalPeriod = selectedMonth || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : { month: today.getMonth() + 1, year: today.getFullYear() };
+  
+  // Generate period options
+  const periodMonths = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - i);
+    return { value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) };
+  });
+  
+  const periodOptions = [
+    { value: '', label: 'Toutes périodes' },
+    ...periodMonths
+  ];
 
   // Note: Automatic email fetch disabled to avoid conflicts with scheduler
   // Scheduler handles initial fetch on startup (from start of current month)
@@ -101,14 +117,14 @@ const Dashboard = () => {
         </div>
         <div className="flex gap-3 items-center">
           <DropdownButton
-            label="12 mois"
-            value={trendMonths}
-            options={PERIOD_OPTIONS}
-            onChange={setTrendMonths}
-            isOpen={showPeriodDropdown}
-            onToggle={() => setShowPeriodDropdown(!showPeriodDropdown)}
-            buttonRef={periodButtonRef}
-            width="150px"
+            label={periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes'}
+            value={globalPeriod}
+            options={periodOptions}
+            onChange={setSelectedMonth}
+            isOpen={showMonthDropdown}
+            onToggle={() => setShowMonthDropdown(!showMonthDropdown)}
+            buttonRef={monthButtonRef}
+            width="200px"
           />
         </div>
       </div>

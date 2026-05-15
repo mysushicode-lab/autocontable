@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
+import { useFilters } from '../context/FilterContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { 
   CreditCard, 
@@ -24,10 +25,14 @@ import {
 import DropdownButton from '../components/DropdownButton';
 
 const Reconciliation = () => {
+  const { selectedMonth, setSelectedMonth } = useFilters();
   const [activeTab, setActiveTab] = useState('matches');
   const [linkModal, setLinkModal] = useState(null); // { type: 'tx2inv'|'inv2tx', id, label }
   const [linkSearch, setLinkSearch] = useState('');
   const [linkSelectedId, setLinkSelectedId] = useState(null);
+  const [linkMonthFilter, setLinkMonthFilter] = useState(''); // Month filter for link modal (YYYY-MM)
+  const [showLinkMonthDropdown, setShowLinkMonthDropdown] = useState(false);
+  const linkMonthButtonRef = useRef(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const periodButtonRef = useRef(null);
@@ -37,7 +42,10 @@ const Reconciliation = () => {
   const queryClient = useQueryClient();
   const today = new Date();
   const currentPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  const [globalPeriod, setGlobalPeriod] = useState(currentPeriod);
+  
+  // Use selectedMonth from FilterContext, default to current period if not set
+  const globalPeriod = selectedMonth || currentPeriod;
+  
   const periodMonths = Array.from({ length: 18 }, (_, i) => {
     const d = new Date(today.getFullYear(), today.getMonth() - i);
     return { value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) };
@@ -199,9 +207,10 @@ const Reconciliation = () => {
     event.target.value = '';
   };
 
-  const openLinkFromTx = (txDbId, tx) => {
+  const openLinkFromTransaction = (txDbId, tx) => {
     setLinkSearch('');
     setLinkSelectedId(null);
+    setLinkMonthFilter(''); // Reset month filter when opening modal
     const amount = tx.amount != null ? `${Math.abs(tx.amount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
     const date = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '';
     const label = [tx.description, amount, date].filter(Boolean).join(' · ');
@@ -211,6 +220,7 @@ const Reconciliation = () => {
   const openLinkFromInvoice = (invoiceId, invoiceLabel) => {
     setLinkSearch('');
     setLinkSelectedId(null);
+    setLinkMonthFilter(''); // Reset month filter when opening modal
     setLinkModal({ type: 'inv2tx', id: invoiceId, label: invoiceLabel });
   };
 
@@ -237,7 +247,7 @@ const Reconciliation = () => {
             label={periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes'}
             value={globalPeriod}
             options={periodOptions}
-            onChange={setGlobalPeriod}
+            onChange={setSelectedMonth}
             isOpen={showPeriodDropdown}
             onToggle={() => setShowPeriodDropdown(!showPeriodDropdown)}
             buttonRef={periodButtonRef}
@@ -470,7 +480,19 @@ const Reconciliation = () => {
       {linkModal && (() => {
         const isTx2Inv = linkModal.type === 'tx2inv';
         const listItems = isTx2Inv ? unmatchedInvoices : bankOnly;
-        const filtered = listItems
+        
+        // Filter by month if selected
+        const monthFiltered = linkMonthFilter 
+          ? listItems.filter(item => {
+              const itemDate = isTx2Inv ? item.invoice?.date : item.date;
+              if (!itemDate) return false;
+              const date = new Date(itemDate);
+              const itemMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+              return itemMonth === linkMonthFilter;
+            })
+          : listItems;
+        
+        const filtered = monthFiltered
           .filter(item => {
             if (!linkSearch) return true;
             const text = isTx2Inv
@@ -483,6 +505,12 @@ const Reconciliation = () => {
             const nb = isTx2Inv ? (b.invoice?.supplier || '') : (b.description || '');
             return na.localeCompare(nb, 'fr');
           });
+        
+        // Generate month options for the modal
+        const linkMonthOptions = [
+          { value: '', label: 'Tous les mois' },
+          ...periodMonths
+        ];
         return (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-md shadow-xl p-6 w-full max-w-md mx-4 flex flex-col" style={{ maxHeight: '80vh' }}>
@@ -490,14 +518,26 @@ const Reconciliation = () => {
                 {isTx2Inv ? 'Lier à une facture' : 'Lier à un paiement bancaire'}
               </h3>
               <p className="text-xs text-gray-500 mb-3 break-words">{linkModal.label}</p>
-              <input
-                autoFocus
-                type="text"
-                value={linkSearch}
-                onChange={e => setLinkSearch(e.target.value)}
-                placeholder="Rechercher..."
-                className="w-full px-3 py-2 border rounded-md text-sm mb-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="flex gap-2 mb-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={linkSearch}
+                  onChange={e => setLinkSearch(e.target.value)}
+                  placeholder="Rechercher..."
+                  className="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <DropdownButton
+                  label={linkMonthOptions.find(o => o.value === linkMonthFilter)?.label || 'Mois'}
+                  value={linkMonthFilter}
+                  options={linkMonthOptions}
+                  onChange={setLinkMonthFilter}
+                  isOpen={showLinkMonthDropdown}
+                  onToggle={() => setShowLinkMonthDropdown(!showLinkMonthDropdown)}
+                  buttonRef={linkMonthButtonRef}
+                  width="120px"
+                />
+              </div>
               <p className="text-xs text-gray-400 mb-2">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</p>
               <div className="overflow-y-auto flex-1 space-y-1 mb-4">
                 {filtered.length === 0 && (
