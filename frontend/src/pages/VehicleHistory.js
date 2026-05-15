@@ -6,7 +6,6 @@ import {
   FileText,
   Wrench,
   Calendar,
-  DollarSign,
   Search,
   ArrowLeft,
   Download
@@ -124,7 +123,7 @@ const VehicleHistory = () => {
               </p>
             </div>
             <div className="p-3 bg-blue-50 rounded-md">
-              <DollarSign className="w-5 h-5 text-blue-600" />
+              <FileText className="w-5 h-5 text-blue-600" />
             </div>
           </div>
         </div>
