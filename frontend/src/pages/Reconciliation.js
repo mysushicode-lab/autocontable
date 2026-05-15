@@ -21,6 +21,7 @@ import {
   rejectReconciliationMatch,
   runAutomaticReconciliation,
   deleteTransaction,
+  uploadInvoiceFile,
 } from '../api';
 import DropdownButton from '../components/DropdownButton';
 
@@ -35,8 +36,10 @@ const Reconciliation = () => {
   const linkMonthButtonRef = useRef(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTransactionForInvoice, setSelectedTransactionForInvoice] = useState(null); // Track which transaction we're creating invoices for
   const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
+  const invoiceInputRef = useRef(null);
   const navigate = useNavigate();
   const { add: addNotif } = useNotifications();
   const queryClient = useQueryClient();
@@ -207,6 +210,41 @@ const Reconciliation = () => {
     event.target.value = '';
   };
 
+  const handleCreateInvoiceClick = (tx) => {
+    setSelectedTransactionForInvoice(tx);
+    invoiceInputRef.current?.click();
+  };
+
+  const handleInvoiceFileSelected = async (event) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0 || !selectedTransactionForInvoice) {
+      return;
+    }
+    
+    // Limit to 10 files
+    const filesToUpload = Array.from(selectedFiles).slice(0, 10);
+    const txId = selectedTransactionForInvoice.db_id || selectedTransactionForInvoice.id;
+    
+    // Upload each file and auto-link to the transaction
+    for (const file of filesToUpload) {
+      try {
+        const result = await uploadInvoiceFile(file);
+        const invoiceId = result.invoice?.id;
+        if (invoiceId) {
+          await manualLinkMutation.mutateAsync({
+            invoice_id: Number(invoiceId),
+            transaction_id: Number(txId)
+          });
+        }
+      } catch (error) {
+        console.error('Error uploading and linking invoice:', error);
+      }
+    }
+    
+    setSelectedTransactionForInvoice(null);
+    event.target.value = '';
+  };
+
   const openLinkFromTransaction = (txDbId, tx) => {
     setLinkSearch('');
     setLinkSelectedId(null);
@@ -263,6 +301,15 @@ const Reconciliation = () => {
             accept=".csv,.ofx,.qfx,.pdf"
             className="hidden"
             onChange={handleBankFileSelected}
+          />
+          <input
+            ref={invoiceInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp"
+            multiple
+            max="10"
+            className="hidden"
+            onChange={handleInvoiceFileSelected}
           />
           <button onClick={() => { console.log('Button clicked'); runMutation.mutate(); }} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />
@@ -465,7 +512,7 @@ const Reconciliation = () => {
                     <button onClick={() => openLinkFromTransaction(tx.db_id || tx.id, tx)} className="px-3 py-1.5 border border-blue-200 rounded-md text-xs text-blue-600 hover:bg-blue-50">
                       Lier
                     </button>
-                    <button onClick={() => navigate('/invoices')} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
+                    <button onClick={() => handleCreateInvoiceClick(tx)} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
                       Créer facture
                     </button>
                   </div>
