@@ -210,7 +210,7 @@ const Reconciliation = () => {
   const openLinkFromTransaction = (txDbId, tx) => {
     setLinkSearch('');
     setLinkSelectedId(null);
-    setLinkMonthFilter(''); // Reset month filter when opening modal
+    setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
     const amount = tx.amount != null ? `${Math.abs(tx.amount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
     const date = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '';
     const label = [tx.description, amount, date].filter(Boolean).join(' · ');
@@ -220,7 +220,7 @@ const Reconciliation = () => {
   const openLinkFromInvoice = (invoiceId, invoiceLabel) => {
     setLinkSearch('');
     setLinkSelectedId(null);
-    setLinkMonthFilter(''); // Reset month filter when opening modal
+    setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
     setLinkModal({ type: 'inv2tx', id: invoiceId, label: invoiceLabel });
   };
 
