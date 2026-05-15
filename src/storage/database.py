@@ -73,6 +73,24 @@ db = Database()
 def init_database():
     """Initialize the database with all tables"""
     db.create_tables()
+    
+    # Add file_hash column if it doesn't exist (for backward compatibility)
+    from sqlalchemy import text
+    session = db.get_session()
+    try:
+        # Check if file_hash column exists
+        result = session.execute(text("PRAGMA table_info(bank_transactions)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'file_hash' not in columns:
+            session.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
+            session.commit()
+            print("Added file_hash column to bank_transactions table")
+    except Exception as e:
+        session.rollback()
+        print(f"Error adding file_hash column: {e}")
+    finally:
+        session.close()
+    
     print("Database initialized successfully")
 
 
