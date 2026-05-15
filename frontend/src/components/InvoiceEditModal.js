@@ -2,7 +2,17 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save } from 'lucide-react';
 
-const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSave, isLoading, existingCategories = [] }) => {
+// Predefined categories for car body shop
+const PREDEFINED_CATEGORIES = [
+  'Toutes les catégories',
+  'Pièces détachées',
+  'Peinture et vernis',
+  'Fournitures atelier',
+  'Sous-traitance',
+  'Équipement et outillage'
+];
+
+const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSave, isLoading }) => {
   if (!editingInvoice) return null;
 
   return createPortal(
@@ -35,18 +45,16 @@ const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSa
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">Catégorie</label>
-            <input 
-              list="category-options"
-              className="w-full px-3 py-2 border rounded-md text-sm" 
-              value={editForm.category} 
-              onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} 
-              placeholder="Sélectionner ou saisir..."
-            />
-            <datalist id="category-options">
-              {existingCategories.map(cat => (
-                <option key={cat} value={cat} />
+            <select
+              className="w-full px-3 py-2 border rounded-md text-sm bg-white"
+              value={editForm.category || ''}
+              onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+            >
+              <option value="">Sélectionner une catégorie</option>
+              {PREDEFINED_CATEGORIES.filter(cat => cat !== 'Toutes les catégories').map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
               ))}
-            </datalist>
+            </select>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">Date facture</label>
