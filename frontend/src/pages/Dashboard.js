@@ -85,6 +85,12 @@ const Dashboard = () => {
   const { data: trendsData } = useQuery(['dashboard-trends', trendMonths], () => fetchTrends(trendMonths));
   const { data: transactionsData } = useQuery(['dashboard-transactions', filters], () => fetchTransactions(filters));
   
+  // Get recent invoices (first 5)
+  const recentInvoices = invoicesData?.invoices?.slice(0, 5) || [];
+  
+  // Get recent transactions (first 5)
+  const recentTransactions = transactionsData?.transactions?.slice(0, 5) || [];
+  
   // Auto-set month filter to most recent invoice date on initial load
   useEffect(() => {
     const fetchMostRecentInvoiceMonth = async () => {
@@ -119,15 +125,6 @@ const Dashboard = () => {
   }, []); // Run only on mount
 
   const invoices = invoicesData?.invoices || [];
-  const recentInvoices = invoices.slice(0, 5).map((invoice) => ({
-    id: invoice.id,
-    number: invoice.invoice_number,
-    supplier: invoice.supplier || 'Fournisseur inconnu',
-    amount: invoice.amount || 0,
-    date: invoice.date ? new Date(invoice.date).toLocaleDateString('fr-FR') : '-',
-    status: invoice.status,
-    vehicle: invoice.vehicle_registration,
-  }));
   
   // Use real month-over-month change from trends API instead of match_rate
   const stats = {
@@ -196,50 +193,36 @@ const Dashboard = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Import Statistics */}
+        {/* Recent Bank Transactions */}
         <div className="rounded-md border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-md">
-          <h3 className="font-semibold text-gray-900 mb-4">Statistiques Import Bancaire</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-md bg-blue-50/50 border border-blue-200/50">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="w-5 h-5 text-blue-600" />
-                <span className="text-sm text-gray-600">Transactions</span>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Transactions Bancaires Récentes</h3>
+            <a href="/reconciliation" className="text-blue-600 text-sm hover:underline">
+              Voir tout
+            </a>
+          </div>
+          <div className="space-y-3">
+            {recentTransactions.map((tx) => (
+              <div 
+                key={tx.id} 
+                className="flex items-center justify-between p-3 rounded-md border border-slate-200/70 bg-white/60 backdrop-blur-md hover:bg-white/80"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <div>
+                    <p className="font-medium text-gray-900">{tx.description || 'Transaction'}</p>
+                    <p className="text-sm text-gray-500">{tx.reference || tx.transaction_id}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-gray-900">{tx.amount.toLocaleString('fr-FR')} €</p>
+                  <span className="text-sm text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '-'}</span>
+                </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {transactionsData?.count || 0}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Importées ce mois</p>
-            </div>
-            <div className="p-4 rounded-md bg-green-50/50 border border-green-200/50">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-gray-600">Montant Total</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {(transactionsData?.transactions?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0).toLocaleString('fr-FR')} €
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Volume transactions</p>
-            </div>
-            <div className="p-4 rounded-md bg-purple-50/50 border border-purple-200/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-5 h-5 text-purple-600" />
-                <span className="text-sm text-gray-600">Rapprochées</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {reconciliationStatus?.matched_invoices || 0}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Factures matchées</p>
-            </div>
-            <div className="p-4 rounded-md bg-orange-50/50 border border-orange-200/50">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-5 h-5 text-orange-600" />
-                <span className="text-sm text-gray-600">Non rapprochées</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {reconciliationStatus?.unmatched_invoices || 0}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">En attente</p>
-            </div>
+            ))}
+            {recentTransactions.length === 0 && (
+              <div className="text-sm text-gray-500">Aucune transaction disponible pour le moment.</div>
+            )}
           </div>
         </div>
 
