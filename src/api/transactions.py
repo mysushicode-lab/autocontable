@@ -21,7 +21,7 @@ BANK_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "bank_statements")
 
 @router.post("/import")
 async def import_bank_statement(file: UploadFile = File(...), current_user: dict = Depends(check_trial_active)):
-    """Import a bank statement from CSV/OFX/QFX/PDF."""
+    """Import a bank statement from CSV/OFX/QFX/PDF. Replaces transactions from the same month."""
     import os
     allowed_extensions = {".csv", ".ofx", ".qfx", ".pdf"}
     extension = os.path.splitext(file.filename or "")[1].lower()
@@ -34,26 +34,57 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
         # Calculate file hash for duplicate detection
         file_hash = hashlib.md5(open(saved_path, 'rb').read()).hexdigest()
         
-        # Check if the same file (by hash) has been imported for the same month
-        existing_same_hash = session.query(BankTransaction).filter(
-            BankTransaction.organization_id == current_user["organization_id"],
-            BankTransaction.file_hash == file_hash
-        ).first()
-        
-        if existing_same_hash:
-            existing_date = existing_same_hash.date
-            file_month = existing_date.month
-            file_year = existing_date.year
-            
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Ce relevé bancaire a déjà été importé pour {file_month}/{file_year}"
-            )
-        
         # Determine the month from the file content or current date
         importer = BankImporter()
         transactions = importer.import_file(saved_path)
         
+        if not transactions:
+            raise HTTPException(status_code=400, detail="No transactions found in file")
+        
+        # Determine the month from the first transaction
+        first_tx_date = transactions[0].get("date") or datetime.utcnow()
+        file_month = first_tx_date.month
+        file_year = first_tx_date.year
+        
+        # Find all existing transactions for this month
+        last_day_num = calendar.monthrange(file_year, file_month)[1]
+        first_day = datetime(file_year, file_month, 1)
+        last_day = datetime(file_year, file_month, last_day_num, 23, 59, 59)
+        
+        existing_transactions = session.query(BankTransaction).filter(
+            BankTransaction.organization_id == current_user["organization_id"],
+            BankTransaction.date >= first_day,
+            BankTransaction.date <= last_day
+        ).all()
+        
+        existing_transaction_ids = [tx.id for tx in existing_transactions]
+        
+        # If there are existing transactions, unmatch invoices and delete matches
+        if existing_transaction_ids:
+            # Find reconciliation matches for these transactions
+            matches = session.query(ReconciliationMatch).filter(
+                ReconciliationMatch.transaction_id.in_(existing_transaction_ids)
+            ).all()
+            
+            # Update invoice status back to unmatched for affected invoices
+            for match in matches:
+                invoice = session.query(Invoice).filter(
+                    Invoice.id == match.invoice_id,
+                    Invoice.organization_id == current_user["organization_id"]
+                ).first()
+                if invoice and invoice.status == InvoiceStatus.MATCHED:
+                    invoice.status = InvoiceStatus.UNMATCHED
+            
+            # Delete reconciliation matches
+            session.query(ReconciliationMatch).filter(
+                ReconciliationMatch.transaction_id.in_(existing_transaction_ids)
+            ).delete()
+            
+            # Delete old transactions
+            for tx in existing_transactions:
+                session.delete(tx)
+        
+        # Import new transactions
         imported_count = 0
 
         for tx in transactions:
@@ -61,14 +92,6 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
             if not transaction_id:
                 raw = f"{tx.get('date')}{tx.get('amount')}{tx.get('description', '')}"
                 transaction_id = "PDF-" + hashlib.md5(raw.encode()).hexdigest()[:16]
-
-            # Check for duplicate transaction_id (transaction-level duplicate)
-            existing_transaction = session.query(BankTransaction).filter(
-                BankTransaction.transaction_id == transaction_id,
-                BankTransaction.organization_id == current_user["organization_id"]
-            ).first()
-            if existing_transaction:
-                continue
 
             session.add(BankTransaction(
                 transaction_id=transaction_id,
@@ -88,6 +111,7 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
         return {
             "message": "Bank statement imported successfully",
             "imported_count": imported_count,
+            "replaced_count": len(existing_transaction_ids),
             "file_path": saved_path,
         }
     except HTTPException:
