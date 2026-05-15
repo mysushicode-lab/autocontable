@@ -237,9 +237,25 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
         if request.amount_tax is not None:
             invoice.amount_tax = request.amount_tax
         if request.date is not None:
-            invoice.date = datetime.fromisoformat(request.date)
+            try:
+                invoice.date = datetime.fromisoformat(request.date)
+            except ValueError:
+                # Try parsing as YYYY-MM-DD format
+                try:
+                    invoice.date = datetime.strptime(request.date, "%Y-%m-%d")
+                except ValueError:
+                    raise HTTPException(status_code=422, detail=f"Invalid date format: {request.date}. Expected YYYY-MM-DD or ISO format.")
         if request.due_date is not None:
-            invoice.due_date = datetime.fromisoformat(request.due_date) if request.due_date else None
+            if request.due_date:
+                try:
+                    invoice.due_date = datetime.fromisoformat(request.due_date)
+                except ValueError:
+                    try:
+                        invoice.due_date = datetime.strptime(request.due_date, "%Y-%m-%d")
+                    except ValueError:
+                        raise HTTPException(status_code=422, detail=f"Invalid due_date format: {request.due_date}. Expected YYYY-MM-DD or ISO format.")
+            else:
+                invoice.due_date = None
         if request.category is not None:
             invoice.category = request.category
         if request.vehicle_registration is not None:
