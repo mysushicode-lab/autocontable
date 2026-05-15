@@ -40,7 +40,7 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDe
     <div className="space-y-3">
       {/* Bulk actions */}
       {filteredTransactions.length > 0 && (
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-md border border-blue-200">
+        <div className="flex items-center justify-between p-3 rounded-md border border-gray-200">
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -48,7 +48,7 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDe
               onChange={handleSelectAll}
               className="w-4 h-4 rounded border-gray-300"
             />
-            <span className="text-sm text-blue-700">{selectedIds.size} sélectionnée(s)</span>
+            <span className="text-sm text-gray-700">{selectedIds.size} sélectionnée(s)</span>
           </div>
           <div className="flex gap-2">
             {selectedIds.size > 0 && (
@@ -63,7 +63,7 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDe
             {onDeleteAll && (
               <button
                 onClick={onDeleteAll}
-                className="px-3 py-1.5 border border-red-200 text-red-600 rounded-md text-sm hover:bg-red-50"
+                className="px-3 py-1.5 border border-gray-300 text-gray-900 rounded-md text-sm hover:bg-gray-50"
               >
                 Supprimer tout le mois
               </button>
