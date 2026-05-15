@@ -108,8 +108,13 @@ const Invoices = () => {
     onError: (error) => {
       let errorMessage = 'Impossible de modifier la facture.';
       try {
-        if (error?.response?.data?.detail) {
-          errorMessage = String(error.response.data.detail);
+        const detail = error?.response?.data?.detail;
+        if (detail) {
+          if (typeof detail === 'string') {
+            errorMessage = detail;
+          } else if (typeof detail === 'object') {
+            errorMessage = JSON.stringify(detail);
+          }
         }
       } catch (e) {
         console.error('Error parsing error message:', e);
