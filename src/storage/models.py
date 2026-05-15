@@ -165,6 +165,7 @@ class BankTransaction(Base):
     account_number = Column(String(50), nullable=True)
     category = Column(String(100), nullable=True)
     source_file = Column(String(500), nullable=True)
+    file_hash = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     matches = relationship("ReconciliationMatch", back_populates="transaction")

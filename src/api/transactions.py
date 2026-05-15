@@ -31,31 +31,28 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
     saved_path = save_uploaded_file(file, BANK_UPLOAD_DIR)
     session = db.get_session()
     try:
-        # Check if the same file has been imported for the same month
+        # Calculate file hash for duplicate detection
         file_hash = hashlib.md5(open(saved_path, 'rb').read()).hexdigest()
+        
+        # Check if the same file (by hash) has been imported for the same month
+        existing_same_hash = session.query(BankTransaction).filter(
+            BankTransaction.organization_id == current_user["organization_id"],
+            BankTransaction.file_hash == file_hash
+        ).first()
+        
+        if existing_same_hash:
+            existing_date = existing_same_hash.date
+            file_month = existing_date.month
+            file_year = existing_date.year
+            
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Ce relevé bancaire a déjà été importé pour {file_month}/{file_year}"
+            )
         
         # Determine the month from the file content or current date
         importer = BankImporter()
         transactions = importer.import_file(saved_path)
-        
-        if transactions:
-            first_tx_date = transactions[0].get("date") or datetime.utcnow()
-            file_month = first_tx_date.month
-            file_year = first_tx_date.year
-            
-            # Check for duplicate import in the same month
-            existing_same_month = session.query(BankTransaction).filter(
-                BankTransaction.organization_id == current_user["organization_id"],
-                BankTransaction.source_file == saved_path
-            ).first()
-            
-            if existing_same_month:
-                existing_date = existing_same_month.date
-                if existing_date.month == file_month and existing_date.year == file_year:
-                    raise HTTPException(
-                        status_code=400, 
-                        detail="Ce relevé bancaire a déjà été importé pour ce mois"
-                    )
         
         imported_count = 0
 
@@ -65,6 +62,7 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
                 raw = f"{tx.get('date')}{tx.get('amount')}{tx.get('description', '')}"
                 transaction_id = "PDF-" + hashlib.md5(raw.encode()).hexdigest()[:16]
 
+            # Check for duplicate transaction_id (transaction-level duplicate)
             existing_transaction = session.query(BankTransaction).filter(
                 BankTransaction.transaction_id == transaction_id,
                 BankTransaction.organization_id == current_user["organization_id"]
@@ -81,6 +79,7 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
                 account_number=tx.get("account_number"),
                 category=tx.get("category"),
                 source_file=saved_path,
+                file_hash=file_hash,
                 organization_id=current_user["organization_id"],
             ))
             imported_count += 1
