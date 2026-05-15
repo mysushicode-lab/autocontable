@@ -106,7 +106,14 @@ const Invoices = () => {
       addNotif(NOTIF_TYPES.SUCCESS, 'Facture mise à jour', 'Les modifications ont été enregistrées.');
     },
     onError: (error) => {
-      const errorMessage = error?.response?.data?.detail || 'Impossible de modifier la facture.';
+      let errorMessage = 'Impossible de modifier la facture.';
+      try {
+        if (error?.response?.data?.detail) {
+          errorMessage = String(error.response.data.detail);
+        }
+      } catch (e) {
+        console.error('Error parsing error message:', e);
+      }
       addNotif(NOTIF_TYPES.ERROR, 'Erreur', errorMessage);
     },
   });
