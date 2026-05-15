@@ -13,7 +13,8 @@ const ReconciliationHeader = ({
   importMutation,
   bankFileInputRef,
   handleBankFileSelected,
-  runMutation
+  runMutation,
+  isRunningReconciliation
 }) => {
   return (
     <div className="flex items-center justify-between">

@@ -48,6 +48,7 @@ const Reconciliation = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransactionForInvoice, setSelectedTransactionForInvoice] = useState(null); // Track which transaction we're creating invoices for
   const [isImporting, setIsImporting] = useState(false);
+  const [isRunningReconciliation, setIsRunningReconciliation] = useState(false);
   const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
   const invoiceInputRef = useRef(null);
@@ -136,6 +137,9 @@ const Reconciliation = () => {
   });
 
   const runMutation = useMutation(() => runAutomaticReconciliation(filters), {
+    onMutate: () => {
+      setIsRunningReconciliation(true);
+    },
     onSuccess: (result) => {
       refreshAll();
       const n = result.matches_created;
@@ -147,6 +151,9 @@ const Reconciliation = () => {
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur rapprochement', error?.response?.data?.detail || 'Analyse automatique échouée.');
+    },
+    onSettled: () => {
+      setIsRunningReconciliation(false);
     },
   });
 
@@ -354,7 +361,7 @@ const Reconciliation = () => {
   };
 
   return (
-    <div className={`space-y-6 ${isImporting ? 'blur-sm pointer-events-none' : ''}`}>
+    <div className={`space-y-6 ${isImporting || isRunningReconciliation ? 'blur-sm pointer-events-none' : ''}`}>
       {/* Header */}
       <ReconciliationHeader
         globalPeriod={globalPeriod}
@@ -368,6 +375,7 @@ const Reconciliation = () => {
         bankFileInputRef={bankFileInputRef}
         handleBankFileSelected={handleBankFileSelected}
         runMutation={runMutation}
+        isRunningReconciliation={isRunningReconciliation}
       />
 
       {/* Stats */}
@@ -484,11 +492,11 @@ const Reconciliation = () => {
       )}
 
       {/* Loading Overlay - rendered at document body level */}
-      {isImporting && createPortal(
+      {(isImporting || isRunningReconciliation) && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-            <p className="text-gray-700 font-medium">Import en cours...</p>
+            <p className="text-gray-700 font-medium">{isRunningReconciliation ? 'Rapprochement en cours...' : 'Import en cours...'}</p>
           </div>
         </div>,
         document.body
