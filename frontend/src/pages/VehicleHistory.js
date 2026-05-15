@@ -5,10 +5,10 @@ import {
   Car,
   FileText,
   Wrench,
-  Calendar,
   Search,
   ArrowLeft,
-  Download
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
@@ -19,6 +19,7 @@ const VehicleHistory = () => {
   const { registration } = useParams();
   const [searchPlate, setSearchPlate] = useState(registration || '');
   const [activeRegistration, setActiveRegistration] = useState(registration || '');
+  const navigate = useNavigate();
 
   const { data: currentVehicle, isFetching, isError } = useQuery(
     ['vehicle-history', activeRegistration],
@@ -150,9 +151,6 @@ const VehicleHistory = () => {
                 {currentVehicle.last_visit ? new Date(currentVehicle.last_visit).toLocaleDateString('fr-FR') : '-'}
               </p>
             </div>
-            <div className="p-3 bg-yellow-50 rounded-md">
-              <Calendar className="w-5 h-5 text-yellow-600" />
-            </div>
           </div>
         </div>
       </div>
@@ -198,8 +196,17 @@ const VehicleHistory = () => {
                     <span className="font-mono text-xs">{invoice.invoice_number}</span>
                   </div>
                 </div>
-                <div className="font-semibold text-gray-900">
-                  {invoice.amount.toLocaleString('fr-FR')} €
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                    title="Voir la facture"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                  <div className="font-semibold text-gray-900">
+                    {invoice.amount.toLocaleString('fr-FR')} €
+                  </div>
                 </div>
               </div>
             ))}
@@ -211,17 +218,31 @@ const VehicleHistory = () => {
       <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
         <h3 className="font-semibold text-gray-900 mb-4">Répartition des Coûts</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {categorySummary.map(([cat, values]) => (
-            <div key={cat} className="p-4 bg-gray-50 rounded-md text-center">
-              <p className="text-sm text-gray-600">{cat}</p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {values.amount.toLocaleString('fr-FR')} €
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {values.count} facture(s)
-              </p>
-            </div>
-          ))}
+          {categorySummary.map(([cat, values]) => {
+            const categoryInvoices = currentVehicle.history.filter(inv => inv.category === cat);
+            return (
+              <div key={cat} className="p-4 bg-gray-50 rounded-md text-center relative">
+                <button
+                  onClick={() => {
+                    if (categoryInvoices.length === 1 && categoryInvoices[0].invoice_id) {
+                      navigate(`/invoices/${categoryInvoices[0].invoice_id}`);
+                    }
+                  }}
+                  className={`absolute top-2 right-2 p-1 text-blue-600 hover:bg-blue-100 rounded-md ${categoryInvoices.length === 1 ? '' : 'hidden'}`}
+                  title="Voir la facture"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+                <p className="text-sm text-gray-600">{cat}</p>
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {values.amount.toLocaleString('fr-FR')} €
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {values.count} facture(s)
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
