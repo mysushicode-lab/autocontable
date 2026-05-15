@@ -15,6 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
 import DropdownButton from '../components/DropdownButton';
+import { useFilters } from '../context/FilterContext';
 
 const COLORS = CHART_COLORS_ARRAY;
 
@@ -56,8 +57,13 @@ const PERIOD_OPTIONS = [
 ];
 
 const Reports = () => {
+  const { selectedMonth, setSelectedMonth } = useFilters();
   const monthOptions = generateLast12Months();
-  const [period, setPeriod] = useState(monthOptions[0].value);
+  const today = new Date();
+  const currentPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  
+  // Use selectedMonth from FilterContext, default to current period if not set
+  const period = selectedMonth || currentPeriod;
   const [trendMonths, setTrendMonths] = useState(12); // For evolution chart
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showTrendDropdown, setShowTrendDropdown] = useState(false);
@@ -306,7 +312,7 @@ const Reports = () => {
             label={periodDisplay}
             value={period}
             options={monthOptions.map(opt => ({ ...opt, label: opt.label.charAt(0).toUpperCase() + opt.label.slice(1) }))}
-            onChange={setPeriod}
+            onChange={setSelectedMonth}
             isOpen={showPeriodDropdown}
             onToggle={() => setShowPeriodDropdown(!showPeriodDropdown)}
             buttonRef={periodButtonRef}
