@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { CreditCard, XCircle, Trash2 } from 'lucide-react';
+import { CreditCard, XCircle, Trash2, AlertTriangle } from 'lucide-react';
 
 const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDeleteAll }) => {
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   const handleSelectAll = () => {
     if (selectedIds.size === filteredTransactions.length) {
@@ -24,8 +25,11 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDe
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    if (!confirm(`Supprimer ${selectedIds.size} transaction(s) ?`)) return;
-    
+    setShowConfirmModal(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    setShowConfirmModal(false);
     for (const id of selectedIds) {
       await deleteTransactionMutation.mutateAsync(id);
     }
@@ -103,6 +107,37 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDe
           </button>
         </div>
       ))}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Confirmer la suppression</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Êtes-vous sûr de vouloir supprimer {selectedIds.size} transaction(s) ? Cette action est irréversible.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmBulkDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
