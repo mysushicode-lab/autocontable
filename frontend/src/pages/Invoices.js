@@ -143,7 +143,14 @@ const Invoices = () => {
   };
 
   const handleEditSave = () => {
-    updateMutation.mutate({ id: editingInvoice.id, data: editForm });
+    // Convert empty strings to null for numeric fields to avoid validation errors
+    const dataToSend = {
+      ...editForm,
+      amount: editForm.amount || null,
+      amount_ht: editForm.amount_ht || null,
+      amount_tax: editForm.amount_tax || null,
+    };
+    updateMutation.mutate({ id: editingInvoice.id, data: dataToSend });
   };
 
   const uploadMutation = useMutation(uploadInvoiceFile, {
