@@ -145,8 +145,12 @@ def get_reconciliation_details(
 
         matches = match_query.all()
         matched_transaction_ids = {match.transaction_id for match in matches}
+        matched_invoice_ids = {match.invoice_id for match in matches}
 
-        unmatched_invoices = invoice_query.filter(Invoice.status.in_([InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING])).all()
+        # Calculate unmatched invoices based on actual reconciliation matches, not invoice status
+        all_invoices = invoice_query.all()
+        unmatched_invoices = [inv for inv in all_invoices if inv.id not in matched_invoice_ids]
+        
         bank_only_transactions = transaction_query.filter(
             ~BankTransaction.id.in_(matched_transaction_ids) if matched_transaction_ids else True
         ).all()
