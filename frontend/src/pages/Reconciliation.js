@@ -272,6 +272,27 @@ const Reconciliation = () => {
     setShowPeriodDropdown(false); // Close period dropdown when changing tabs
   };
 
+  const handleDeleteAllTransactions = async () => {
+    if (!globalPeriod) {
+      addNotif(NOTIF_TYPES.WARNING, 'Période requise', 'Veuillez sélectionner une période pour supprimer les transactions.');
+      return;
+    }
+    if (!confirm(`Supprimer toutes les transactions de ${periodOptions.find(o => o.value === globalPeriod)?.label || 'cette période'} ?`)) return;
+    
+    const [year, month] = globalPeriod.split('-').map(Number);
+    const allTransactionIds = allTransactions
+      .filter(tx => {
+        const txDate = new Date(tx.date);
+        return txDate.getFullYear() === year && txDate.getMonth() + 1 === month;
+      })
+      .map(tx => tx.id);
+    
+    for (const id of allTransactionIds) {
+      await deleteTransactionMutation.mutateAsync(id);
+    }
+    addNotif(NOTIF_TYPES.SUCCESS, 'Transactions supprimées', `${allTransactionIds.length} transaction(s) supprimée(s).`);
+  };
+
   const submitManualLink = async () => {
     if (!linkSelectedId) return;
     const payload = linkModal.type === 'tx2inv'
@@ -334,6 +355,7 @@ const Reconciliation = () => {
           <TransactionsTab
             filteredTransactions={filteredTransactions}
             deleteTransactionMutation={deleteTransactionMutation}
+            onDeleteAll={handleDeleteAllTransactions}
           />
         )}
 
