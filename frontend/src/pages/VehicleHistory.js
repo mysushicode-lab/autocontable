@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Car,
   FileText,
   Wrench,
+  Calendar,
   Search,
   ArrowLeft,
   Download,
@@ -116,35 +117,38 @@ const VehicleHistory = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-md">
+              <FileText className="w-5 h-5 text-blue-600" />
+            </div>
             <div>
               <p className="text-sm text-gray-600">Total Dépenses</p>
               <p className="text-2xl font-bold text-gray-900">
                 {currentVehicle.total_spent.toLocaleString('fr-FR')} €
               </p>
             </div>
-            <div className="p-3 bg-blue-50 rounded-md">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
           </div>
         </div>
         
         <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-50 rounded-md">
+              <Wrench className="w-5 h-5 text-green-600" />
+            </div>
             <div>
               <p className="text-sm text-gray-600">Interventions</p>
               <p className="text-2xl font-bold text-gray-900">
                 {currentVehicle.intervention_count}
               </p>
             </div>
-            <div className="p-3 bg-green-50 rounded-md">
-              <Wrench className="w-5 h-5 text-green-600" />
-            </div>
           </div>
         </div>
         
         <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-yellow-50 rounded-md">
+              <Calendar className="w-5 h-5 text-yellow-600" />
+            </div>
             <div>
               <p className="text-sm text-gray-600">Dernière visite</p>
               <p className="text-2xl font-bold text-gray-900">
