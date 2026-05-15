@@ -29,6 +29,8 @@ const InvoiceHeader = ({ onExport, onUploadClick, uploadMutation, uploadInputRef
           ref={uploadInputRef}
           type="file"
           accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp"
+          multiple
+          max="10"
           className="hidden"
           onChange={onInvoiceSelected}
         />

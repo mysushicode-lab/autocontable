@@ -186,11 +186,19 @@ const Invoices = () => {
   };
 
   const handleInvoiceSelected = async (event) => {
-    const selectedFile = event.target.files?.[0];
-    if (!selectedFile) {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) {
       return;
     }
-    await uploadMutation.mutateAsync(selectedFile);
+    
+    // Limit to 10 files
+    const filesToUpload = Array.from(selectedFiles).slice(0, 10);
+    
+    // Upload each file sequentially
+    for (const file of filesToUpload) {
+      await uploadMutation.mutateAsync(file);
+    }
+    
     event.target.value = '';
   };
 
