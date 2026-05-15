@@ -83,6 +83,17 @@ const Invoices = () => {
   const { add: addNotif } = useNotifications();
   const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));
   const invoices = data?.invoices || [];
+  
+  // Extract unique categories from all invoices
+  const existingCategories = React.useMemo(() => {
+    const categories = new Set();
+    invoices.forEach(inv => {
+      if (inv.category) {
+        categories.add(inv.category);
+      }
+    });
+    return Array.from(categories).sort();
+  }, [invoices]);
 
   const deleteMutation = useMutation((id) => deleteInvoice(id), {
     onSuccess: () => {
@@ -306,6 +317,7 @@ const Invoices = () => {
         onClose={() => setEditingInvoice(null)}
         onSave={handleEditSave}
         isLoading={updateMutation.isLoading}
+        existingCategories={existingCategories}
       />
     </div>
   );

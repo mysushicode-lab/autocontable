@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Save } from 'lucide-react';
 
-const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSave, isLoading }) => {
+const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSave, isLoading, existingCategories = [] }) => {
   if (!editingInvoice) return null;
 
   return (
@@ -34,7 +34,18 @@ const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSa
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">Catégorie</label>
-            <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} />
+            <input 
+              list="category-options"
+              className="w-full px-3 py-2 border rounded-md text-sm" 
+              value={editForm.category} 
+              onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} 
+              placeholder="Sélectionner ou saisir..."
+            />
+            <datalist id="category-options">
+              {existingCategories.map(cat => (
+                <option key={cat} value={cat} />
+              ))}
+            </datalist>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">Date facture</label>
