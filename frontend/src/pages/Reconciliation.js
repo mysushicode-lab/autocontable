@@ -462,7 +462,7 @@ const Reconciliation = () => {
                   </div>
                   <p className="font-bold text-gray-900 text-center">{tx.amount.toLocaleString('fr-FR')} €</p>
                   <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => openLinkFromTx(tx.db_id || tx.id, tx)} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
+                    <button onClick={() => openLinkFromTransaction(tx.db_id || tx.id, tx)} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
                       Lier
                     </button>
                     <button onClick={() => navigate('/invoices')} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
