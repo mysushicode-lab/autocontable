@@ -22,6 +22,7 @@ import {
   deleteTransaction,
   deleteTransactionsByMonth,
   uploadInvoiceFile,
+  fetchInvoices,
 } from '../api';
 import DropdownButton from '../components/DropdownButton';
 import ReconciliationHeader from '../components/Reconciliation/ReconciliationHeader';
@@ -70,6 +71,39 @@ const Reconciliation = () => {
 
   const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
   const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
+  
+  // Auto-set month filter to most recent invoice date on initial load
+  useEffect(() => {
+    const fetchMostRecentInvoiceMonth = async () => {
+      try {
+        // Fetch all invoices without filters to get the most recent one
+        const data = await fetchInvoices({});
+        if (data?.invoices && data.invoices.length > 0) {
+          // Sort by date descending to find the most recent
+          const sortedInvoices = data.invoices.sort((a, b) => {
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return new Date(b.date) - new Date(a.date);
+          });
+          const mostRecentInvoice = sortedInvoices[0];
+          if (mostRecentInvoice.date) {
+            const date = new Date(mostRecentInvoice.date);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const monthValue = `${year}-${String(month).padStart(2, '0')}`;
+            // Only set if not already set by user
+            if (!selectedMonth) {
+              setSelectedMonth(monthValue);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching most recent invoice:', error);
+      }
+    };
+    
+    fetchMostRecentInvoiceMonth();
+  }, []); // Run only on mount
   const refreshAll = () => {
     queryClient.invalidateQueries('reconciliation-status');
     queryClient.invalidateQueries('reconciliation-details');
