@@ -212,7 +212,16 @@ class Exporter:
             total_ht  = sum(i.amount_ht  or 0 for i in invoices)
             total_tva = sum(i.amount_tax or 0 for i in invoices)
             total_ttc = sum(i.amount     or 0 for i in invoices)
-            matched   = sum(1 for i in invoices if i.status and i.status.value == 'matched')
+            
+            # Calculate matched invoices based on actual reconciliation matches, not invoice status
+            from src.storage.models import ReconciliationMatch, BankTransaction
+            matches = self.session.query(ReconciliationMatch).join(Invoice).filter(
+                Invoice.date >= first_day,
+                Invoice.date <= last_day
+            ).all()
+            matched_invoice_ids = {match.invoice_id for match in matches if match.status != 'rejected'}
+            matched = len([inv for inv in invoices if inv.id in matched_invoice_ids])
+            
             summary_data = {
                 'Indicateur': [
                     'Période',
