@@ -8,7 +8,7 @@ import calendar
 import hashlib
 
 from src.storage.database import db
-from src.storage.models import BankTransaction
+from src.storage.models import BankTransaction, ReconciliationMatch
 from src.bank_importer.bank_importer import BankImporter
 from src.api.utils import save_uploaded_file
 from src.api.auth import get_current_user, check_trial_active
@@ -153,10 +153,18 @@ def delete_transaction(transaction_id: int, current_user: dict = Depends(get_cur
         if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
         
+        # Delete any reconciliation matches that reference this transaction
+        session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.transaction_id == transaction_id
+        ).delete()
+        
         session.delete(transaction)
         session.commit()
         
         return {"message": "Transaction deleted successfully"}
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(exc))
     finally:
         session.close()
 
@@ -175,6 +183,14 @@ def delete_transactions_by_month(year: int, month: int, current_user: dict = Dep
             BankTransaction.date >= first_day,
             BankTransaction.date <= last_day
         ).all()
+        
+        transaction_ids = [tx.id for tx in transactions]
+        
+        # Delete reconciliation matches for these transactions
+        if transaction_ids:
+            session.query(ReconciliationMatch).filter(
+                ReconciliationMatch.transaction_id.in_(transaction_ids)
+            ).delete()
         
         deleted_count = len(transactions)
         for tx in transactions:
