@@ -276,33 +276,38 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
                 supplier = session.query(Supplier).filter(Supplier.name == request.supplier_name).first()
                 if not supplier:
                     normalized = request.supplier_name.lower().strip()
-                    supplier = Supplier(name=request.supplier_name, normalized_name=normalized)
-                    session.add(supplier)
+                    supplier = session.query(Supplier).filter(Supplier.normalized_name == normalized).first()
+                if supplier:
+                    invoice.supplier_id = supplier.id
+                else:
+                    # Create new supplier
+                    new_supplier = Supplier(
+                        name=request.supplier_name,
+                        normalized_name=normalized,
+                        organization_id=current_user["organization_id"]
+                    )
+                    session.add(new_supplier)
                     session.flush()
-                invoice.supplier_id = supplier.id
-            else:
-                invoice.supplier_id = None
+                    invoice.supplier_id = new_supplier.id
+        
         session.commit()
         session.refresh(invoice)
+        
         return {
-            "message": "Invoice updated",
+            "message": "Invoice updated successfully",
             "invoice": {
                 "id": invoice.id,
                 "invoice_number": invoice.invoice_number,
-                "supplier": invoice.supplier.name if invoice.supplier else None,
                 "amount": invoice.amount,
-                "amount_ht": invoice.amount_ht,
-                "amount_tax": invoice.amount_tax,
                 "date": invoice.date.isoformat() if invoice.date else None,
-                "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
-                "category": invoice.category,
-                "vehicle_registration": invoice.vehicle_registration,
-                "work_order_reference": invoice.work_order_reference,
-                "purchase_order": invoice.purchase_order,
-                "payment_method": invoice.payment_method,
-                "status": invoice.status.value if invoice.status else None,
             }
         }
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc))
     finally:
         session.close()
 
