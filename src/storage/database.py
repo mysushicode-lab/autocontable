@@ -70,11 +70,8 @@ class Database:
 db = Database()
 
 
-def init_database():
-    """Initialize the database with all tables"""
-    db.create_tables()
-    
-    # Add file_hash column if it doesn't exist (for backward compatibility)
+def run_migrations():
+    """Run database migrations"""
     from sqlalchemy import text
     session = db.get_session()
     try:
@@ -90,7 +87,12 @@ def init_database():
         print(f"Error adding file_hash column: {e}")
     finally:
         session.close()
-    
+
+
+def init_database():
+    """Initialize the database with all tables"""
+    db.create_tables()
+    run_migrations()
     print("Database initialized successfully")
 
 

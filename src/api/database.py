@@ -118,6 +118,17 @@ def startup_event():
     except Exception as e:
         print(f"BankTransactions migration: {e}")
 
+    # Add file_hash column to bank_transactions table
+    try:
+        result = conn.execute(text("PRAGMA table_info(bank_transactions)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'file_hash' not in columns:
+            conn.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
+            conn.commit()
+            print("Added file_hash column to bank_transactions table")
+    except Exception as e:
+        print(f"file_hash column migration: {e}")
+
     # Add organization_id columns to remaining tables
     add_col_migrations = [
         "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
