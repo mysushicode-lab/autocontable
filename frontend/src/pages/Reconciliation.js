@@ -18,6 +18,7 @@ import {
   rejectReconciliationMatch,
   runAutomaticReconciliation,
   deleteTransaction,
+  deleteTransactionsByMonth,
   uploadInvoiceFile,
 } from '../api';
 import DropdownButton from '../components/DropdownButton';
@@ -280,17 +281,13 @@ const Reconciliation = () => {
     if (!confirm(`Supprimer toutes les transactions de ${periodOptions.find(o => o.value === globalPeriod)?.label || 'cette période'} ?`)) return;
     
     const [year, month] = globalPeriod.split('-').map(Number);
-    const allTransactionIds = allTransactions
-      .filter(tx => {
-        const txDate = new Date(tx.date);
-        return txDate.getFullYear() === year && txDate.getMonth() + 1 === month;
-      })
-      .map(tx => tx.id);
-    
-    for (const id of allTransactionIds) {
-      await deleteTransactionMutation.mutateAsync(id);
+    try {
+      const result = await deleteTransactionsByMonth(year, month);
+      refreshAll();
+      addNotif(NOTIF_TYPES.SUCCESS, 'Transactions supprimées', `${result.deleted_count} transaction(s) supprimée(s).`);
+    } catch (error) {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', error?.response?.data?.detail || 'Impossible de supprimer les transactions.');
     }
-    addNotif(NOTIF_TYPES.SUCCESS, 'Transactions supprimées', `${allTransactionIds.length} transaction(s) supprimée(s).`);
   };
 
   const submitManualLink = async () => {

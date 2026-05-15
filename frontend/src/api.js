@@ -133,6 +133,11 @@ export const deleteTransaction = async (transactionId) => {
   return response.data;
 };
 
+export const deleteTransactionsByMonth = async (year, month) => {
+  const response = await api.delete(`/api/transactions/month/${year}/${month}`);
+  return response.data;
+};
+
 export const updateInvoice = async (invoiceId, data) => {
   const response = await api.put(`/api/invoices/${invoiceId}`, data);
   return response.data;
