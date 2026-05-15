@@ -1,13 +1,13 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
-const ReconciliationTabs = ({ activeTab, setActiveTab, searchTerm, setSearchTerm, matches, unmatchedInvoices, bankOnly, allTransactions, children }) => {
+const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm, matches, unmatchedInvoices, bankOnly, allTransactions, children }) => {
   return (
     <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md">
       <div className="border-b">
         <div className="flex">
           <button
-            onClick={() => setActiveTab('matches')}
+            onClick={() => onTabChange('matches')}
             className={`px-6 py-4 font-medium border-b-2 ${
               activeTab === 'matches' 
                 ? 'border-blue-600 text-blue-600' 
@@ -17,7 +17,7 @@ const ReconciliationTabs = ({ activeTab, setActiveTab, searchTerm, setSearchTerm
             Correspondances ({matches.filter(m => m.transaction).length})
           </button>
           <button
-            onClick={() => setActiveTab('unmatched')}
+            onClick={() => onTabChange('unmatched')}
             className={`px-6 py-4 font-medium border-b-2 ${
               activeTab === 'unmatched' 
                 ? 'border-blue-600 text-blue-600' 
@@ -27,7 +27,7 @@ const ReconciliationTabs = ({ activeTab, setActiveTab, searchTerm, setSearchTerm
             Factures sans paiement ({unmatchedInvoices.length})
           </button>
           <button
-            onClick={() => setActiveTab('bankonly')}
+            onClick={() => onTabChange('bankonly')}
             className={`px-6 py-4 font-medium border-b-2 ${
               activeTab === 'bankonly' 
                 ? 'border-blue-600 text-blue-600' 
@@ -37,7 +37,7 @@ const ReconciliationTabs = ({ activeTab, setActiveTab, searchTerm, setSearchTerm
             Paiements sans facture ({bankOnly.length})
           </button>
           <button
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => onTabChange('transactions')}
             className={`px-6 py-4 font-medium border-b-2 ${
               activeTab === 'transactions'
                 ? 'border-blue-600 text-blue-600'

@@ -267,6 +267,11 @@ const Reconciliation = () => {
     setLinkModal({ type: 'inv2tx', id: invoiceId, label: invoiceLabel });
   };
 
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setShowPeriodDropdown(false); // Close period dropdown when changing tabs
+  };
+
   const submitManualLink = async () => {
     if (!linkSelectedId) return;
     const payload = linkModal.type === 'tx2inv'
@@ -304,7 +309,7 @@ const Reconciliation = () => {
       {/* Tabs */}
       <ReconciliationTabs
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        onTabChange={handleTabChange}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         matches={matches}
