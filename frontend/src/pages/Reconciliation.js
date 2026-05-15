@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Unlink,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import {
   createManualReconciliationLink,
@@ -46,6 +47,7 @@ const Reconciliation = () => {
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransactionForInvoice, setSelectedTransactionForInvoice] = useState(null); // Track which transaction we're creating invoices for
+  const [isImporting, setIsImporting] = useState(false);
   const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
   const invoiceInputRef = useRef(null);
@@ -117,6 +119,9 @@ const Reconciliation = () => {
   };
 
   const importMutation = useMutation(importBankStatementFile, {
+    onMutate: () => {
+      setIsImporting(true);
+    },
     onSuccess: (result) => {
       refreshAll();
       setActiveTab('transactions');
@@ -124,6 +129,9 @@ const Reconciliation = () => {
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur import bancaire', error?.response?.data?.detail || 'Impossible d\'importer le relevé.');
+    },
+    onSettled: () => {
+      setIsImporting(false);
     },
   });
 
@@ -258,39 +266,37 @@ const Reconciliation = () => {
   };
 
   const handleInvoiceFileSelected = async (event) => {
-    const selectedFiles = event.target.files;
-    if (!selectedFiles || selectedFiles.length === 0 || !selectedTransactionForInvoice) {
-      return;
-    }
-    
-    // Limit to 10 files
-    const filesToUpload = Array.from(selectedFiles).slice(0, 10);
-    const txId = selectedTransactionForInvoice.db_id || selectedTransactionForInvoice.id;
-    
-    // Upload each file and auto-link to the transaction
+  const selectedFiles = event.target.files;
+  if (!selectedFiles || selectedFiles.length === 0 || !selectedTransactionForInvoice) {
+    return;
+  }
+  
+  setIsImporting(true);
+  
+  // Limit to 10 files
+  const filesToUpload = Array.from(selectedFiles).slice(0, 10);
+  const txId = selectedTransactionForInvoice.db_id || selectedTransactionForInvoice.id;
+  
+  // Upload each file and auto-link to the transaction
+  try {
     for (const file of filesToUpload) {
-      try {
-        const result = await uploadInvoiceFile(file);
-        const invoiceId = result.invoice?.id;
-        if (invoiceId) {
-          await manualLinkMutation.mutateAsync({
-            invoice_id: Number(invoiceId),
-            transaction_id: Number(txId)
-          });
-        }
-      } catch (error) {
-        console.error('Error uploading and linking invoice:', error);
+      const result = await uploadInvoiceFile(file);
+      const invoiceId = result.invoice?.id;
+      if (invoiceId) {
+        await manualLinkMutation.mutateAsync({
+          invoice_id: Number(invoiceId),
+          transaction_id: Number(txId)
+        });
       }
     }
-    
-    setSelectedTransactionForInvoice(null);
+    refreshAll();
+    addNotif(NOTIF_TYPES.SUCCESS, 'Factures importées', `${filesToUpload.length} facture${filesToUpload.length > 1 ? 's' : ''} importée${filesToUpload.length > 1 ? 's' : ''} et rapprochée${filesToUpload.length > 1 ? 's' : ''} avec succès.`);
+  } catch (error) {
+    addNotif(NOTIF_TYPES.ERROR, 'Erreur import factures', error?.response?.data?.detail || 'Impossible d\'importer les factures.');
+  } finally {
+    setIsImporting(false);
     event.target.value = '';
-  };
-
-  const openLinkFromTransaction = (txDbId, tx) => {
-    setLinkSearch('');
-    setLinkSelectedId(null);
-    setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
+  }
     const amount = tx.amount != null ? `${Math.abs(tx.amount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
     const date = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '';
     const label = [tx.description, amount, date].filter(Boolean).join(' · ');
@@ -341,7 +347,7 @@ const Reconciliation = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isImporting ? 'blur-sm pointer-events-none' : ''}`}>
       {/* Header */}
       <ReconciliationHeader
         globalPeriod={globalPeriod}
@@ -465,6 +471,17 @@ const Reconciliation = () => {
                 Supprimer
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Loading Overlay - rendered at document body level */}
+      {isImporting && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+            <p className="text-gray-700 font-medium">Import en cours...</p>
           </div>
         </div>,
         document.body
