@@ -266,40 +266,47 @@ const Reconciliation = () => {
   };
 
   const handleInvoiceFileSelected = async (event) => {
-  const selectedFiles = event.target.files;
-  if (!selectedFiles || selectedFiles.length === 0 || !selectedTransactionForInvoice) {
-    return;
-  }
-  
-  setIsImporting(true);
-  
-  // Limit to 10 files
-  const filesToUpload = Array.from(selectedFiles).slice(0, 10);
-  const txId = selectedTransactionForInvoice.db_id || selectedTransactionForInvoice.id;
-  
-  // Upload each file and auto-link to the transaction
-  try {
-    for (const file of filesToUpload) {
-      const result = await uploadInvoiceFile(file);
-      const invoiceId = result.invoice?.id;
-      if (invoiceId) {
-        await manualLinkMutation.mutateAsync({
-          invoice_id: Number(invoiceId),
-          transaction_id: Number(txId)
-        });
-      }
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0 || !selectedTransactionForInvoice) {
+      return;
     }
-    refreshAll();
-    addNotif(NOTIF_TYPES.SUCCESS, 'Factures importées', `${filesToUpload.length} facture${filesToUpload.length > 1 ? 's' : ''} importée${filesToUpload.length > 1 ? 's' : ''} et rapprochée${filesToUpload.length > 1 ? 's' : ''} avec succès.`);
-  } catch (error) {
-    addNotif(NOTIF_TYPES.ERROR, 'Erreur import factures', error?.response?.data?.detail || 'Impossible d\'importer les factures.');
-  } finally {
-    setIsImporting(false);
-    event.target.value = '';
-  }
+    
+    setIsImporting(true);
+    
+    // Limit to 10 files
+    const filesToUpload = Array.from(selectedFiles).slice(0, 10);
+    const txId = selectedTransactionForInvoice.db_id || selectedTransactionForInvoice.id;
+    
+    // Upload each file and auto-link to the transaction
+    try {
+      for (const file of filesToUpload) {
+        const result = await uploadInvoiceFile(file);
+        const invoiceId = result.invoice?.id;
+        if (invoiceId) {
+          await manualLinkMutation.mutateAsync({
+            invoice_id: Number(invoiceId),
+            transaction_id: Number(txId)
+          });
+        }
+      }
+      refreshAll();
+      addNotif(NOTIF_TYPES.SUCCESS, 'Factures importées', `${filesToUpload.length} facture${filesToUpload.length > 1 ? 's' : ''} importée${filesToUpload.length > 1 ? 's' : ''} et rapprochée${filesToUpload.length > 1 ? 's' : ''} avec succès.`);
+    } catch (error) {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur import factures', error?.response?.data?.detail || 'Impossible d\'importer les factures.');
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
+    }
+  };
+
+  const openLinkFromTransaction = (tx) => {
+    const txDbId = tx.db_id || tx.id;
     const amount = tx.amount != null ? `${Math.abs(tx.amount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
     const date = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '';
     const label = [tx.description, amount, date].filter(Boolean).join(' · ');
+    setLinkSearch('');
+    setLinkSelectedId(null);
+    setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
     setLinkModal({ type: 'tx2inv', id: txDbId, label });
   };
 
