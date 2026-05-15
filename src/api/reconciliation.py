@@ -230,7 +230,10 @@ def get_reconciliation_status(
 
         all_invoices = invoice_q.all()
         total_invoices   = len(all_invoices)
-        matched_invoices = sum(1 for inv in all_invoices if inv.status == InvoiceStatus.MATCHED)
+        
+        # Calculate matched invoices based on actual reconciliation matches, not invoice status
+        matched_invoice_ids = {match.invoice_id for match in active}
+        matched_invoices = len(matched_invoice_ids)
 
         success_rate = round((matched_invoices / total_invoices) * 100) if total_invoices else 0
 
