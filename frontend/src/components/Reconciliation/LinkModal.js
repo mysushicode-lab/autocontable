@@ -1,7 +1,7 @@
 import React from 'react';
 import DropdownButton from '../DropdownButton';
 
-const LinkModal = ({ linkModal, linkSearch, setLinkSearch, linkMonthFilter, setLinkMonthFilter, showLinkMonthDropdown, setShowLinkMonthDropdown, linkMonthButtonRef, periodMonths, unmatchedInvoices, bankOnly, linkSelectedId, setLinkSelectedId, submitManualLink }) => {
+const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMonthFilter, setLinkMonthFilter, showLinkMonthDropdown, setShowLinkMonthDropdown, linkMonthButtonRef, periodMonths, unmatchedInvoices, bankOnly, linkSelectedId, setLinkSelectedId, submitManualLink }) => {
   const isTx2Inv = linkModal.type === 'tx2inv';
   const listItems = isTx2Inv ? unmatchedInvoices : bankOnly;
   

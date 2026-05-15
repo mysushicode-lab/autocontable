@@ -356,6 +356,7 @@ const Reconciliation = () => {
       {linkModal && (
         <LinkModal
           linkModal={linkModal}
+          setLinkModal={setLinkModal}
           linkSearch={linkSearch}
           setLinkSearch={setLinkSearch}
           linkMonthFilter={linkMonthFilter}
