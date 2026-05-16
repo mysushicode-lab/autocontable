@@ -82,10 +82,19 @@ class ReportGenerator:
             category_totals[category]['amount_ht'] += invoice.amount_ht or 0
             category_totals[category]['tax'] += invoice.amount_tax or 0
         
-        # Reconciliation status
-        matched_count = sum(1 for i in invoices if i.status == InvoiceStatus.MATCHED)
-        unmatched_count = sum(1 for i in invoices if i.status == InvoiceStatus.UNMATCHED)
-        pending_count = sum(1 for i in invoices if i.status == InvoiceStatus.PENDING)
+        # Reconciliation status - calculate based on actual reconciliation matches, not invoice status
+        from src.storage.models import ReconciliationMatch, BankTransaction
+        match_q = self.session.query(ReconciliationMatch).join(Invoice).filter(
+            Invoice.date >= first_day,
+            Invoice.date <= last_day
+        )
+        if self.org_id:
+            match_q = match_q.filter(ReconciliationMatch.organization_id == self.org_id)
+        matches = match_q.all()
+        matched_invoice_ids = {match.invoice_id for match in matches if match.status != 'rejected'}
+        matched_count = len([inv for inv in invoices if inv.id in matched_invoice_ids])
+        unmatched_count = len(invoices) - matched_count
+        pending_count = 0  # Pending is not calculated from matches, it's a status
         
         return {
             'period': f"{year}-{month:02d}",
