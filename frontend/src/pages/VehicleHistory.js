@@ -234,15 +234,6 @@ const VehicleHistory = () => {
                       <Download className="w-4 h-4" />
                     </button>
                   )}
-                  {invoice.invoice_id && (
-                    <button
-                      onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
-                      title="Voir la facture"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
-                  )}
                   <div className="font-semibold text-gray-900">
                     {invoice.amount.toLocaleString('fr-FR')} €
                   </div>
