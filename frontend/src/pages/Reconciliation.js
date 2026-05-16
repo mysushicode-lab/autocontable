@@ -59,7 +59,8 @@ const Reconciliation = () => {
   const currentPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   
   // Use selectedMonth from FilterContext, default to current period if not set
-  const globalPeriod = selectedMonth || currentPeriod;
+  // Check if selectedMonth is explicitly set (including empty string for "all periods")
+  const globalPeriod = selectedMonth !== undefined ? selectedMonth : currentPeriod;
   
   const periodMonths = Array.from({ length: 18 }, (_, i) => {
     const d = new Date(today.getFullYear(), today.getMonth() - i);

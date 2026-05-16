@@ -6,7 +6,7 @@ export const FilterProvider = ({ children }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(undefined);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -19,7 +19,7 @@ export const FilterProvider = ({ children }) => {
     setSearchTerm('');
     setStatusFilter('all');
     setCategoryFilter('all');
-    setSelectedMonth('');
+    setSelectedMonth(undefined);
     setShowAdvancedFilters(false);
     setDateFrom('');
     setDateTo('');
