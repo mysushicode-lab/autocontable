@@ -201,8 +201,7 @@ const VehicleHistory = () => {
                   {invoice.file_path && (
                     <a
                       href={invoice.file_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      download
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
                       title="Télécharger la facture"
                     >
