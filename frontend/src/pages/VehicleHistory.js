@@ -217,38 +217,6 @@ const VehicleHistory = () => {
           </div>
         </div>
       </div>
-
-      {/* Récapitulatif par catégorie */}
-      <div className="rounded-md border border-white/30 bg-white/50 p-6 shadow-sm backdrop-blur-md">
-        <h3 className="font-semibold text-gray-900 mb-4">Répartition des Coûts</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {categorySummary.map(([cat, values]) => {
-            const categoryInvoices = currentVehicle.history.filter(inv => inv.category === cat);
-            return (
-              <div key={cat} className="p-4 bg-gray-50 rounded-md text-center relative">
-                <button
-                  onClick={() => {
-                    if (categoryInvoices.length === 1 && categoryInvoices[0].invoice_id) {
-                      navigate(`/invoices/${categoryInvoices[0].invoice_id}`);
-                    }
-                  }}
-                  className={`absolute top-2 right-2 p-1 text-blue-600 hover:bg-blue-100 rounded-md ${categoryInvoices.length === 1 ? '' : 'hidden'}`}
-                  title="Voir la facture"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-                <p className="text-sm text-gray-600">{cat}</p>
-                <p className="text-lg font-semibold text-gray-900 mt-1">
-                  {values.amount.toLocaleString('fr-FR')} €
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {values.count} facture(s)
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
