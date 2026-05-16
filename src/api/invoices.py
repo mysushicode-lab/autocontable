@@ -363,13 +363,21 @@ def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_curre
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
         
-        if not invoice.file_path or not os.path.exists(invoice.file_path):
+        if not invoice.file_path:
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        # Convert relative path to absolute if needed
+        file_path = invoice.file_path
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.getcwd(), file_path.lstrip('/'))
+        
+        if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="PDF file not found")
         
         return FileResponse(
-            invoice.file_path,
+            file_path,
             media_type="application/pdf",
-            filename=os.path.basename(invoice.file_path)
+            filename=os.path.basename(file_path)
         )
     finally:
         session.close()
