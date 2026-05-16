@@ -208,7 +208,10 @@ const Dashboard = () => {
                 className="flex items-center justify-between p-3 rounded-md border border-slate-200/70 bg-white/60 backdrop-blur-md hover:bg-white/80"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <div className="relative">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-blue-500 animate-ping opacity-75" />
+                  </div>
                   <div>
                     <p className="font-medium text-gray-900">{tx.description || 'Transaction'}</p>
                     <p className="text-sm text-gray-500">{tx.reference || tx.transaction_id}</p>
@@ -241,10 +244,16 @@ const Dashboard = () => {
                 className="flex items-center justify-between p-3 rounded-md border border-slate-200/70 bg-white/60 backdrop-blur-md hover:bg-white/80"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    invoice.status === 'matched' ? 'bg-green-500' :
-                    invoice.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`} />
+                  <div className="relative">
+                    <div className={`w-2 h-2 rounded-full ${
+                      invoice.status === 'matched' ? 'bg-green-500' :
+                      invoice.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                    <div className={`absolute inset-0 w-2 h-2 rounded-full animate-ping opacity-75 ${
+                      invoice.status === 'matched' ? 'bg-green-500' :
+                      invoice.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                  </div>
                   <div>
                     <p className="font-medium text-gray-900">{invoice.supplier}</p>
                     <p className="text-sm text-gray-500">{invoice.number}</p>
