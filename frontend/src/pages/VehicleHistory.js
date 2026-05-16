@@ -191,23 +191,22 @@ const VehicleHistory = () => {
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{invoice.description}</p>
+                  <p className="font-medium text-gray-900">{invoice.invoice_number || invoice.description}</p>
+                  <p className="text-sm text-gray-500 mt-1">{invoice.category}</p>
                   <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                     <span>{invoice.date ? new Date(invoice.date).toLocaleDateString('fr-FR') : '-'}</span>
-                    <span className="px-2 py-0.5 bg-gray-200 rounded text-xs">
-                      {invoice.category}
-                    </span>
-                    <span className="font-mono text-xs">{invoice.invoice_number}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
-                    title="Voir la facture"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
+                  {invoice.invoice_id && (
+                    <button
+                      onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                      title="Voir la facture"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  )}
                   <div className="font-semibold text-gray-900">
                     {invoice.amount.toLocaleString('fr-FR')} €
                   </div>
