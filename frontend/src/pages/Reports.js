@@ -63,7 +63,7 @@ const Reports = () => {
   const currentPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   
   // Use selectedMonth from FilterContext, default to current period if not set
-  const period = selectedMonth || currentPeriod;
+  const period = selectedMonth !== undefined ? selectedMonth : currentPeriod;
   const [trendMonths, setTrendMonths] = useState(12); // For evolution chart
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showTrendDropdown, setShowTrendDropdown] = useState(false);

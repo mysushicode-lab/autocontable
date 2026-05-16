@@ -48,7 +48,7 @@ const Dashboard = () => {
   const today = new Date();
   
   // Use selectedMonth from FilterContext, default to current month if not set
-  const globalPeriod = selectedMonth || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const globalPeriod = selectedMonth !== undefined ? selectedMonth : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : { month: today.getMonth() + 1, year: today.getFullYear() };
   
   // Generate period options
