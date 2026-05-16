@@ -51,7 +51,10 @@ def reject_match(match_id: int, current_user: dict = Depends(get_current_user)):
     """Reject a proposed reconciliation match."""
     session = db.get_session()
     try:
-        match = session.query(ReconciliationMatch).filter(ReconciliationMatch.id == match_id).first()
+        match = session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.id == match_id,
+            ReconciliationMatch.organization_id == current_user["organization_id"]
+        ).first()
         if not match:
             raise HTTPException(status_code=404, detail="Match not found")
 
@@ -69,9 +72,16 @@ def reject_match(match_id: int, current_user: dict = Depends(get_current_user)):
 def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(get_current_user)):
     """Create a manual invoice to bank transaction link."""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
-        invoice = session.query(Invoice).filter(Invoice.id == payload.invoice_id).first()
-        transaction = session.query(BankTransaction).filter(BankTransaction.id == payload.transaction_id).first()
+        invoice = session.query(Invoice).filter(
+            Invoice.id == payload.invoice_id,
+            Invoice.organization_id == org_id
+        ).first()
+        transaction = session.query(BankTransaction).filter(
+            BankTransaction.id == payload.transaction_id,
+            BankTransaction.organization_id == org_id
+        ).first()
 
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
@@ -82,6 +92,7 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
             ReconciliationMatch.transaction_id == transaction.id,
             ReconciliationMatch.invoice_id != invoice.id,
             ReconciliationMatch.status != "rejected",
+            ReconciliationMatch.organization_id == org_id
         ).first()
         if transaction_already_linked:
             raise HTTPException(status_code=400, detail="Bank transaction is already linked to another invoice")
@@ -89,6 +100,7 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
         existing_match = session.query(ReconciliationMatch).filter(
             ReconciliationMatch.invoice_id == invoice.id,
             ReconciliationMatch.transaction_id == transaction.id,
+            ReconciliationMatch.organization_id == org_id
         ).first()
         if existing_match:
             existing_match.status = "confirmed"
@@ -99,21 +111,22 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
             session.commit()
             session.refresh(existing_match)
             return {"message": "Manual link updated", "match": serialize_match(existing_match)}
-
-        manual_match = ReconciliationMatch(
-            invoice_id=invoice.id,
-            transaction_id=transaction.id,
-            match_score=1.0,
-            match_type="manual",
-            status="confirmed",
-            notes=payload.notes,
-            matched_by="user",
-        )
-        session.add(manual_match)
-        invoice.status = InvoiceStatus.MATCHED
-        session.commit()
-        session.refresh(manual_match)
-        return {"message": "Manual link created", "match": serialize_match(manual_match)}
+        else:
+            manual_match = ReconciliationMatch(
+                invoice_id=invoice.id,
+                transaction_id=transaction.id,
+                match_score=1.0,
+                match_type="manual",
+                status="confirmed",
+                matched_by="user",
+                notes=payload.notes,
+                organization_id=org_id
+            )
+            session.add(manual_match)
+            invoice.status = InvoiceStatus.MATCHED
+            session.commit()
+            session.refresh(manual_match)
+            return {"message": "Manual link created", "match": serialize_match(manual_match)}
     finally:
         session.close()
 

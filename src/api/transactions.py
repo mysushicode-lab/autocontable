@@ -58,26 +58,29 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
         ).all()
         
         existing_transaction_ids = [tx.id for tx in existing_transactions]
+        org_id = current_user["organization_id"]
         
         # If there are existing transactions, unmatch invoices and delete matches
         if existing_transaction_ids:
             # Find reconciliation matches for these transactions
             matches = session.query(ReconciliationMatch).filter(
-                ReconciliationMatch.transaction_id.in_(existing_transaction_ids)
+                ReconciliationMatch.transaction_id.in_(existing_transaction_ids),
+                ReconciliationMatch.organization_id == org_id
             ).all()
             
             # Update invoice status back to unmatched for affected invoices
             for match in matches:
                 invoice = session.query(Invoice).filter(
                     Invoice.id == match.invoice_id,
-                    Invoice.organization_id == current_user["organization_id"]
+                    Invoice.organization_id == org_id
                 ).first()
-                if invoice and invoice.status == InvoiceStatus.MATCHED:
+                if invoice:
                     invoice.status = InvoiceStatus.UNMATCHED
             
             # Delete reconciliation matches
             session.query(ReconciliationMatch).filter(
-                ReconciliationMatch.transaction_id.in_(existing_transaction_ids)
+                ReconciliationMatch.transaction_id.in_(existing_transaction_ids),
+                ReconciliationMatch.organization_id == org_id
             ).delete()
             
             # Delete old transactions
@@ -167,10 +170,11 @@ def list_transactions(
 def delete_transaction(transaction_id: int, current_user: dict = Depends(get_current_user)):
     """Delete a bank transaction"""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
         transaction = session.query(BankTransaction).filter(
             BankTransaction.id == transaction_id,
-            BankTransaction.organization_id == current_user["organization_id"]
+            BankTransaction.organization_id == org_id
         ).first()
         
         if not transaction:
@@ -178,21 +182,23 @@ def delete_transaction(transaction_id: int, current_user: dict = Depends(get_cur
         
         # Find reconciliation matches that reference this transaction
         matches = session.query(ReconciliationMatch).filter(
-            ReconciliationMatch.transaction_id == transaction_id
+            ReconciliationMatch.transaction_id == transaction_id,
+            ReconciliationMatch.organization_id == org_id
         ).all()
         
         # Update invoice status back to unmatched for affected invoices
         for match in matches:
             invoice = session.query(Invoice).filter(
                 Invoice.id == match.invoice_id,
-                Invoice.organization_id == current_user["organization_id"]
+                Invoice.organization_id == org_id
             ).first()
             if invoice and invoice.status == InvoiceStatus.MATCHED:
                 invoice.status = InvoiceStatus.UNMATCHED
         
         # Delete reconciliation matches
         session.query(ReconciliationMatch).filter(
-            ReconciliationMatch.transaction_id == transaction_id
+            ReconciliationMatch.transaction_id == transaction_id,
+            ReconciliationMatch.organization_id == org_id
         ).delete()
         
         session.delete(transaction)
@@ -210,13 +216,14 @@ def delete_transaction(transaction_id: int, current_user: dict = Depends(get_cur
 def delete_transactions_by_month(year: int, month: int, current_user: dict = Depends(get_current_user)):
     """Delete all transactions for a specific month"""
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
         last_day_num = calendar.monthrange(year, month)[1]
         first_day = datetime(year, month, 1)
         last_day = datetime(year, month, last_day_num, 23, 59, 59)
         
         transactions = session.query(BankTransaction).filter(
-            BankTransaction.organization_id == current_user["organization_id"],
+            BankTransaction.organization_id == org_id,
             BankTransaction.date >= first_day,
             BankTransaction.date <= last_day
         ).all()
@@ -225,14 +232,15 @@ def delete_transactions_by_month(year: int, month: int, current_user: dict = Dep
         
         # Find reconciliation matches for these transactions
         matches = session.query(ReconciliationMatch).filter(
-            ReconciliationMatch.transaction_id.in_(transaction_ids)
+            ReconciliationMatch.transaction_id.in_(transaction_ids),
+            ReconciliationMatch.organization_id == org_id
         ).all()
         
         # Update invoice status back to unmatched for affected invoices
         for match in matches:
             invoice = session.query(Invoice).filter(
                 Invoice.id == match.invoice_id,
-                Invoice.organization_id == current_user["organization_id"]
+                Invoice.organization_id == org_id
             ).first()
             if invoice and invoice.status == InvoiceStatus.MATCHED:
                 invoice.status = InvoiceStatus.UNMATCHED
@@ -240,7 +248,8 @@ def delete_transactions_by_month(year: int, month: int, current_user: dict = Dep
         # Delete reconciliation matches for these transactions
         if transaction_ids:
             session.query(ReconciliationMatch).filter(
-                ReconciliationMatch.transaction_id.in_(transaction_ids)
+                ReconciliationMatch.transaction_id.in_(transaction_ids),
+                ReconciliationMatch.organization_id == org_id
             ).delete()
         
         deleted_count = len(transactions)

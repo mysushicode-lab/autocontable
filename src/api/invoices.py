@@ -37,13 +37,16 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
 
     saved_path = save_uploaded_file(file, INVOICE_UPLOAD_DIR)
     session = db.get_session()
+    org_id = current_user["organization_id"]
     try:
         already_done = session.query(ProcessedFileHash).filter(
-            ProcessedFileHash.content_hash == content_hash
+            ProcessedFileHash.content_hash == content_hash,
+            ProcessedFileHash.organization_id == org_id
         ).first()
         if already_done:
             existing_invoice = session.query(Invoice).filter(
-                Invoice.content_hash == content_hash
+                Invoice.content_hash == content_hash,
+                Invoice.organization_id == org_id
             ).first()
             if existing_invoice:
                 return {
@@ -62,13 +65,16 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
 
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
-        invoice = create_or_update_invoice(session, saved_path, extracted_data, current_user["organization_id"])
+        invoice = create_or_update_invoice(session, saved_path, extracted_data, org_id)
         
         invoice.content_hash = content_hash
         if invoice.supplier:
-            invoice.supplier.organization_id = current_user["organization_id"]
-        if not session.query(ProcessedFileHash).filter(ProcessedFileHash.content_hash == content_hash).first():
-            session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename, organization_id=current_user["organization_id"]))
+            invoice.supplier.organization_id = org_id
+        if not session.query(ProcessedFileHash).filter(
+            ProcessedFileHash.content_hash == content_hash,
+            ProcessedFileHash.organization_id == org_id
+        ).first():
+            session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename, organization_id=org_id))
         session.commit()
         
         # Run automatic reconciliation after manual import
@@ -76,13 +82,13 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
             from src.storage.models import BankTransaction
             recon_invoices = session.query(Invoice).filter(
                 Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
-                Invoice.organization_id == current_user["organization_id"]
+                Invoice.organization_id == org_id
             ).all()
             recon_transactions = session.query(BankTransaction).filter(
-                BankTransaction.organization_id == current_user["organization_id"]
+                BankTransaction.organization_id == org_id
             ).all()
             engine = ReconciliationEngine(session)
-            engine.reconcile(recon_invoices, recon_transactions, current_user["organization_id"])
+            engine.reconcile(recon_invoices, recon_transactions, org_id)
         except Exception as recon_err:
             print(f"[Reconciliation] Auto-reconcile after upload failed: {recon_err}")
         

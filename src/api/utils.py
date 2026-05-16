@@ -80,7 +80,10 @@ def create_or_update_invoice(session: Session, file_path: str, extracted_data: d
     
     extraction_confidence = extracted_data.get("extraction_confidence", "low")
 
-    invoice = session.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
+    invoice = session.query(Invoice).filter(
+        Invoice.invoice_number == invoice_number,
+        Invoice.organization_id == organization_id
+    ).first()
     
     # Disable autoflush to prevent premature INSERT before all fields are set
     with session.no_autoflush:
