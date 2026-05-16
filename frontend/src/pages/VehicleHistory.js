@@ -18,7 +18,7 @@ import { fetchVehicleHistory } from '../api';
 
 const handleDownloadInvoice = async (invoiceId) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     const response = await fetch(`/api/invoices/${invoiceId}/download`, {
       headers: {
         'Authorization': `Bearer ${token}`
