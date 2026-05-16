@@ -272,7 +272,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
       doc.text('Résumé', 14, 60);
 
       doc.setFontSize(11);
-      doc.text(`Total Dépenses: ${currentVehicle.total_spent.toLocaleString('fr-FR')} €`, 14, 70);
+      doc.text(`Total Dépenses: ${currentVehicle.total_spent.toLocaleString('fr-FR', { useGrouping: false })} €`, 14, 70);
       doc.text(`Nombre d'interventions: ${currentVehicle.intervention_count}`, 14, 78);
       doc.text(`Dernière visite: ${currentVehicle.last_visit ? new Date(currentVehicle.last_visit).toLocaleDateString('fr-FR') : '-'}`, 14, 86);
 
@@ -282,7 +282,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
         inv.description || '-',
         inv.category || '-',
         inv.invoice_number || '-',
-        `${inv.amount?.toLocaleString('fr-FR') || 0} €`,
+        `${inv.amount?.toLocaleString('fr-FR', { useGrouping: false }) || 0} €`,
       ]);
 
       doc.setFontSize(14);
@@ -311,7 +311,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
 
       const categoryData = Object.entries(currentVehicle.categories || {}).map(([cat, vals]) => [
         cat,
-        `${vals.amount?.toLocaleString('fr-FR') || 0} €`,
+        `${vals.amount?.toLocaleString('fr-FR', { useGrouping: false }) || 0} €`,
         `${vals.count} facture(s)`,
       ]);
 
