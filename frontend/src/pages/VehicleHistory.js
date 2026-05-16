@@ -198,6 +198,17 @@ const VehicleHistory = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {invoice.file_path && (
+                    <a
+                      href={invoice.file_path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                      title="Télécharger la facture"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
+                  )}
                   {invoice.invoice_id && (
                     <button
                       onClick={() => navigate(`/invoices/${invoice.invoice_id}`)}

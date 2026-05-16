@@ -32,6 +32,8 @@ def get_vehicle_history(registration: str, current_user: dict = Depends(get_curr
             categories[category]["count"] += 1
             categories[category]["amount"] += invoice.amount or 0
             history.append({
+                "invoice_id": invoice.id,
+                "file_path": invoice.file_path,
                 "date": invoice.date.isoformat() if invoice.date else None,
                 "description": invoice.category or "Facture fournisseur",
                 "amount": invoice.amount,
