@@ -16,6 +16,33 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { fetchVehicleHistory } from '../api';
 
+const handleDownloadInvoice = async (invoiceId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/invoices/${invoiceId}/download`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to download invoice');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice_${invoiceId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Download failed:', error);
+  }
+};
+
 const VehicleHistory = () => {
   const { registration } = useParams();
   const [searchPlate, setSearchPlate] = useState(registration || '');
@@ -199,14 +226,13 @@ const VehicleHistory = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {invoice.invoice_id && (
-                    <a
-                      href={`/api/invoices/${invoice.invoice_id}/download`}
-                      download
+                    <button
+                      onClick={() => handleDownloadInvoice(invoice.invoice_id)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
                       title="Télécharger la facture"
                     >
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                   )}
                   {invoice.invoice_id && (
                     <button
