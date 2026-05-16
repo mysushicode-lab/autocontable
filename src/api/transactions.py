@@ -192,7 +192,7 @@ def delete_transaction(transaction_id: int, current_user: dict = Depends(get_cur
                 Invoice.id == match.invoice_id,
                 Invoice.organization_id == org_id
             ).first()
-            if invoice and invoice.status == InvoiceStatus.MATCHED:
+            if invoice:
                 invoice.status = InvoiceStatus.UNMATCHED
         
         # Delete reconciliation matches
@@ -242,7 +242,7 @@ def delete_transactions_by_month(year: int, month: int, current_user: dict = Dep
                 Invoice.id == match.invoice_id,
                 Invoice.organization_id == org_id
             ).first()
-            if invoice and invoice.status == InvoiceStatus.MATCHED:
+            if invoice:
                 invoice.status = InvoiceStatus.UNMATCHED
         
         # Delete reconciliation matches for these transactions

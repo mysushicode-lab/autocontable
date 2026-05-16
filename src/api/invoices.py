@@ -204,7 +204,10 @@ def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_use
                 ProcessedFileHash.content_hash == invoice.content_hash,
                 ProcessedFileHash.organization_id == current_user["organization_id"]
             ).delete()
-        session.query(ReconciliationMatch).filter(ReconciliationMatch.invoice_id == invoice_id).delete()
+        session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.invoice_id == invoice_id,
+            ReconciliationMatch.organization_id == current_user["organization_id"]
+        ).delete()
         session.delete(invoice)
         session.commit()
         return {"message": "Invoice deleted"}
