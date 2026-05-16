@@ -198,9 +198,9 @@ const VehicleHistory = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {invoice.file_path && (
+                  {invoice.invoice_id && (
                     <a
-                      href={invoice.file_path}
+                      href={`/api/invoices/${invoice.invoice_id}/download`}
                       download
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
                       title="Télécharger la facture"
