@@ -7,6 +7,10 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleToggleSign = async (tx) => {
+    if (tx.amount === undefined || tx.amount === null) {
+      console.error('Transaction amount is undefined:', tx);
+      return;
+    }
     const newAmount = tx.amount * -1;
     await updateTransactionMutation.mutateAsync(tx.id, newAmount);
   };
