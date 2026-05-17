@@ -13,12 +13,16 @@ router = APIRouter()
 
 @router.get("/monthly")
 @router.get("/monthly/")
-def get_monthly_report(year: int, month: int, current_user: dict = Depends(get_current_user)):
-    """Get monthly totals report"""
+def get_monthly_report(year: Optional[int] = None, month: Optional[int] = None, current_user: dict = Depends(get_current_user)):
+    """Get monthly totals report (if year/month not provided, returns overall totals)"""
     session = db.get_session()
     try:
         report_gen = ReportGenerator(session, org_id=current_user["organization_id"])
-        return report_gen.monthly_totals(year, month)
+        if year and month:
+            return report_gen.monthly_totals(year, month)
+        else:
+            # Return overall totals when no month filter
+            return report_gen.overall_totals()
     finally:
         session.close()
 

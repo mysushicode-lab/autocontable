@@ -42,6 +42,34 @@ class ReportGenerator:
             inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
         invoices = inv_q.all()
         
+        return self._calculate_totals(invoices, f"{year}-{month:02d}")
+    
+    def overall_totals(self) -> Dict:
+        """
+        Generate overall totals report (all time)
+        
+        Returns:
+            Dictionary with overall totals
+        """
+        # Get all invoices
+        inv_q = self.session.query(Invoice)
+        if self.org_id:
+            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
+        invoices = inv_q.all()
+        
+        return self._calculate_totals(invoices, "overall")
+    
+    def _calculate_totals(self, invoices: List, period: str) -> Dict:
+        """
+        Calculate totals from a list of invoices
+        
+        Args:
+            invoices: List of Invoice objects
+            period: Period identifier (e.g., "2026-04" or "overall")
+            
+        Returns:
+            Dictionary with totals
+        """
         # Calculate totals
         total_amount = sum(i.amount for i in invoices)
         total_tax = sum(i.amount_tax or 0 for i in invoices)
@@ -84,20 +112,19 @@ class ReportGenerator:
         
         # Reconciliation status - calculate based on actual reconciliation matches, not invoice status
         from src.storage.models import ReconciliationMatch, BankTransaction
-        match_q = self.session.query(ReconciliationMatch).join(Invoice).filter(
-            Invoice.date >= first_day,
-            Invoice.date <= last_day
-        )
+        match_q = self.session.query(ReconciliationMatch).join(Invoice)
         if self.org_id:
             match_q = match_q.filter(ReconciliationMatch.organization_id == self.org_id)
         matches = match_q.all()
+        
+        # Filter matches by invoice date to match the invoice query
         matched_invoice_ids = {match.invoice_id for match in matches if match.status != 'rejected'}
         matched_count = len([inv for inv in invoices if inv.id in matched_invoice_ids])
         unmatched_count = len(invoices) - matched_count
         pending_count = 0  # Pending is not calculated from matches, it's a status
         
         return {
-            'period': f"{year}-{month:02d}",
+            'period': period,
             'total_invoices': len(invoices),
             'total_amount': total_amount,
             'total_tax': total_tax,

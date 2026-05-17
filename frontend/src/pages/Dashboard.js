@@ -79,7 +79,7 @@ const Dashboard = () => {
   };
 
   const { data: invoicesData } = useQuery(['dashboard-invoices', filters], () => fetchInvoices(filters));
-  const { data: reportData } = useQuery(['dashboard-report', filters], () => fetchMonthlyReport(filters));
+  const { data: reportData } = useQuery(['dashboard-report'], () => fetchMonthlyReport({}));
   const { data: reconciliationStatus } = useQuery(['dashboard-reconciliation-status'], () => fetchReconciliationStatus({}));
   const { data: reconciliationDetails } = useQuery(['dashboard-reconciliation-details'], () => fetchReconciliationDetails({}));
   const { data: trendsData } = useQuery(['dashboard-trends', trendMonths], () => fetchTrends(trendMonths));
