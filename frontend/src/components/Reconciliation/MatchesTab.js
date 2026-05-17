@@ -42,7 +42,7 @@ const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
                   {/* ── Actions ── */}
                   <button
                     onClick={() => viewInvoice(invoice.id)}
-                    className="shrink-0 p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md"
+                    className="shrink-0 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md"
                     title="Voir la facture"
                   >
                     <Eye className="w-4 h-4" />
