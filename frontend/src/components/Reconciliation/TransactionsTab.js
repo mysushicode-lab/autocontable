@@ -7,11 +7,15 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleToggleSign = async (tx) => {
-    if (tx.amount === undefined || tx.amount === null) {
-      console.error('Transaction amount is undefined:', tx);
+    console.log('[Toggle Sign] Transaction object:', tx);
+    console.log('[Toggle Sign] tx.amount:', tx.amount);
+    if (tx.amount === undefined || tx.amount === null || isNaN(tx.amount)) {
+      console.error('Transaction amount is invalid:', tx);
+      alert('Erreur: Le montant de la transaction est invalide.');
       return;
     }
     const newAmount = tx.amount * -1;
+    console.log('[Toggle Sign] New amount:', newAmount);
     await updateTransactionMutation.mutateAsync(tx.id, newAmount);
   };
   
