@@ -76,7 +76,7 @@ const Reconciliation = () => {
   const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {};
 
   const { data: statsData } = useQuery(['reconciliation-status'], () => fetchReconciliationStatus({}));
-  const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
+  const { data: detailsData, isLoading } = useQuery(['reconciliation-details'], () => fetchReconciliationDetails({}));
   
   // Auto-set month filter to most recent invoice date on initial load
   useEffect(() => {
