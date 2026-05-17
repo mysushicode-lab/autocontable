@@ -18,6 +18,8 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
     console.log('[Toggle Sign] New amount:', newAmount);
     await updateTransactionMutation.mutateAsync({ transactionId: tx.id, amount: newAmount });
   };
+
+  const isLoading = updateTransactionMutation.isLoading;
   
   const handleSelectAll = () => {
     if (selectedIds.size === filteredTransactions.length) {
@@ -114,10 +116,15 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
           </div>
           <button
             onClick={() => handleToggleSign(tx)}
-            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md flex-shrink-0"
+            disabled={isLoading}
+            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Inverser le signe (positif/négatif)"
           >
-            <RefreshCw className="w-4 h-4" />
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </button>
           <button
             onClick={() => deleteTransactionMutation.mutate(tx.id)}
