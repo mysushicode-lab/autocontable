@@ -92,13 +92,14 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
                 ).all()
                 engine = ReconciliationEngine(recon_session)
                 engine.reconcile(recon_invoices, recon_transactions, org_id)
+                recon_session.commit()
             finally:
                 recon_session.close()
         except Exception as recon_err:
             print(f"[Reconciliation] Auto-reconcile after upload failed: {recon_err}")
         
-        # Refresh the invoice from the original session
-        session.refresh(invoice)
+        # Re-fetch the invoice from the database to get the latest status after reconciliation
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
         return {
             "message": "Invoice imported successfully",
             "invoice": {
