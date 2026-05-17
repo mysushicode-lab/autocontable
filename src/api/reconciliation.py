@@ -88,14 +88,8 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
         if not transaction:
             raise HTTPException(status_code=404, detail="Bank transaction not found")
 
-        transaction_already_linked = session.query(ReconciliationMatch).filter(
-            ReconciliationMatch.transaction_id == transaction.id,
-            ReconciliationMatch.invoice_id != invoice.id,
-            ReconciliationMatch.status != "rejected",
-            ReconciliationMatch.organization_id == org_id
-        ).first()
-        if transaction_already_linked:
-            raise HTTPException(status_code=400, detail="Bank transaction is already linked to another invoice")
+        # Allow multiple invoices to be linked to the same transaction
+        # Removed transaction_already_linked check
 
         existing_match = session.query(ReconciliationMatch).filter(
             ReconciliationMatch.invoice_id == invoice.id,
