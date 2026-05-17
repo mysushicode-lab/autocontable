@@ -249,6 +249,8 @@ def get_reconciliation_status(
 
         all_matches = match_q.all()
         active = [m for m in all_matches if m.status != 'rejected']
+        manual = [m for m in active if m.match_type == 'manual']
+        auto = [m for m in active if m.match_type != 'manual']
 
         all_invoices = invoice_q.all()
         total_invoices   = len(all_invoices)
@@ -266,6 +268,8 @@ def get_reconciliation_status(
             "matched_invoices":  matched_invoices,
             "unmatched_invoices": total_invoices - matched_invoices,
             "success_rate":      success_rate,
+            "manualMatched":     len(manual),
+            "autoMatched":       len(auto),
         }
     finally:
         session.close()
