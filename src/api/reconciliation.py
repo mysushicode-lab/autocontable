@@ -154,10 +154,16 @@ def get_reconciliation_details(
         matched_transaction_ids = {match.transaction_id for match in matches}
         matched_invoice_ids = {match.invoice_id for match in matches}
 
+        # Group matches by transaction to show all invoices per transaction
+        from collections import defaultdict
+        matches_by_tx = defaultdict(list)
+        for match in matches:
+            matches_by_tx[match.transaction_id].append(match)
+
         # Calculate unmatched invoices based on actual reconciliation matches, not invoice status
         all_invoices = invoice_query.all()
         unmatched_invoices = [inv for inv in all_invoices if inv.id not in matched_invoice_ids]
-        
+
         bank_only_transactions = transaction_query.filter(
             ~BankTransaction.id.in_(matched_transaction_ids) if matched_transaction_ids else True
         ).all()
@@ -165,25 +171,30 @@ def get_reconciliation_details(
         return {
             "matches": [
                 {
-                    "id": match.id,
-                    "score": round((match.match_score or 0) * 100, 2),
-                    "status": match.status,
-                    "invoice": {
-                        "id": match.invoice.id,
-                        "number": match.invoice.invoice_number,
-                        "supplier": match.invoice.supplier.name if match.invoice.supplier else None,
-                        "amount": match.invoice.amount,
-                        "date": match.invoice.date.isoformat() if match.invoice.date else None,
-                        "vehicle": match.invoice.vehicle_registration
-                    },
+                    "transaction_id": tx_id,
                     "transaction": {
-                        "id": match.transaction.transaction_id,
-                        "amount": match.transaction.amount,
-                        "date": match.transaction.date.isoformat() if match.transaction.date else None,
-                        "description": match.transaction.description
-                    }
+                        "id": matches[0].transaction.transaction_id,
+                        "amount": matches[0].transaction.amount,
+                        "date": matches[0].transaction.date.isoformat() if matches[0].transaction.date else None,
+                        "description": matches[0].transaction.description
+                    },
+                    "invoices": [
+                        {
+                            "id": match.invoice.id,
+                            "number": match.invoice.invoice_number,
+                            "supplier": match.invoice.supplier.name if match.invoice.supplier else None,
+                            "amount": match.invoice.amount,
+                            "date": match.invoice.date.isoformat() if match.invoice.date else None,
+                            "vehicle": match.invoice.vehicle_registration,
+                            "match_id": match.id,
+                            "score": round((match.match_score or 0) * 100, 2),
+                            "status": match.status,
+                            "match_type": match.match_type
+                        }
+                        for match in matches
+                    ]
                 }
-                for match in matches
+                for tx_id, matches in matches_by_tx.items()
             ],
             "unmatched_invoices": [
                 {
