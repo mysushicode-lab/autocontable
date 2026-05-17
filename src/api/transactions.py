@@ -1,4 +1,8 @@
 """Transaction endpoints"""
+from pydantic import BaseModel
+
+class UpdateTransactionRequest(BaseModel):
+    amount: float
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -169,7 +173,7 @@ def list_transactions(
 @router.put("/{transaction_id}")
 def update_transaction(
     transaction_id: int,
-    amount: float = Form(...),
+    request: UpdateTransactionRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Update a bank transaction amount"""
@@ -182,7 +186,7 @@ def update_transaction(
         ).first()
         if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
-        transaction.amount = amount
+        transaction.amount = request.amount
         session.commit()
 
         # Run automatic reconciliation after transaction amount update
