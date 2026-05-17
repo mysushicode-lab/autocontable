@@ -22,6 +22,7 @@ import {
   runAutomaticReconciliation,
   deleteTransaction,
   deleteTransactionsByMonth,
+  updateTransaction,
   uploadInvoiceFile,
   fetchInvoices,
 } from '../api';
@@ -179,6 +180,16 @@ const Reconciliation = () => {
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', error?.response?.data?.detail || 'Impossible de supprimer la transaction.');
+    },
+  });
+
+  const updateTransactionMutation = useMutation(updateTransaction, {
+    onSuccess: () => {
+      refreshAll();
+      addNotif(NOTIF_TYPES.SUCCESS, 'Transaction modifiée', 'Le montant a été mis à jour.');
+    },
+    onError: (error) => {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur modification', error?.response?.data?.detail || 'Impossible de modifier la transaction.');
     },
   });
 
@@ -415,6 +426,7 @@ const Reconciliation = () => {
           <TransactionsTab
             filteredTransactions={filteredTransactions}
             deleteTransactionMutation={deleteTransactionMutation}
+            updateTransactionMutation={updateTransactionMutation}
             onDeleteAll={handleDeleteAllTransactions}
           />
         )}

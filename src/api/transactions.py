@@ -166,6 +166,28 @@ def list_transactions(
         session.close()
 
 
+@router.put("/{transaction_id}")
+def update_transaction(
+    transaction_id: int,
+    amount: float = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a bank transaction amount"""
+    session = db.get_session()
+    org_id = current_user["organization_id"]
+    try:
+        transaction = session.query(BankTransaction).filter(
+            BankTransaction.id == transaction_id,
+            BankTransaction.organization_id == org_id
+        ).first()
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        transaction.amount = amount
+        session.commit()
+        return {"message": "Transaction updated successfully"}
+    finally:
+        session.close()
+
 @router.delete("/{transaction_id}")
 def delete_transaction(transaction_id: int, current_user: dict = Depends(get_current_user)):
     """Delete a bank transaction"""

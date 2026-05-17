@@ -65,7 +65,9 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
 
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
+        print(f"[Upload] Extracted date: {extracted_data.get('date')}, amount: {extracted_data.get('amount')}, supplier: {extracted_data.get('supplier_name')}")
         invoice = create_or_update_invoice(session, saved_path, extracted_data, org_id)
+        print(f"[Upload] Created invoice with date: {invoice.date}, amount: {invoice.amount}, status: {invoice.status}")
         
         invoice.content_hash = content_hash
         if not session.query(ProcessedFileHash).filter(

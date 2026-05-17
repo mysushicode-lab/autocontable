@@ -133,6 +133,13 @@ export const deleteTransaction = async (transactionId) => {
   return response.data;
 };
 
+export const updateTransaction = async (transactionId, amount) => {
+  const formData = new FormData();
+  formData.append('amount', amount);
+  const response = await api.put(`/api/transactions/${transactionId}`, formData);
+  return response.data;
+};
+
 export const deleteTransactionsByMonth = async (year, month) => {
   const response = await api.delete(`/api/transactions/month/${year}/${month}`);
   return response.data;

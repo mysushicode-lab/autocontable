@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CreditCard, XCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { CreditCard, XCircle, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 
-const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDeleteAll }) => {
+const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, updateTransactionMutation, onDeleteAll }) => {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const handleToggleSign = async (tx) => {
+    const newAmount = tx.amount * -1;
+    await updateTransactionMutation.mutateAsync(tx.id, newAmount);
+  };
   
   const handleSelectAll = () => {
     if (selectedIds.size === filteredTransactions.length) {
@@ -99,6 +104,13 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, onDe
             </p>
             <p className="text-xs text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</p>
           </div>
+          <button
+            onClick={() => handleToggleSign(tx)}
+            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md flex-shrink-0"
+            title="Inverser le signe (positif/négatif)"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
           <button
             onClick={() => deleteTransactionMutation.mutate(tx.id)}
             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md flex-shrink-0"
