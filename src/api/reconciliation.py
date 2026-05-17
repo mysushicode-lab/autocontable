@@ -252,12 +252,17 @@ def get_reconciliation_status(
         manual = [m for m in active if m.match_type == 'manual']
         auto = [m for m in active if m.match_type != 'manual']
 
-        all_invoices = invoice_q.all()
-        total_invoices   = len(all_invoices)
-        
-        # Calculate matched invoices based on actual reconciliation matches, not invoice status
+        # Get all invoices (including from previous months) that are matched to transactions in the selected month
         matched_invoice_ids = {match.invoice_id for match in active}
         matched_invoices = len(matched_invoice_ids)
+        
+        # Get invoices from the selected month for the total count
+        all_invoices = invoice_q.all()
+        total_invoices = len(all_invoices)
+        
+        # Calculate unmatched invoices: invoices from selected month that are not matched
+        matched_in_selected_month = len([inv for inv in all_invoices if inv.id in matched_invoice_ids])
+        unmatched_invoices = total_invoices - matched_in_selected_month
 
         success_rate = round((matched_invoices / total_invoices) * 100) if total_invoices else 0
 
@@ -266,7 +271,7 @@ def get_reconciliation_status(
             "confirmed":         len(active),
             "total_invoices":    total_invoices,
             "matched_invoices":  matched_invoices,
-            "unmatched_invoices": total_invoices - matched_invoices,
+            "unmatched_invoices": unmatched_invoices,
             "success_rate":      success_rate,
             "manualMatched":     len(manual),
             "autoMatched":       len(auto),
