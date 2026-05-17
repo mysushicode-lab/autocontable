@@ -1,9 +1,6 @@
 """Transaction endpoints"""
 from pydantic import BaseModel
-
-class UpdateTransactionRequest(BaseModel):
-    amount: float
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
@@ -16,6 +13,9 @@ from src.storage.models import BankTransaction, ReconciliationMatch, Invoice, In
 from src.bank_importer.bank_importer import BankImporter
 from src.api.utils import save_uploaded_file
 from src.api.auth import get_current_user, check_trial_active
+
+class UpdateTransactionRequest(BaseModel):
+    amount: float
 
 router = APIRouter()
 
