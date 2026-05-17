@@ -147,7 +147,7 @@ def get_reconciliation_details(
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
             invoice_query = invoice_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
-            match_query = match_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
+            match_query = match_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
             transaction_query = transaction_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
 
         matches = match_query.all()
@@ -245,7 +245,7 @@ def get_reconciliation_status(
             first_day = datetime(year, month, 1)
             last_day = datetime(year, month, last_day_num, 23, 59, 59)
             invoice_q = invoice_q.filter(Invoice.date >= first_day, Invoice.date <= last_day)
-            match_q = match_q.filter(Invoice.date >= first_day, Invoice.date <= last_day)
+            match_q = match_q.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
 
         all_matches = match_q.all()
         active = [m for m in all_matches if m.status != 'rejected']

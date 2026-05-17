@@ -111,8 +111,15 @@ class ReportGenerator:
             category_totals[category]['tax'] += invoice.amount_tax or 0
         
         # Reconciliation status - calculate based on actual reconciliation matches, not invoice status
+        # Filter matches by transaction date to include invoices from previous months matched to current month transactions
         from src.storage.models import ReconciliationMatch, BankTransaction
-        match_q = self.session.query(ReconciliationMatch).join(Invoice)
+        match_q = self.session.query(ReconciliationMatch).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
+        if period != "overall":
+            # For monthly reports, filter by transaction date
+            year, month = map(int, period.split('-'))
+            first_day = datetime(year, month, 1)
+            last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
+            match_q = match_q.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
         if self.org_id:
             match_q = match_q.filter(ReconciliationMatch.organization_id == self.org_id)
         matches = match_q.all()
