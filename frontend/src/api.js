@@ -134,7 +134,7 @@ export const deleteTransaction = async (transactionId) => {
 };
 
 export const updateTransaction = async (transactionId, amount) => {
-  const response = await api.put(`/api/transactions/${transactionId}`, { amount });
+  const response = await api.put(`/api/transactions/${transactionId}?amount=${amount}`);
   return response.data;
 };
 

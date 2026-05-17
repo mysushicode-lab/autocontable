@@ -173,11 +173,11 @@ def list_transactions(
 @router.put("/{transaction_id}")
 def update_transaction(
     transaction_id: int,
-    request: UpdateTransactionRequest,
+    amount: float,
     current_user: dict = Depends(get_current_user)
 ):
     """Update a bank transaction amount"""
-    print(f"[Update Transaction] Received request: transaction_id={transaction_id}, amount={request.amount}")
+    print(f"[Update Transaction] Received request: transaction_id={transaction_id}, amount={amount}")
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
@@ -187,7 +187,7 @@ def update_transaction(
         ).first()
         if not transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
-        transaction.amount = request.amount
+        transaction.amount = amount
         session.commit()
 
         # Run automatic reconciliation after transaction amount update
