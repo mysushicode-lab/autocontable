@@ -68,8 +68,6 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         invoice = create_or_update_invoice(session, saved_path, extracted_data, org_id)
         
         invoice.content_hash = content_hash
-        if invoice.supplier:
-            invoice.supplier.organization_id = org_id
         if not session.query(ProcessedFileHash).filter(
             ProcessedFileHash.content_hash == content_hash,
             ProcessedFileHash.organization_id == org_id
@@ -77,21 +75,29 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
             session.add(ProcessedFileHash(content_hash=content_hash, filename=file.filename, organization_id=org_id))
         session.commit()
         
-        # Run automatic reconciliation after manual import
+        # Store invoice ID before running reconciliation
+        invoice_id = invoice.id
+        
+        # Run automatic reconciliation after manual import in a separate session
         try:
             from src.storage.models import BankTransaction
-            recon_invoices = session.query(Invoice).filter(
-                Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
-                Invoice.organization_id == org_id
-            ).all()
-            recon_transactions = session.query(BankTransaction).filter(
-                BankTransaction.organization_id == org_id
-            ).all()
-            engine = ReconciliationEngine(session)
-            engine.reconcile(recon_invoices, recon_transactions, org_id)
+            recon_session = db.get_session()
+            try:
+                recon_invoices = recon_session.query(Invoice).filter(
+                    Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
+                    Invoice.organization_id == org_id
+                ).all()
+                recon_transactions = recon_session.query(BankTransaction).filter(
+                    BankTransaction.organization_id == org_id
+                ).all()
+                engine = ReconciliationEngine(recon_session)
+                engine.reconcile(recon_invoices, recon_transactions, org_id)
+            finally:
+                recon_session.close()
         except Exception as recon_err:
             print(f"[Reconciliation] Auto-reconcile after upload failed: {recon_err}")
         
+        # Refresh the invoice from the original session
         session.refresh(invoice)
         return {
             "message": "Invoice imported successfully",
@@ -282,18 +288,24 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
                 pass
         if request.supplier_name is not None:
             if request.supplier_name:
-                supplier = session.query(Supplier).filter(Supplier.name == request.supplier_name).first()
+                org_id = current_user["organization_id"]
+                normalized = request.supplier_name.lower().strip()
+                supplier = session.query(Supplier).filter(
+                    Supplier.organization_id == org_id,
+                    Supplier.name == request.supplier_name,
+                ).first()
                 if not supplier:
-                    normalized = request.supplier_name.lower().strip()
-                    supplier = session.query(Supplier).filter(Supplier.normalized_name == normalized).first()
+                    supplier = session.query(Supplier).filter(
+                        Supplier.organization_id == org_id,
+                        Supplier.normalized_name == normalized,
+                    ).first()
                 if supplier:
                     invoice.supplier_id = supplier.id
                 else:
-                    # Create new supplier
                     new_supplier = Supplier(
                         name=request.supplier_name,
                         normalized_name=normalized,
-                        organization_id=current_user["organization_id"]
+                        organization_id=org_id,
                     )
                     session.add(new_supplier)
                     session.flush()

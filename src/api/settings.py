@@ -1,4 +1,5 @@
 """Settings endpoints"""
+import os
 from fastapi import APIRouter, Depends
 from typing import Optional
 from datetime import datetime
@@ -8,7 +9,49 @@ from src.storage.models import Settings, Organization
 from src.api.schemas import SettingUpdate, TestImapRequest
 from src.api.auth import get_current_user, check_trial_active
 
+try:
+    import stripe
+    stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+    STRIPE_AVAILABLE = bool(stripe.api_key)
+except ImportError:
+    STRIPE_AVAILABLE = False
+
 router = APIRouter()
+
+
+def sync_plan_from_stripe(org, session):
+    """Sync organization plan from Stripe subscription state.
+
+    Returns True if any change was committed.
+    """
+    if not STRIPE_AVAILABLE or not org.stripe_customer_id:
+        return False
+    try:
+        subscriptions = stripe.Subscription.list(
+            customer=org.stripe_customer_id,
+            status='all',
+            limit=10,
+        )
+        has_active = any(
+            sub.status in ('active', 'trialing', 'past_due')
+            for sub in subscriptions.data
+        )
+        changed = False
+        if has_active and org.plan_type != 'paid':
+            org.plan_type = 'paid'
+            org.is_trial_active = False
+            changed = True
+        elif not has_active and org.plan_type == 'paid':
+            # Subscription cancelled or expired
+            org.plan_type = 'free'
+            org.is_trial_active = False
+            changed = True
+        if changed:
+            session.commit()
+        return changed
+    except Exception as e:
+        print(f"[sync_plan_from_stripe] Error: {e}")
+        return False
 
 
 @router.get("/")
@@ -80,12 +123,19 @@ def test_imap_connection(request: TestImapRequest):
 
 @router.get("/plan")
 def get_plan_status(current_user: dict = Depends(get_current_user)):
-    """Get current organization plan status and trial information"""
+    """Get current organization plan status and trial information.
+
+    Auto-syncs from Stripe if the org has a stripe_customer_id, ensuring the
+    plan is always up-to-date even if webhooks are missed.
+    """
     session = db.get_session()
     try:
         org = session.query(Organization).filter(Organization.id == current_user["organization_id"]).first()
         if not org:
             return {"error": "Organization not found"}, 404
+
+        # Sync from Stripe (no-op if no customer id or stripe unavailable)
+        sync_plan_from_stripe(org, session)
 
         now = datetime.utcnow()
         is_trial_expired = False

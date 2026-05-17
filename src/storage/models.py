@@ -31,6 +31,7 @@ class Organization(Base):
     trial_start_date = Column(DateTime, nullable=True)
     trial_end_date = Column(DateTime, nullable=True)
     is_trial_active = Column(Boolean, default=True)
+    stripe_customer_id = Column(String(255), nullable=True)  # Stripe customer ID for billing
     created_at = Column(DateTime, default=datetime.utcnow)
 
     users = relationship("User", back_populates="organization")

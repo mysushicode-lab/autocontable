@@ -155,6 +155,7 @@ def startup_event():
         "ALTER TABLE organizations ADD COLUMN trial_start_date DATETIME",
         "ALTER TABLE organizations ADD COLUMN trial_end_date DATETIME",
         "ALTER TABLE organizations ADD COLUMN is_trial_active BOOLEAN DEFAULT 1",
+        "ALTER TABLE organizations ADD COLUMN stripe_customer_id VARCHAR(255)",
     ]
     for stmt in add_org_col_migrations:
         try:

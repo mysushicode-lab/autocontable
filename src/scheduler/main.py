@@ -156,7 +156,7 @@ class InvoiceScheduler:
             
             # Initialize processors
             invoice_processor = InvoiceProcessor()
-            supplier_classifier = SupplierClassifier(session)
+            supplier_classifier = SupplierClassifier(session, org_id=organization_id)
             category_classifier = CategoryClassifier()
             
             processed_count = 0

@@ -63,7 +63,7 @@ def create_or_update_invoice(session: Session, file_path: str, extracted_data: d
     if not organization_id:
         raise ValueError("organization_id is required for invoice creation")
     
-    supplier_classifier = SupplierClassifier(session)
+    supplier_classifier = SupplierClassifier(session, org_id=organization_id)
     category_classifier = CategoryClassifier()
     supplier = supplier_classifier.detect_supplier(extracted_data)
     

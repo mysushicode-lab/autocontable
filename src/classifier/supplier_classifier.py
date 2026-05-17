@@ -11,9 +11,16 @@ from src.storage.models import Supplier
 class SupplierClassifier:
     """Classify and normalize supplier names"""
     
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, org_id: int = None):
         self.session = session
+        self.org_id = org_id
         self.supplier_cache = {}
+
+    def _scope(self, query):
+        """Scope a Supplier query by organization_id when available."""
+        if self.org_id is not None:
+            return query.filter(Supplier.organization_id == self.org_id)
+        return query
     
     def normalize_name(self, name: str) -> str:
         """
@@ -155,8 +162,8 @@ class SupplierClassifier:
         return domain_lower in generic_domains or domain_lower in email_service_domains
     
     def _find_by_normalized_name(self, normalized_name: str) -> Optional[Supplier]:
-        """Find supplier by normalized name"""
-        supplier = self.session.query(Supplier).filter(
+        """Find supplier by normalized name (scoped to organization)"""
+        supplier = self._scope(self.session.query(Supplier)).filter(
             Supplier.normalized_name == normalized_name
         ).first()
         return supplier
@@ -169,8 +176,8 @@ class SupplierClassifier:
         if not name or len(name) < 3:
             return None
         
-        # Get all existing suppliers
-        all_suppliers = self.session.query(Supplier).all()
+        # Get all existing suppliers (scoped to organization)
+        all_suppliers = self._scope(self.session.query(Supplier)).all()
         
         best_match = None
         best_ratio = 0.0
@@ -201,7 +208,7 @@ class SupplierClassifier:
     
     def _find_by_email_domain(self, email_domain: str, email_from: str = None) -> Optional[Supplier]:
         """Find supplier by email domain and update name to domain if needed"""
-        supplier = self.session.query(Supplier).filter(
+        supplier = self._scope(self.session.query(Supplier)).filter(
             Supplier.email_domain == email_domain
         ).first()
         # Update supplier name to domain for consistency
@@ -223,25 +230,26 @@ class SupplierClassifier:
         if not email_domain and email:
             email_domain = self._extract_email_domain(email)
         
-        # Check if supplier already exists (by normalized_name or email_domain)
+        # Check if supplier already exists (by normalized_name or email_domain) - scoped to org
         if email_domain:
-            existing = self.session.query(Supplier).filter(
+            existing = self._scope(self.session.query(Supplier)).filter(
                 (Supplier.normalized_name == normalized) | (Supplier.email_domain == email_domain)
             ).first()
         else:
-            existing = self.session.query(Supplier).filter(
+            existing = self._scope(self.session.query(Supplier)).filter(
                 Supplier.normalized_name == normalized
             ).first()
         
         if existing:
             return existing
         
-        # Create new supplier
+        # Create new supplier (scoped to organization)
         supplier = Supplier(
             name=name,
             normalized_name=normalized,
             email=email,  # Store complete email for reference
-            email_domain=email_domain
+            email_domain=email_domain,
+            organization_id=self.org_id,
         )
         
         try:
@@ -249,8 +257,8 @@ class SupplierClassifier:
             self.session.commit()
         except Exception:
             self.session.rollback()
-            # Try to fetch again in case of race condition
-            existing = self.session.query(Supplier).filter(
+            # Try to fetch again in case of race condition (scoped)
+            existing = self._scope(self.session.query(Supplier)).filter(
                 Supplier.normalized_name == normalized
             ).first()
             if existing:

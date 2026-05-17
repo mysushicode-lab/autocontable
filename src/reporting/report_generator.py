@@ -184,10 +184,13 @@ class ReportGenerator:
         last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
         
         # Get matches for the period
-        matches = self.session.query(ReconciliationMatch).join(Invoice).filter(
+        match_q = self.session.query(ReconciliationMatch).join(Invoice).filter(
             Invoice.date >= first_day,
             Invoice.date <= last_day
-        ).all()
+        )
+        if self.org_id:
+            match_q = match_q.filter(ReconciliationMatch.organization_id == self.org_id)
+        matches = match_q.all()
         
         # Calculate statistics
         active   = [m for m in matches if m.status != 'rejected']
@@ -216,7 +219,8 @@ class ReportGenerator:
             Dictionary with supplier summary
         """
         query = self.session.query(Invoice)
-        
+        if self.org_id:
+            query = query.filter(Invoice.organization_id == self.org_id)
         if supplier_id:
             query = query.filter(Invoice.supplier_id == supplier_id)
         

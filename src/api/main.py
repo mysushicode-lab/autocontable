@@ -6,6 +6,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from src.api.database import startup_event
 from src.api.auth import router as auth_router, get_current_user
@@ -16,6 +20,7 @@ from src.api.users import router as users_router
 from src.api.settings import router as settings_router
 from src.api.reports import router as reports_router
 from src.api.vehicles import router as vehicles_router
+from src.api.payments import router as stripe_router
 
 app = FastAPI(title="Invoice Processing API", version="1.0.0")
 
@@ -111,6 +116,8 @@ app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(settings_router, prefix="/api/settings", tags=["Settings"])
 app.include_router(reports_router, prefix="/api/reports", tags=["Reports"])
 app.include_router(vehicles_router, prefix="/api/vehicles", tags=["Vehicles"])
+
+app.include_router(stripe_router, prefix="/api/stripe", tags=["Stripe"])
 
 
 if __name__ == "__main__":

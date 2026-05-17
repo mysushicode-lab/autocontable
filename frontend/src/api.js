@@ -233,4 +233,29 @@ export const uploadProfilePhoto = async (userId, file) => {
   return response.data;
 };
 
+export const createStripeCheckoutSession = async (planType) => {
+  const response = await api.post('/api/stripe/create-checkout-session', { plan_type: planType });
+  return response.data;
+};
+
+export const verifyStripeSession = async (sessionId) => {
+  const response = await api.get(`/api/stripe/verify-session/${sessionId}`);
+  return response.data;
+};
+
+export const createStripePortalSession = async () => {
+  const response = await api.post('/api/stripe/create-portal-session');
+  return response.data;
+};
+
+export const fetchStripePaymentMethods = async () => {
+  const response = await api.get('/api/stripe/payment-methods');
+  return response.data;
+};
+
+export const fetchStripeInvoices = async () => {
+  const response = await api.get('/api/stripe/invoices');
+  return response.data;
+};
+
 export default api;

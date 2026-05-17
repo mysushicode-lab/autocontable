@@ -43,3 +43,6 @@ python-jose[cryptography]>=3.3.0
 
 # Utilities
 requests>=2.31.0
+
+# Payments
+stripe>=8.0.0
