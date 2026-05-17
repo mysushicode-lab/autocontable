@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, XCircle, Eye } from 'lucide-react';
+import { Link, XCircle, ExternalLink } from 'lucide-react';
 
 const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
   return (
@@ -45,7 +45,7 @@ const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
                     className="shrink-0 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md"
                     title="Voir la facture"
                   >
-                    <Eye className="w-4 h-4" />
+                    <ExternalLink className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => rejectMutation.mutate(invoice.match_id)}
