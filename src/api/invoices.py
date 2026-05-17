@@ -1,5 +1,5 @@
 """Invoice endpoints"""
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -391,6 +391,35 @@ def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_curre
             file_path,
             media_type="application/pdf",
             filename=os.path.basename(file_path)
+        )
+    finally:
+        session.close()
+
+
+@router.get("/{invoice_id}/view")
+def view_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_user)):
+    """View invoice PDF file in browser"""
+    session = db.get_session()
+    try:
+        invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        
+        if not invoice.file_path:
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        # Convert relative path to absolute if needed
+        file_path = invoice.file_path
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.getcwd(), file_path.lstrip('/'))
+        
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        return FileResponse(
+            file_path,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "inline; filename=" + os.path.basename(file_path)}
         )
     finally:
         session.close()

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link, XCircle } from 'lucide-react';
+import { Link, XCircle, Eye } from 'lucide-react';
 
-const MatchesTab = ({ filteredMatches, rejectMutation }) => {
+const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
   return (
     <div className="space-y-2">
       {filteredMatches.map((matchGroup) => {
@@ -40,6 +40,13 @@ const MatchesTab = ({ filteredMatches, rejectMutation }) => {
                   </div>
 
                   {/* ── Actions ── */}
+                  <button
+                    onClick={() => viewInvoice(invoice.id)}
+                    className="shrink-0 p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md"
+                    title="Voir la facture"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => rejectMutation.mutate(invoice.match_id)}
                     className="shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md"

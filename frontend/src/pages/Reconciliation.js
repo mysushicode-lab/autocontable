@@ -25,6 +25,7 @@ import {
   updateTransaction,
   uploadInvoiceFile,
   fetchInvoices,
+  viewInvoice,
 } from '../api';
 import DropdownButton from '../components/DropdownButton';
 import ReconciliationHeader from '../components/Reconciliation/ReconciliationHeader';
@@ -415,7 +416,7 @@ const Reconciliation = () => {
       >
         {isLoading && <div className="text-sm text-gray-500 mb-4">Chargement du rapprochement...</div>}
         {activeTab === 'matches' && (
-          <MatchesTab filteredMatches={filteredMatches} rejectMutation={rejectMutation} />
+          <MatchesTab filteredMatches={filteredMatches} rejectMutation={rejectMutation} viewInvoice={viewInvoice} />
         )}
 
         {activeTab === 'unmatched' && (
