@@ -75,7 +75,7 @@ const Reconciliation = () => {
   ];
   const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {};
 
-  const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
+  const { data: statsData } = useQuery(['reconciliation-status'], () => fetchReconciliationStatus({}));
   const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
   
   // Auto-set month filter to most recent invoice date on initial load
@@ -202,10 +202,10 @@ const Reconciliation = () => {
   const bankOnly = detailsData?.bank_only || [];
   const stats = {
     totalMatched: statsData?.matched_invoices ?? matches.length,
-    autoMatched:  matches.filter(m => m.match_type !== 'manual').length,
-    manualMatched: matches.filter(m => m.match_type === 'manual').length,
-    unmatched:    statsData?.unmatched_invoices ?? unmatchedInvoices.length,
-    successRate:  statsData?.success_rate ?? 0,
+    autoMatched: statsData?.autoMatched ?? 0,
+    manualMatched: statsData?.manualMatched ?? 0,
+    unmatched: statsData?.unmatched_invoices ?? unmatchedInvoices.length,
+    successRate: statsData?.success_rate ?? 0,
   };
 
   // Filter helper function
