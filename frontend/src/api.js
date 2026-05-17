@@ -123,10 +123,8 @@ export const getInvoicePdfUrl = (invoiceId) => {
   return `/api/invoices/${invoiceId}/download`;
 };
 
-export const viewInvoice = async (invoiceId) => {
-  const response = await api.get(`/api/invoices/${invoiceId}/view`, { responseType: 'blob' });
-  const url = window.URL.createObjectURL(new Blob([response.data]));
-  window.open(url, '_blank');
+export const viewInvoice = (invoiceId) => {
+  window.open(`/api/invoices/${invoiceId}/view`, '_blank');
 };
 
 export const deleteInvoice = async (invoiceId) => {
