@@ -16,7 +16,7 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
     }
     const newAmount = tx.amount * -1;
     console.log('[Toggle Sign] New amount:', newAmount);
-    await updateTransactionMutation.mutateAsync(tx.id, newAmount);
+    await updateTransactionMutation.mutateAsync({ transactionId: tx.id, amount: newAmount });
   };
   
   const handleSelectAll = () => {
