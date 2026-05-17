@@ -79,15 +79,6 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
             width="120px"
           />
         </div>
-        <div className="flex items-center gap-2 mb-2">
-          <input
-            type="checkbox"
-            checked={linkSelectedIds.size === filtered.length && filtered.length > 0}
-            onChange={handleSelectAll}
-            className="w-4 h-4 rounded border-gray-300"
-          />
-          <span className="text-xs text-gray-500">{linkSelectedIds.size} sélectionné(s)</span>
-        </div>
         <p className="text-xs text-gray-400 mb-2">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</p>
         <div className="overflow-y-auto flex-1 space-y-1 mb-4">
           {filtered.length === 0 && (
