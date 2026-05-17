@@ -177,6 +177,7 @@ def update_transaction(
     current_user: dict = Depends(get_current_user)
 ):
     """Update a bank transaction amount"""
+    print(f"[Update Transaction] Received request: transaction_id={transaction_id}, amount={request.amount}")
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
