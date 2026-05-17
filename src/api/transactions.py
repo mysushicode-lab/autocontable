@@ -184,6 +184,28 @@ def update_transaction(
             raise HTTPException(status_code=404, detail="Transaction not found")
         transaction.amount = amount
         session.commit()
+
+        # Run automatic reconciliation after transaction amount update
+        try:
+            from src.reconciliation.reconciliation_engine import ReconciliationEngine
+            from src.storage.models import Invoice, InvoiceStatus
+            recon_session = db.get_session()
+            try:
+                recon_invoices = recon_session.query(Invoice).filter(
+                    Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
+                    Invoice.organization_id == org_id
+                ).all()
+                recon_transactions = recon_session.query(BankTransaction).filter(
+                    BankTransaction.organization_id == org_id
+                ).all()
+                engine = ReconciliationEngine(recon_session)
+                engine.reconcile(recon_invoices, recon_transactions, org_id)
+                recon_session.commit()
+            finally:
+                recon_session.close()
+        except Exception as recon_err:
+            print(f"[Reconciliation] Auto-reconcile after transaction update failed: {recon_err}")
+
         return {"message": "Transaction updated successfully"}
     finally:
         session.close()
