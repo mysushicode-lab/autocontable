@@ -41,7 +41,7 @@ const Reconciliation = () => {
   const [activeTab, setActiveTab] = useState('matches');
   const [linkModal, setLinkModal] = useState(null); // { type: 'tx2inv'|'inv2tx', id, label }
   const [linkSearch, setLinkSearch] = useState('');
-  const [linkSelectedId, setLinkSelectedId] = useState(null);
+  const [linkSelectedIds, setLinkSelectedIds] = useState(new Set());
   const [linkMonthFilter, setLinkMonthFilter] = useState(''); // Month filter for link modal (YYYY-MM)
   const [showLinkMonthDropdown, setShowLinkMonthDropdown] = useState(false);
   const linkMonthButtonRef = useRef(null);
@@ -324,14 +324,14 @@ const Reconciliation = () => {
     const date = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '';
     const label = [tx.description, amount, date].filter(Boolean).join(' · ');
     setLinkSearch('');
-    setLinkSelectedId(null);
+    setLinkSelectedIds(new Set());
     setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
     setLinkModal({ type: 'tx2inv', id: txDbId, label });
   };
 
   const openLinkFromInvoice = (invoiceId, invoiceLabel) => {
     setLinkSearch('');
-    setLinkSelectedId(null);
+    setLinkSelectedIds(new Set());
     setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
     setLinkModal({ type: 'inv2tx', id: invoiceId, label: invoiceLabel });
   };
@@ -364,11 +364,15 @@ const Reconciliation = () => {
   };
 
   const submitManualLink = async () => {
-    if (!linkSelectedId) return;
-    const payload = linkModal.type === 'tx2inv'
-      ? { invoice_id: Number(linkSelectedId), transaction_id: Number(linkModal.id) }
-      : { invoice_id: Number(linkModal.id), transaction_id: Number(linkSelectedId) };
-    await manualLinkMutation.mutateAsync(payload);
+    if (linkSelectedIds.size === 0) return;
+    
+    // Link all selected items
+    for (const selectedId of linkSelectedIds) {
+      const payload = linkModal.type === 'tx2inv'
+        ? { invoice_id: Number(selectedId), transaction_id: Number(linkModal.id) }
+        : { invoice_id: Number(linkModal.id), transaction_id: Number(selectedId) };
+      await manualLinkMutation.mutateAsync(payload);
+    }
     setLinkModal(null);
   };
 
@@ -466,8 +470,8 @@ const Reconciliation = () => {
           periodMonths={periodMonths}
           unmatchedInvoices={unmatchedInvoices}
           bankOnly={bankOnly}
-          linkSelectedId={linkSelectedId}
-          setLinkSelectedId={setLinkSelectedId}
+          linkSelectedIds={linkSelectedIds}
+          setLinkSelectedIds={setLinkSelectedIds}
           submitManualLink={submitManualLink}
         />
       )}

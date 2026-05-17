@@ -1,7 +1,7 @@
 import React from 'react';
 import DropdownButton from '../DropdownButton';
 
-const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMonthFilter, setLinkMonthFilter, showLinkMonthDropdown, setShowLinkMonthDropdown, linkMonthButtonRef, periodMonths, unmatchedInvoices, bankOnly, linkSelectedId, setLinkSelectedId, submitManualLink }) => {
+const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMonthFilter, setLinkMonthFilter, showLinkMonthDropdown, setShowLinkMonthDropdown, linkMonthButtonRef, periodMonths, unmatchedInvoices, bankOnly, linkSelectedIds, setLinkSelectedIds, submitManualLink }) => {
   const isTx2Inv = linkModal.type === 'tx2inv';
   const listItems = isTx2Inv ? unmatchedInvoices : bankOnly;
   
@@ -30,7 +30,23 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
       return na.localeCompare(nb, 'fr');
     });
   
-  // Generate month options for the modal
+  const handleSelectOne = (id) => {
+    const newSelected = new Set(linkSelectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setLinkSelectedIds(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (linkSelectedIds.size === filtered.length) {
+      setLinkSelectedIds(new Set());
+    } else {
+      setLinkSelectedIds(new Set(filtered.map(item => isTx2Inv ? item.id : (item.db_id || item.id))));
+    }
+  };
   const linkMonthOptions = [
     { value: '', label: 'Tous les mois' },
     ...periodMonths
@@ -63,6 +79,15 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
             width="120px"
           />
         </div>
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            type="checkbox"
+            checked={linkSelectedIds.size === filtered.length && filtered.length > 0}
+            onChange={handleSelectAll}
+            className="w-4 h-4 rounded border-gray-300"
+          />
+          <span className="text-xs text-gray-500">{linkSelectedIds.size} sélectionné(s)</span>
+        </div>
         <p className="text-xs text-gray-400 mb-2">{filtered.length} résultat{filtered.length !== 1 ? 's' : ''}</p>
         <div className="overflow-y-auto flex-1 space-y-1 mb-4">
           {filtered.length === 0 && (
@@ -72,38 +97,46 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
           )}
           {filtered.map(item => {
             const id = isTx2Inv ? item.id : (item.db_id || item.id);
-            const selected = linkSelectedId === id;
+            const selected = linkSelectedIds.has(id);
             return isTx2Inv ? (
               <button
                 key={id}
-                onClick={() => setLinkSelectedId(id)}
-                className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors ${
+                onClick={() => handleSelectOne(id)}
+                className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors flex items-center gap-3 ${
                   selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <span className="font-medium">{item.invoice?.supplier || '—'}</span>
-                <span className="text-gray-500 ml-2">{item.invoice?.number}</span>
-                <span className="float-right font-bold text-gray-800">{item.invoice?.amount?.toLocaleString('fr-FR')} €</span>
-                <div className="text-xs text-gray-400 mt-0.5">{item.invoice?.date ? new Date(item.invoice.date).toLocaleDateString('fr-FR') : '—'}</div>
+                <input type="checkbox" checked={selected} readOnly className="w-4 h-4 rounded border-gray-300" />
+                <div className="flex-1">
+                  <span className="font-medium">{item.invoice?.supplier || '—'}</span>
+                  <span className="text-gray-500 ml-2">{item.invoice?.number}</span>
+                  <span className="float-right font-bold text-gray-800">{item.invoice?.amount?.toLocaleString('fr-FR')} €</span>
+                  <div className="text-xs text-gray-400 mt-0.5">{item.invoice?.date ? new Date(item.invoice.date).toLocaleDateString('fr-FR') : '—'}</div>
+                </div>
               </button>
             ) : (
               <button
                 key={id}
-                onClick={() => setLinkSelectedId(id)}
-                className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors ${
+                onClick={() => handleSelectOne(id)}
+                className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors flex items-center gap-3 ${
                   selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
-                <span className="font-medium break-words block">{item.description || '—'}</span>
-                <span className={`float-right font-bold ${ item.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>{item.amount?.toLocaleString('fr-FR')} €</span>
-                <div className="text-xs text-gray-400 mt-0.5">{item.date ? new Date(item.date).toLocaleDateString('fr-FR') : '—'}</div>
+                <input type="checkbox" checked={selected} readOnly className="w-4 h-4 rounded border-gray-300" />
+                <div className="flex-1">
+                  <span className="font-medium break-words block">{item.description || '—'}</span>
+                  <span className={`float-right font-bold ${ item.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>{item.amount?.toLocaleString('fr-FR')} €</span>
+                  <div className="text-xs text-gray-400 mt-0.5">{item.date ? new Date(item.date).toLocaleDateString('fr-FR') : '—'}</div>
+                </div>
               </button>
             );
           })}
         </div>
         <div className="flex gap-2 justify-end border-t pt-3">
           <button onClick={() => setLinkModal(null)} className="px-4 py-2 text-sm text-gray-600 border rounded-md hover:bg-gray-50">Annuler</button>
-          <button onClick={submitManualLink} disabled={!linkSelectedId} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-40">Lier</button>
+          <button onClick={submitManualLink} disabled={linkSelectedIds.size === 0} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-40">
+            Lier ({linkSelectedIds.size})
+          </button>
         </div>
       </div>
     </div>
