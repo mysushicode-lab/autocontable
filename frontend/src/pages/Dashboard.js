@@ -112,7 +112,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img 
-            src="/logo_mysushicode_blanc.png" 
+            src="/logo_mysushicode_blanc.png?v=1" 
             alt="Logo" 
             className="h-10 w-auto"
           />
