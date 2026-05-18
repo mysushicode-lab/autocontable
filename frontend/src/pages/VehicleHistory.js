@@ -261,7 +261,7 @@ const ExportPdfButton = ({ currentVehicle }) => {
 
       // Header
       doc.setFontSize(20);
-      doc.text('MAILFACT - Historique Véhicule', 14, 20);
+      doc.text('autofactmatch - Historique Véhicule', 14, 20);
 
       doc.setFontSize(12);
       doc.text(`Immatriculation: ${currentVehicle.registration}`, 14, 35);

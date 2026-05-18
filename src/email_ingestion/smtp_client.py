@@ -48,7 +48,7 @@ class SMTPClient:
         base_url = base_url or os.getenv('FRONTEND_URL', 'https://carrosserie-erik.fr')
         reset_link = f"{base_url}/reset-password?token={reset_token}"
         
-        subject = "Réinitialisation de votre mot de passe - MAILFACT"
+        subject = "Réinitialisation de votre mot de passe - autofactmatch"
         
         text_body = f"""Bonjour,
 
@@ -62,7 +62,7 @@ Ce lien expire dans 1 heure.
 Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
 
 Cordialement,
-L'équipe MAILFACT
+L'équipe autofactmatch
 """
         
         html_body = f"""<!DOCTYPE html>
@@ -82,7 +82,7 @@ L'équipe MAILFACT
 <body>
     <div class="container">
         <div class="header">
-            <h1>MAILFACT</h1>
+            <h1>autofactmatch</h1>
             <p>Gestion Comptable</p>
         </div>
         <div class="content">
@@ -98,7 +98,7 @@ L'équipe MAILFACT
             <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
         </div>
         <div class="footer">
-            <p>L'équipe MAILFACT</p>
+            <p>L'équipe autofactmatch</p>
         </div>
     </div>
 </body>

@@ -100,7 +100,7 @@ const Layout = ({ children }) => {
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="p-6 border-b border-slate-700">
           <h1 className="text-xl font-bold">
-            MAILFACT
+            autofactmatch
           </h1>
           <p className="text-sm text-slate-400 mt-1">Gestion Comptable</p>
         </div>
@@ -241,7 +241,7 @@ const Layout = ({ children }) => {
               Votre période d'essai de 7 jours est terminée. Toutes les fonctionnalités sont maintenant bloquées.
             </p>
             <p className="text-xs text-gray-500 mb-6">
-              Pour continuer à utiliser MAILFACT, veuillez mettre à niveau vers un plan payant.
+              Pour continuer à utiliser autofactmatch, veuillez mettre à niveau vers un plan payant.
             </p>
             <div className="flex gap-3 justify-end">
               <button
