@@ -113,6 +113,7 @@ def list_invoices(
     supplier: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
+    include_reconciled: Optional[bool] = False,
     current_user: dict = Depends(get_current_user)
 ):
     """List all invoices with optional filters"""
@@ -147,6 +148,23 @@ def list_invoices(
             query = query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
         
         invoices = query.all()
+        
+        # If include_reconciled is True, also include invoices matched to transactions in the selected month
+        if include_reconciled and month and year:
+            from src.storage.models import ReconciliationMatch, BankTransaction
+            matches = session.query(ReconciliationMatch).join(Invoice).join(
+                BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
+            ).filter(
+                BankTransaction.date >= first_day,
+                BankTransaction.date <= last_day,
+                Invoice.organization_id == current_user["organization_id"]
+            ).all()
+            
+            matched_invoice_ids = {inv.id for inv in invoices}
+            for match in matches:
+                if match.status != 'rejected' and match.invoice_id not in matched_invoice_ids:
+                    invoices.append(match.invoice)
+                    matched_invoice_ids.add(match.invoice_id)
         
         return {
             "count": len(invoices),

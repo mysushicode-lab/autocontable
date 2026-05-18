@@ -78,7 +78,7 @@ const Reports = () => {
   const { data, isLoading } = useQuery(['monthly-report', year, month], () => fetchMonthlyReport({ year, month }));
 
   // Fetch individual invoices for client-side CSV exports (needs amount_ht, amount_tax, due_date)
-  const { data: invoicesData } = useQuery(['report-invoices', year, month], () => fetchInvoices({ year, month }));
+  const { data: invoicesData } = useQuery(['report-invoices', year, month], () => fetchInvoices({ year, month, include_reconciled: true }));
   const exportInvoices = invoicesData?.invoices || [];
 
   // Fetch trends for evolution chart with selected period
