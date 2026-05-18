@@ -42,7 +42,11 @@ const Login = () => {
               <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-md mb-4">
                 <Car className="w-7 h-7 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">autofactmatch</h1>
+              <img 
+                src="/automatchfact.png" 
+                alt="autofactmatch logo" 
+                className="h-8 w-auto mx-auto"
+              />
               <p className="text-gray-500 mt-1 text-sm">Gestion Comptable</p>
             </div>
 

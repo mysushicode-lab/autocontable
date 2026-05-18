@@ -99,9 +99,11 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="p-6 border-b border-slate-700">
-          <h1 className="text-xl font-bold">
-            autofactmatch
-          </h1>
+          <img 
+            src="/automatchfact.png" 
+            alt="autofactmatch logo" 
+            className="h-8 w-auto"
+          />
           <p className="text-sm text-slate-400 mt-1">Gestion Comptable</p>
         </div>
         
