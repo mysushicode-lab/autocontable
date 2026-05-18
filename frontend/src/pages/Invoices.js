@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { fetchInvoices, getExportUrl, uploadInvoiceFile, deleteInvoice, updateInvoice } from '../api';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
@@ -55,6 +56,7 @@ const Invoices = () => {
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const uploadInputRef = useRef(null);
   const queryClient = useQueryClient();
@@ -157,6 +159,9 @@ const Invoices = () => {
   };
 
   const uploadMutation = useMutation(uploadInvoiceFile, {
+    onMutate: () => {
+      setIsImporting(true);
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries('invoices');
       queryClient.invalidateQueries('dashboard-invoices');
@@ -170,6 +175,9 @@ const Invoices = () => {
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur import facture', error?.response?.data?.detail || 'Impossible d\'importer la facture.');
+    },
+    onSettled: () => {
+      setIsImporting(false);
     },
   });
 
@@ -224,7 +232,7 @@ const Invoices = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isImporting ? 'blur-sm pointer-events-none' : ''}`}>
       <InvoiceHeader
         onExport={handleExport}
         onUploadClick={handleUploadClick}
@@ -309,6 +317,17 @@ const Invoices = () => {
         onSave={handleEditSave}
         isLoading={updateMutation.isLoading}
       />
+
+      {/* Loading Overlay - rendered at document body level */}
+      {isImporting && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+            <p className="text-gray-700 font-medium">Import en cours...</p>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
