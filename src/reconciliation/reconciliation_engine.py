@@ -43,6 +43,7 @@ class ReconciliationEngine:
         print(f"[Reconciliation] Starting: {len(invoices)} invoices, {len(transactions)} transactions")
 
         # Fetch non-rejected existing matches to avoid re-processing
+        # Manual matches are also skipped to protect user-created links
         match_query = self.session.query(ReconciliationMatch).filter(ReconciliationMatch.status != 'rejected')
         if organization_id:
             match_query = match_query.filter(ReconciliationMatch.organization_id == organization_id)
@@ -50,7 +51,7 @@ class ReconciliationEngine:
         already_matched_tx_ids = {m.transaction_id for m in existing}
         already_matched_invoice_ids = {m.invoice_id for m in existing}
 
-        print(f"[Reconciliation] Skipping: {len(already_matched_invoice_ids)} invoices + {len(already_matched_tx_ids)} transactions already matched")
+        print(f"[Reconciliation] Skipping: {len(already_matched_invoice_ids)} invoices + {len(already_matched_tx_ids)} transactions already matched (including manual)")
 
         # Build candidate pairs after pre-filtering (fast, no AI)
         candidates = []
