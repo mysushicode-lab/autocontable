@@ -13,12 +13,12 @@ export const PoweredByMysushicode = ({ className = '' }) => {
       <div className="absolute inset-0 translate-x-2 translate-y-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md" />
       <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md" />
       <GlassMorphCard className="relative">
-      <div className="px-5 py-4 text-center text-sm text-gray-700">
-        <div className="flex items-center justify-center gap-2">
+      <div className="px-3 py-2 text-center text-xs text-gray-700">
+        <div className="flex items-center justify-center gap-1">
           <img 
             src="/logo_mysushicode.png" 
             alt="Mysushicode logo" 
-            className="h-4 w-auto"
+            className="h-3 w-auto"
           />
           <span className="text-white">Powered by </span>
           <a
