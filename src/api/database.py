@@ -161,7 +161,9 @@ def startup_event():
             conn.execute(text(stmt))
             conn.commit()
         except Exception as e:
-            print(f"Organization column migration: {e}")
+            # "duplicate column name" is expected on subsequent startups (idempotent migration)
+            if "duplicate column name" not in str(e).lower():
+                print(f"Organization column migration: {e}")
 
     # Set default plan values for existing organizations that don't have them
     from datetime import datetime, timedelta
