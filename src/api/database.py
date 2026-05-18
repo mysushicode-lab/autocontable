@@ -141,18 +141,33 @@ def startup_event():
         except Exception:
             pass
 
-    # Recreate processed_file_hashes without the GLOBAL UNIQUE(content_hash) constraint.
-    # The new schema enforces uniqueness per organisation so the same invoice PDF
-    # can be ingested independently by different tenants.
+    # Recreate processed_file_hashes uniqueness as (organization_id, content_hash)
+    # instead of the legacy GLOBAL unique on content_hash alone.
+    # SQLAlchemy's Column(unique=True) creates a separate UNIQUE INDEX (not a table-level
+    # constraint), so we need to inspect indexes, not just the CREATE TABLE statement.
     try:
+        # Find any UNIQUE index on content_hash alone (legacy) and drop it
+        legacy_indexes = conn.execute(text("""
+            SELECT name, sql FROM sqlite_master
+            WHERE type='index' AND tbl_name='processed_file_hashes'
+              AND sql IS NOT NULL AND sql LIKE '%UNIQUE%'
+        """)).fetchall()
+        for idx_name, idx_sql in legacy_indexes:
+            # Keep only the composite (organization_id, content_hash) unique index
+            sql_lower = (idx_sql or '').lower()
+            is_composite = 'organization_id' in sql_lower and 'content_hash' in sql_lower
+            if not is_composite:
+                conn.execute(text(f'DROP INDEX IF EXISTS "{idx_name}"'))
+                print(f"Dropped legacy unique index {idx_name} on processed_file_hashes")
+        conn.commit()
+
+        # Also rebuild the table if the CREATE TABLE itself has an old UNIQUE constraint
         pfh_sql = conn.execute(text(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name='processed_file_hashes'"
         )).fetchone()
         needs_rebuild = False
         if pfh_sql and pfh_sql[0]:
             schema_sql = pfh_sql[0]
-            # Old schema had `content_hash VARCHAR(32) UNIQUE` (column-level UNIQUE)
-            # New schema uses table-level UNIQUE(organization_id, content_hash)
             if 'UNIQUE' in schema_sql and 'uq_processed_hash_per_org' not in schema_sql:
                 needs_rebuild = True
         if needs_rebuild:
@@ -162,10 +177,8 @@ def startup_event():
                 content_hash VARCHAR(32) NOT NULL,
                 organization_id INTEGER REFERENCES organizations(id),
                 filename VARCHAR(500),
-                processed_at DATETIME,
-                CONSTRAINT uq_processed_hash_per_org UNIQUE (organization_id, content_hash)
+                processed_at DATETIME
             )"""))
-            # Copy rows, deduplicating any (org, hash) pairs that may have collided
             conn.execute(text(
                 "INSERT OR IGNORE INTO processed_file_hashes "
                 "(id, content_hash, organization_id, filename, processed_at) "
@@ -173,9 +186,20 @@ def startup_event():
                 "FROM processed_file_hashes_old"
             ))
             conn.execute(text("DROP TABLE processed_file_hashes_old"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_processed_file_hashes_content_hash ON processed_file_hashes(content_hash)"))
             conn.commit()
-            print("Rebuilt processed_file_hashes with per-organisation uniqueness")
+            print("Rebuilt processed_file_hashes without global UNIQUE")
+
+        # Ensure plain (non-unique) lookup index on content_hash
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_processed_file_hashes_content_hash "
+            "ON processed_file_hashes(content_hash)"
+        ))
+        # Ensure composite UNIQUE index (organization_id, content_hash)
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_processed_hash_per_org "
+            "ON processed_file_hashes(organization_id, content_hash)"
+        ))
+        conn.commit()
     except Exception as e:
         print(f"processed_file_hashes migration: {e}")
 
