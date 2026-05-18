@@ -10,8 +10,8 @@ export const PoweredByMysushicode = ({ className = '' }) => {
 
   return (
     <div className={`relative inline-block ${className}`}>
-      <div className="absolute inset-0 translate-x-2 translate-y-2 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md" />
-      <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md" />
+      <div className="absolute inset-0 translate-x-2 translate-y-2 rounded-md border border-white/20 bg-white/10 backdrop-blur-md" />
+      <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-md border border-white/20 bg-white/10 backdrop-blur-md" />
       <GlassMorphCard className="relative">
       <div className="px-3 py-2 text-center text-xs text-gray-700">
         <div className="flex items-center justify-center gap-1">
