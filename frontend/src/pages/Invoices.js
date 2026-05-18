@@ -1,17 +1,15 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
-  FileText,
-  FileDown,
   CheckCircle,
   XCircle,
   Clock
 } from 'lucide-react';
 import { fetchInvoices, getExportUrl, uploadInvoiceFile, deleteInvoice, updateInvoice } from '../api';
+import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
 import InvoiceFilters from '../components/InvoiceFilters';
 import InvoiceTable from '../components/InvoiceTable';
 import InvoiceEditModal from '../components/InvoiceEditModal';
@@ -87,37 +85,7 @@ const Invoices = () => {
   const invoices = data?.invoices || [];
   
   // Auto-set month filter to most recent invoice date on initial load
-  useEffect(() => {
-    const fetchMostRecentInvoiceMonth = async () => {
-      try {
-        // Fetch all invoices without filters to get the most recent one
-        const data = await fetchInvoices({});
-        if (data?.invoices && data.invoices.length > 0) {
-          // Sort by date descending to find the most recent
-          const sortedInvoices = data.invoices.sort((a, b) => {
-            if (!a.date) return 1;
-            if (!b.date) return -1;
-            return new Date(b.date) - new Date(a.date);
-          });
-          const mostRecentInvoice = sortedInvoices[0];
-          if (mostRecentInvoice.date) {
-            const date = new Date(mostRecentInvoice.date);
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const monthValue = `${year}-${String(month).padStart(2, '0')}`;
-            // Only set if not already set by user
-            if (!selectedMonth) {
-              setSelectedMonth(monthValue);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching most recent invoice:', error);
-      }
-    };
-    
-    fetchMostRecentInvoiceMonth();
-  }, []); // Run only on mount
+  useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
 
   const deleteMutation = useMutation((id) => deleteInvoice(id), {
     onSuccess: () => {
@@ -204,8 +172,6 @@ const Invoices = () => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur import facture', error?.response?.data?.detail || 'Impossible d\'importer la facture.');
     },
   });
-
-  const exportUrl = getExportUrl('/api/reports/export/invoices', parsedMonth);
 
   const handleExport = async () => {
     const token = localStorage.getItem('auth_token');

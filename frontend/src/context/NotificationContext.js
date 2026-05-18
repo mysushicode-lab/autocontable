@@ -61,7 +61,9 @@ export const NotificationProvider = ({ children }) => {
           );
         }
         prevInvoiceCount.current = count;
-      } catch (_) {}
+      } catch (err) {
+        console.error('Notification polling error:', err);
+      }
     };
 
     check();

@@ -11,7 +11,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('auth_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Invalid auth_user in localStorage, clearing:', e);
+        localStorage.removeItem('auth_user');
+      }
     }
     setLoading(false);
   }, []);
@@ -33,8 +38,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUserPhoto = (photoUrl) => {
-    setUser(prev => ({ ...prev, profile_photo: photoUrl }));
-    localStorage.setItem('auth_user', JSON.stringify({ ...user, profile_photo: photoUrl }));
+    setUser(prev => {
+      const updated = { ...prev, profile_photo: photoUrl };
+      localStorage.setItem('auth_user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const updateUser = (userData) => {

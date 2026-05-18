@@ -1,5 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
@@ -24,10 +23,10 @@ import {
   deleteTransactionsByMonth,
   updateTransaction,
   uploadInvoiceFile,
-  fetchInvoices,
   viewInvoice,
 } from '../api';
-import DropdownButton from '../components/DropdownButton';
+import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
+import { matchAmount } from '../utils/searchHelpers';
 import ReconciliationHeader from '../components/Reconciliation/ReconciliationHeader';
 import ReconciliationTabs from '../components/Reconciliation/ReconciliationTabs';
 import MatchesTab from '../components/Reconciliation/MatchesTab';
@@ -54,7 +53,6 @@ const Reconciliation = () => {
   const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
   const invoiceInputRef = useRef(null);
-  const navigate = useNavigate();
   const { add: addNotif } = useNotifications();
   const queryClient = useQueryClient();
   const today = new Date();
@@ -79,37 +77,7 @@ const Reconciliation = () => {
   const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
   
   // Auto-set month filter to most recent invoice date on initial load
-  useEffect(() => {
-    const fetchMostRecentInvoiceMonth = async () => {
-      try {
-        // Fetch all invoices without filters to get the most recent one
-        const data = await fetchInvoices({});
-        if (data?.invoices && data.invoices.length > 0) {
-          // Sort by date descending to find the most recent
-          const sortedInvoices = data.invoices.sort((a, b) => {
-            if (!a.date) return 1;
-            if (!b.date) return -1;
-            return new Date(b.date) - new Date(a.date);
-          });
-          const mostRecentInvoice = sortedInvoices[0];
-          if (mostRecentInvoice.date) {
-            const date = new Date(mostRecentInvoice.date);
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const monthValue = `${year}-${String(month).padStart(2, '0')}`;
-            // Only set if not already set by user
-            if (!selectedMonth) {
-              setSelectedMonth(monthValue);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching most recent invoice:', error);
-      }
-    };
-    
-    fetchMostRecentInvoiceMonth();
-  }, []); // Run only on mount
+  useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
   const refreshAll = () => {
     queryClient.invalidateQueries('reconciliation-status');
     queryClient.invalidateQueries('reconciliation-details');
@@ -208,57 +176,35 @@ const Reconciliation = () => {
     successRate: statsData?.success_rate ?? 0,
   };
 
-  // Filter helper function
+  // Filter helper functions
   const matchesSearch = (term, item) => {
     if (!term) return true;
     const lowerTerm = term.toLowerCase();
-    
-    // Helper for amount matching
-    const matchAmount = (amount) => {
-      if (amount === null || amount === undefined) return false;
-      const amountStr = amount.toString().replace(/[\s,.]/g, '');
-      const termClean = term.replace(/[\s,.]/g, '');
-      return amountStr.includes(termClean);
-    };
-    
-    const amountMatch = matchAmount(item.transaction?.amount);
-    const descMatch = item.transaction?.description?.toLowerCase().includes(lowerTerm);
-    const invoiceAmountMatch = matchAmount(item.invoice?.amount);
-    const supplierMatch = item.invoice?.supplier?.toLowerCase().includes(lowerTerm);
-    return amountMatch || descMatch || invoiceAmountMatch || supplierMatch;
+    return (
+      matchAmount(item.transaction?.amount, term) ||
+      item.transaction?.description?.toLowerCase().includes(lowerTerm) ||
+      matchAmount(item.invoice?.amount, term) ||
+      item.invoice?.supplier?.toLowerCase().includes(lowerTerm)
+    );
   };
 
   const invoiceSearch = (term, item) => {
     if (!term) return true;
     const lowerTerm = term.toLowerCase();
-    
-    const matchAmount = (amount) => {
-      if (amount === null || amount === undefined) return false;
-      const amountStr = amount.toString().replace(/[\s,.]/g, '');
-      const termClean = term.replace(/[\s,.]/g, '');
-      return amountStr.includes(termClean);
-    };
-    
-    const amountMatch = matchAmount(item.invoice?.amount);
-    const supplierMatch = item.invoice?.supplier?.toLowerCase().includes(lowerTerm);
-    const numberMatch = item.invoice?.number?.toLowerCase().includes(lowerTerm);
-    return amountMatch || supplierMatch || numberMatch;
+    return (
+      matchAmount(item.invoice?.amount, term) ||
+      item.invoice?.supplier?.toLowerCase().includes(lowerTerm) ||
+      item.invoice?.number?.toLowerCase().includes(lowerTerm)
+    );
   };
 
   const transactionSearch = (term, item) => {
     if (!term) return true;
     const lowerTerm = term.toLowerCase();
-    
-    const matchAmount = (amount) => {
-      if (amount === null || amount === undefined) return false;
-      const amountStr = amount.toString().replace(/[\s,.]/g, '');
-      const termClean = term.replace(/[\s,.]/g, '');
-      return amountStr.includes(termClean);
-    };
-    
-    const amountMatch = matchAmount(item.amount);
-    const descMatch = item.description?.toLowerCase().includes(lowerTerm);
-    return amountMatch || descMatch;
+    return (
+      matchAmount(item.amount, term) ||
+      item.description?.toLowerCase().includes(lowerTerm)
+    );
   };
 
   // Filtered data

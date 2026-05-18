@@ -91,9 +91,7 @@ export const importBankStatementFile = async (file) => {
 };
 
 export const runAutomaticReconciliation = async (filters = {}) => {
-  console.log('runAutomaticReconciliation called with filters:', filters);
   const response = await api.post('/api/reconciliation/run', null, { params: filters });
-  console.log('runAutomaticReconciliation response:', response.data);
   return response.data;
 };
 
@@ -127,6 +125,8 @@ export const viewInvoice = async (invoiceId) => {
   const response = await api.get(`/api/invoices/${invoiceId}/view`, { responseType: 'blob' });
   const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
   window.open(url, '_blank');
+  // Revoke the URL after a delay to allow the new tab to load it
+  setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
 };
 
 export const deleteInvoice = async (invoiceId) => {
@@ -140,7 +140,7 @@ export const deleteTransaction = async (transactionId) => {
 };
 
 export const updateTransaction = async ({ transactionId, amount }) => {
-  const response = await api.put(`/api/transactions/${transactionId}?amount=${amount}`);
+  const response = await api.put(`/api/transactions/${transactionId}`, null, { params: { amount } });
   return response.data;
 };
 
