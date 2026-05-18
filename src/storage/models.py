@@ -2,7 +2,7 @@
 Database models for invoice processing and bank reconciliation
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Enum, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Enum, JSON, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
@@ -144,14 +144,22 @@ class Supplier(Base):
 
 
 class ProcessedFileHash(Base):
-    """Permanent registry of all file hashes ever processed by AI."""
+    """Permanent registry of all file hashes ever processed by AI.
+
+    Uniqueness is per-organisation so the same invoice PDF can be ingested
+    independently by different tenants.
+    """
     __tablename__ = 'processed_file_hashes'
 
     id = Column(Integer, primary_key=True)
-    content_hash = Column(String(32), unique=True, nullable=False, index=True)
+    content_hash = Column(String(32), nullable=False, index=True)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
     filename = Column(String(500), nullable=True)
     processed_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'content_hash', name='uq_processed_hash_per_org'),
+    )
 
 
 class BankTransaction(Base):

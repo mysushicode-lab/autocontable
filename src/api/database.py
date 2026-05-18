@@ -141,6 +141,44 @@ def startup_event():
         except Exception:
             pass
 
+    # Recreate processed_file_hashes without the GLOBAL UNIQUE(content_hash) constraint.
+    # The new schema enforces uniqueness per organisation so the same invoice PDF
+    # can be ingested independently by different tenants.
+    try:
+        pfh_sql = conn.execute(text(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='processed_file_hashes'"
+        )).fetchone()
+        needs_rebuild = False
+        if pfh_sql and pfh_sql[0]:
+            schema_sql = pfh_sql[0]
+            # Old schema had `content_hash VARCHAR(32) UNIQUE` (column-level UNIQUE)
+            # New schema uses table-level UNIQUE(organization_id, content_hash)
+            if 'UNIQUE' in schema_sql and 'uq_processed_hash_per_org' not in schema_sql:
+                needs_rebuild = True
+        if needs_rebuild:
+            conn.execute(text("ALTER TABLE processed_file_hashes RENAME TO processed_file_hashes_old"))
+            conn.execute(text("""CREATE TABLE processed_file_hashes (
+                id INTEGER PRIMARY KEY,
+                content_hash VARCHAR(32) NOT NULL,
+                organization_id INTEGER REFERENCES organizations(id),
+                filename VARCHAR(500),
+                processed_at DATETIME,
+                CONSTRAINT uq_processed_hash_per_org UNIQUE (organization_id, content_hash)
+            )"""))
+            # Copy rows, deduplicating any (org, hash) pairs that may have collided
+            conn.execute(text(
+                "INSERT OR IGNORE INTO processed_file_hashes "
+                "(id, content_hash, organization_id, filename, processed_at) "
+                "SELECT id, content_hash, organization_id, filename, processed_at "
+                "FROM processed_file_hashes_old"
+            ))
+            conn.execute(text("DROP TABLE processed_file_hashes_old"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_processed_file_hashes_content_hash ON processed_file_hashes(content_hash)"))
+            conn.commit()
+            print("Rebuilt processed_file_hashes with per-organisation uniqueness")
+    except Exception as e:
+        print(f"processed_file_hashes migration: {e}")
+
     # Add unique index on email (global uniqueness)
     try:
         conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users(email)"))
