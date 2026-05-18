@@ -1,6 +1,6 @@
 """Settings endpoints"""
 import os
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 from datetime import datetime
 
@@ -99,8 +99,8 @@ def update_setting(key: str, update: SettingUpdate, current_user: dict = Depends
 
 
 @router.post("/test-imap")
-def test_imap_connection(request: TestImapRequest):
-    """Test IMAP connection with provided credentials"""
+def test_imap_connection(request: TestImapRequest, current_user: dict = Depends(get_current_user)):
+    """Test IMAP connection with provided credentials (authenticated)"""
     import imaplib
     import ssl
     try:
@@ -132,7 +132,7 @@ def get_plan_status(current_user: dict = Depends(get_current_user)):
     try:
         org = session.query(Organization).filter(Organization.id == current_user["organization_id"]).first()
         if not org:
-            return {"error": "Organization not found"}, 404
+            raise HTTPException(status_code=404, detail="Organization not found")
 
         # Sync from Stripe (no-op if no customer id or stripe unavailable)
         sync_plan_from_stripe(org, session)

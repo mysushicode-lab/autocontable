@@ -33,9 +33,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount uploads directory for static file serving
-os.makedirs("data/uploads", exist_ok=True)
-app.mount("/api/uploads", StaticFiles(directory="data/uploads"), name="uploads")
+# Mount profile photos directory for public static serving (profile photos only)
+os.makedirs("data/uploads/profile_photos", exist_ok=True)
+app.mount("/api/uploads/profile_photos", StaticFiles(directory="data/uploads/profile_photos"), name="profile_photos")
 
 
 @app.on_event("startup")

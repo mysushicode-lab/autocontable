@@ -1,5 +1,4 @@
 """Transaction endpoints"""
-from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -7,6 +6,7 @@ from datetime import datetime
 import os
 import calendar
 import hashlib
+import logging
 
 from src.storage.database import db
 from src.storage.models import BankTransaction, ReconciliationMatch, Invoice, InvoiceStatus
@@ -14,9 +14,7 @@ from src.bank_importer.bank_importer import BankImporter
 from src.api.utils import save_uploaded_file
 from src.api.auth import get_current_user, check_trial_active
 
-class UpdateTransactionRequest(BaseModel):
-    amount: float
-
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 UPLOAD_ROOT = os.path.join("data", "uploads")
@@ -36,7 +34,8 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
     session = db.get_session()
     try:
         # Calculate file hash for duplicate detection
-        file_hash = hashlib.md5(open(saved_path, 'rb').read()).hexdigest()
+        with open(saved_path, 'rb') as f:
+            file_hash = hashlib.md5(f.read()).hexdigest()
         
         # Determine the month from the file content or current date
         importer = BankImporter()
@@ -177,7 +176,6 @@ def update_transaction(
     current_user: dict = Depends(get_current_user)
 ):
     """Update a bank transaction amount"""
-    print(f"[Update Transaction] Received request: transaction_id={transaction_id}, amount={amount}")
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
@@ -209,7 +207,7 @@ def update_transaction(
             finally:
                 recon_session.close()
         except Exception as recon_err:
-            print(f"[Reconciliation] Auto-reconcile after transaction update failed: {recon_err}")
+            logger.warning(f"Auto-reconcile after transaction update failed: {recon_err}")
 
         return {"message": "Transaction updated successfully"}
     finally:

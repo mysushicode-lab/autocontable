@@ -49,9 +49,12 @@ def export_invoices_csv(
     
     session = db.get_session()
     try:
-        exporter = Exporter(session, org_id=current_user["organization_id"])
+        org_id = current_user["organization_id"]
+        exporter = Exporter(session, org_id=org_id)
+        os.makedirs("data/exports", exist_ok=True)
         filename = f"invoices_{year or datetime.now().year}_{month or datetime.now().month}.csv"
-        output_path = os.path.join("data/exports", filename)
+        # Scope output path by organization to avoid collisions between tenants
+        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
         exporter.export_invoices_to_csv(output_path, month, year)
         return FileResponse(output_path, filename=filename)
     finally:
@@ -72,9 +75,11 @@ def export_transactions_csv(
     
     session = db.get_session()
     try:
-        exporter = Exporter(session, org_id=current_user["organization_id"])
+        org_id = current_user["organization_id"]
+        exporter = Exporter(session, org_id=org_id)
+        os.makedirs("data/exports", exist_ok=True)
         filename = f"transactions_{year or datetime.now().year}_{month or datetime.now().month}.csv"
-        output_path = os.path.join("data/exports", filename)
+        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
         exporter.export_transactions_to_csv(output_path, month, year)
         return FileResponse(output_path, filename=filename)
     finally:
@@ -103,11 +108,11 @@ def export_dossier_zip(year: int, month: int, current_user: dict = Depends(get_c
 
         os.makedirs("data/exports", exist_ok=True)
         zip_filename = f"dossier_comptable_{year}_{month:02d}.zip"
-        zip_path = os.path.join("data/exports", zip_filename)
+        zip_path = os.path.join("data/exports", f"org_{org_id}_{zip_filename}")
 
         exporter = Exporter(session, org_id=org_id)
         excel_filename = f"rapport_{year}_{month:02d}.xlsx"
-        excel_path = os.path.join("data/exports", excel_filename)
+        excel_path = os.path.join("data/exports", f"org_{org_id}_{excel_filename}")
         exporter.export_monthly_report_to_excel(excel_path, year, month)
 
         def safe_name(s: str) -> str:
@@ -137,9 +142,11 @@ def export_monthly_report_excel(year: int, month: int, current_user: dict = Depe
     
     session = db.get_session()
     try:
-        exporter = Exporter(session, org_id=current_user["organization_id"])
+        org_id = current_user["organization_id"]
+        exporter = Exporter(session, org_id=org_id)
+        os.makedirs("data/exports", exist_ok=True)
         filename = f"monthly_report_{year}_{month:02d}.xlsx"
-        output_path = os.path.join("data/exports", filename)
+        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
         exporter.export_monthly_report_to_excel(output_path, year, month)
         return FileResponse(output_path, filename=filename)
     finally:

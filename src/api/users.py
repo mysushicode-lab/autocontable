@@ -4,14 +4,22 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import os
 import shutil
-import hashlib
 
 from src.storage.database import db
 from src.storage.models import User, UserRole
 from src.api.schemas import CreateUserRequest, UpdateUserRequest
-from src.api.auth import get_current_user
+from src.api.auth import get_current_user, _hash_password
 
 router = APIRouter()
+
+ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Ensure the current user has admin role."""
+    if current_user.get("role") != UserRole.ADMIN.value:
+        raise HTTPException(status_code=403, detail="Permission refusée - rôle administrateur requis")
+    return current_user
 
 
 @router.get("")
@@ -39,14 +47,16 @@ def list_users(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/create")
-def create_user(request: CreateUserRequest, current_user: dict = Depends(get_current_user)):
-    """Create a new user in the same organization"""
+def create_user(request: CreateUserRequest, current_user: dict = Depends(require_admin)):
+    """Create a new user in the same organization (admin only)"""
     session = db.get_session()
     try:
         if session.query(User).filter(User.username == request.username).first():
             raise HTTPException(status_code=400, detail="Username already exists")
+        if session.query(User).filter(User.email == request.email).first():
+            raise HTTPException(status_code=400, detail="Email already exists")
 
-        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
+        password_hash = _hash_password(request.password)
         user = User(
             username=request.username,
             password_hash=password_hash,
@@ -63,8 +73,8 @@ def create_user(request: CreateUserRequest, current_user: dict = Depends(get_cur
 
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, current_user: dict = Depends(get_current_user)):
-    """Delete a user"""
+def delete_user(user_id: int, current_user: dict = Depends(require_admin)):
+    """Delete a user (admin only)"""
     session = db.get_session()
     try:
         user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
@@ -86,7 +96,9 @@ def delete_user(user_id: int, current_user: dict = Depends(get_current_user)):
 
 @router.put("/{user_id}")
 def update_user(user_id: int, request: UpdateUserRequest, current_user: dict = Depends(get_current_user)):
-    """Update user name and email"""
+    """Update user name and email (admin can update anyone, users can only update themselves)"""
+    if current_user["id"] != user_id and current_user.get("role") != UserRole.ADMIN.value:
+        raise HTTPException(status_code=403, detail="Permission refusée")
     session = db.get_session()
     try:
         user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
@@ -117,23 +129,28 @@ def update_user(user_id: int, request: UpdateUserRequest, current_user: dict = D
 
 @router.post("/{user_id}/profile-photo")
 def upload_profile_photo(user_id: int, file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    """Upload profile photo for a user"""
+    """Upload profile photo (users can only modify their own, admins can modify any)"""
+    if current_user["id"] != user_id and current_user.get("role") != UserRole.ADMIN.value:
+        raise HTTPException(status_code=403, detail="Permission refusée")
+
+    # Validate file type using extension whitelist (content-type can be spoofed)
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in ALLOWED_PHOTO_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Format d'image non supporté")
+    if not file.content_type or not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
     session = db.get_session()
     try:
         user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Validate file type
-        if not file.content_type or not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="File must be an image")
-
         # Create uploads directory if not exists
         upload_dir = os.path.join("data", "uploads", "profile_photos")
         os.makedirs(upload_dir, exist_ok=True)
 
-        # Generate filename
-        ext = os.path.splitext(file.filename)[1]
+        # Generate filename using sanitized extension
         filename = f"user_{user_id}{ext}"
         filepath = os.path.join(upload_dir, filename)
 

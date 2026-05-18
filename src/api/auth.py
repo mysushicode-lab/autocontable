@@ -5,10 +5,27 @@ from src.storage.models import User, UserToken, Organization, UserRole, Settings
 from src.api.schemas import RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.email_ingestion import SMTPClient
 import hashlib
+import hmac
 import secrets
+import logging
 from datetime import datetime, timedelta
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _hash_password(password: str) -> str:
+    """Hash a password using SHA-256.
+
+    NOTE: SHA-256 without salt is NOT secure for production use. This is kept
+    for backward-compat with existing accounts. Migrate to bcrypt/argon2 ASAP.
+    """
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def _verify_password(password: str, stored_hash: str) -> bool:
+    """Constant-time password verification to avoid timing attacks."""
+    return hmac.compare_digest(_hash_password(password), stored_hash)
 
 
 def get_current_user(authorization: str = Header(None)) -> dict:
@@ -77,10 +94,9 @@ def register(request: RegisterRequest):
         session.add(org)
         session.flush()
         org_id = org.id
-        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
         user = User(
             username=request.username,
-            password_hash=password_hash,
+            password_hash=_hash_password(request.password),
             name=request.name,
             email=request.email,
             role=UserRole.ADMIN,
@@ -125,10 +141,10 @@ def login(request: LoginRequest):
     session = db.get_session()
     try:
         user = session.query(User).filter(User.username == request.username).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="Identifiants invalides")
-        password_hash = hashlib.sha256(request.password.encode()).hexdigest()
-        if user.password_hash != password_hash:
+        # Always run hash verification even if user doesn't exist to prevent timing attacks
+        dummy_hash = "0" * 64
+        stored_hash = user.password_hash if user else dummy_hash
+        if not _verify_password(request.password, stored_hash) or not user:
             raise HTTPException(status_code=401, detail="Identifiants invalides")
         token_value = secrets.token_hex(32)
         user_token = UserToken(token=token_value, user_id=user.id)
@@ -213,7 +229,7 @@ def reset_password(request: ResetPasswordRequest):
             raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
         # Update password
-        user.password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+        user.password_hash = _hash_password(request.new_password)
 
         # Delete the used token
         session.delete(reset_token)
@@ -236,13 +252,12 @@ def change_password(request: ChangePasswordRequest, current_user: dict = Depends
         if not user:
             raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
-        # Verify current password
-        current_hash = hashlib.sha256(request.current_password.encode()).hexdigest()
-        if user.password_hash != current_hash:
+        # Verify current password using constant-time comparison
+        if not _verify_password(request.current_password, user.password_hash):
             raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
 
         # Update password
-        user.password_hash = hashlib.sha256(request.new_password.encode()).hexdigest()
+        user.password_hash = _hash_password(request.new_password)
 
         # Delete all user tokens to force re-login
         session.query(UserToken).filter(UserToken.user_id == user.id).delete()
@@ -268,8 +283,10 @@ def change_username(request: ChangeUsernameRequest, current_user: dict = Depends
             raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
         user.username = request.new_username
+        # Invalidate other sessions to force re-login with new username
+        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
         session.commit()
-        return {"message": "Nom d'utilisateur changé avec succès"}
+        return {"message": "Nom d'utilisateur changé avec succès. Veuillez vous reconnecter."}
     finally:
         session.close()
 

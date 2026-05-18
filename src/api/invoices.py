@@ -8,6 +8,9 @@ from datetime import datetime
 import os
 import hashlib
 import calendar
+import logging
+
+logger = logging.getLogger(__name__)
 
 from src.storage.database import db
 from src.storage.models import Invoice, Supplier, ReconciliationMatch, InvoiceStatus, ProcessedFileHash
@@ -96,7 +99,7 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
             finally:
                 recon_session.close()
         except Exception as recon_err:
-            print(f"[Reconciliation] Auto-reconcile after upload failed: {recon_err}")
+            logger.warning(f"Auto-reconcile after upload failed: {recon_err}")
         
         # Re-fetch the invoice from the database to get the latest status after reconciliation
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()

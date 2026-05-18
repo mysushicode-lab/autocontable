@@ -9,6 +9,7 @@ NOTE: This file is named payments.py instead of stripe.py to avoid
 conflict with the `stripe` package import.
 """
 import os
+import logging
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -16,6 +17,7 @@ from src.api.auth import get_current_user
 from src.storage.database import db
 from src.storage.models import Organization
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Initialize Stripe with the secret key from environment
@@ -25,17 +27,6 @@ STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 class CreateCheckoutSessionRequest(BaseModel):
     plan_type: str  # 'pro' or other plan types
-
-
-@router.get("/debug")
-async def debug_stripe():
-    """Debug endpoint to check Stripe configuration"""
-    return {
-        "stripe_secret_key_set": bool(stripe.api_key),
-        "stripe_pro_price_id": os.getenv('STRIPE_PRO_PRICE_ID'),
-        "frontend_url": os.getenv('FRONTEND_URL'),
-        "webhook_secret_set": bool(STRIPE_WEBHOOK_SECRET),
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -81,8 +72,8 @@ async def stripe_webhook(request: Request):
         return {"status": "success"}
     except Exception as e:
         session.rollback()
-        print(f"[Stripe Webhook] Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Stripe Webhook error: {e}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
     finally:
         session.close()
 
@@ -206,10 +197,9 @@ async def verify_checkout_session(
         raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
     except HTTPException:
         raise
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Unexpected error in verify_checkout_session")
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         db_session.close()
 
@@ -285,16 +275,14 @@ async def create_checkout_session(
         return {"session_id": checkout_session.id, "url": checkout_session.url}
 
     except stripe.error.StripeError as e:
-        # Surface Stripe-specific errors to the client for easier debugging
         msg = getattr(e, 'user_message', None) or str(e)
-        print(f"[Stripe] StripeError: {msg}")
+        logger.error(f"Stripe StripeError: {msg}")
         raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Unexpected error in create_checkout_session")
+        raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         db_session.close()
 
