@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useMutation } from 'react-query';
 import { useAuth } from '../context/AuthContext';
 import { register } from '../api';
-import { Car, User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -48,13 +48,10 @@ const Signup = () => {
 
           <div className="relative rounded-md border border-white/30 bg-white/70 p-8 shadow-sm backdrop-blur-md">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-md mb-4">
-                <Car className="w-7 h-7 text-white" />
-              </div>
               <img 
                 src="/automatchfact.png" 
                 alt="autofactmatch logo" 
-                className="h-8 w-auto mx-auto"
+                className="h-10 w-auto mx-auto"
               />
               <p className="text-gray-500 mt-1 text-sm">Chaque compte dispose de son propre espace isolé</p>
             </div>
