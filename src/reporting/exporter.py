@@ -17,6 +17,67 @@ class Exporter:
         self.session = session
         self.org_id = org_id
     
+    def _generate_accounting_entries(self, invoices, comptes_mapping, default_compte, tva_compte, fourn_compte):
+        """
+        Generate accounting entries (débit/crédit) for invoices
+        
+        Args:
+            invoices: List of Invoice objects
+            comptes_mapping: Dict mapping category to (compte, libelle)
+            default_compte: Default compte tuple (compte, libelle)
+            tva_compte: TVA compte tuple (compte, libelle)
+            fourn_compte: Fournisseur compte tuple (compte, libelle)
+            
+        Returns:
+            List of dicts with accounting entries
+        """
+        entries = []
+        for inv in invoices:
+            compte, libelle_compte = comptes_mapping.get(inv.category or '', default_compte)
+            supplier = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
+            piece = inv.invoice_number
+            date_str = inv.date.strftime('%d/%m/%Y') if inv.date else ''
+            tva = round(inv.amount_tax or 0, 2)
+            ttc = round(inv.amount or 0, 2)
+            ht = round(inv.amount_ht or 0, 2) or round(ttc - tva, 2)
+            is_avoir = ttc < 0
+
+            libelle_base = f"{'Avoir' if is_avoir else 'Facture'} {supplier} — {piece}"
+
+            # Ligne 1 : Compte de charge (6xx) — débit HT
+            entries.append({
+                'Date': date_str,
+                'N° Pièce': piece,
+                'N° Compte': compte,
+                'Libellé compte': libelle_compte,
+                'Libellé écriture': libelle_base,
+                'Débit': abs(ht) if not is_avoir else 0,
+                'Crédit': abs(ht) if is_avoir else 0,
+            })
+            # Ligne 2 : TVA déductible (445660) — débit TVA
+            if tva:
+                entries.append({
+                    'Date': date_str,
+                    'N° Pièce': piece,
+                    'N° Compte': tva_compte[0],
+                    'Libellé compte': tva_compte[1],
+                    'Libellé écriture': f"TVA — {libelle_base}",
+                    'Débit': abs(tva) if not is_avoir else 0,
+                    'Crédit': abs(tva) if is_avoir else 0,
+                })
+            # Ligne 3 : Fournisseur (401000) — crédit TTC
+            entries.append({
+                'Date': date_str,
+                'N° Pièce': piece,
+                'N° Compte': fourn_compte[0],
+                'Libellé compte': fourn_compte[1],
+                'Libellé écriture': f"Fournisseur — {supplier}",
+                'Débit': abs(ttc) if is_avoir else 0,
+                'Crédit': abs(ttc) if not is_avoir else 0,
+            })
+        
+        return entries
+    
     def export_invoices_to_csv(self, output_path: str, month: int = None, year: int = None) -> str:
         """
         Export invoices to CSV
@@ -267,42 +328,16 @@ class Exporter:
 
             # ── Feuille 2 : Journal des Achats (PCG) ────────────────────────
             journal_rows = []
-            for inv in all_invoices:
-                compte, libelle_compte = _COMPTES.get(inv.category or '', _DEFAULT_COMPTE)
-                supplier  = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
-                piece     = inv.invoice_number
-                date_str  = inv.date.strftime('%d/%m/%Y') if inv.date else ''
-                tva       = round(inv.amount_tax or 0, 2)
-                ttc       = round(inv.amount     or 0, 2)
-                ht        = round(inv.amount_ht  or 0, 2) or round(ttc - tva, 2)
-                is_avoir  = ttc < 0
-
-                libelle_base = f"{'Avoir' if is_avoir else 'Facture'} {supplier} — {piece}"
-
-                # Ligne 1 : Compte de charge (6xx) — débit HT
+            for entry in self._generate_accounting_entries(all_invoices, _COMPTES, _DEFAULT_COMPTE, _TVA_COMPTE, _FOURN_COMPTE):
                 journal_rows.append({
-                    'Date': date_str, 'Journal': 'ACH', 'N° Pièce': piece,
-                    'N° Compte': compte, 'Libellé compte': libelle_compte,
-                    'Libellé écriture': libelle_base,
-                    'Débit': abs(ht) if not is_avoir else 0,
-                    'Crédit': abs(ht) if is_avoir else 0,
-                })
-                # Ligne 2 : TVA déductible (445660) — débit TVA
-                if tva:
-                    journal_rows.append({
-                        'Date': date_str, 'Journal': 'ACH', 'N° Pièce': piece,
-                        'N° Compte': _TVA_COMPTE[0], 'Libellé compte': _TVA_COMPTE[1],
-                        'Libellé écriture': f"TVA — {libelle_base}",
-                        'Débit': abs(tva) if not is_avoir else 0,
-                        'Crédit': abs(tva) if is_avoir else 0,
-                    })
-                # Ligne 3 : Fournisseur (401000) — crédit TTC
-                journal_rows.append({
-                    'Date': date_str, 'Journal': 'ACH', 'N° Pièce': piece,
-                    'N° Compte': _FOURN_COMPTE[0], 'Libellé compte': _FOURN_COMPTE[1],
-                    'Libellé écriture': f"Fournisseur — {supplier}",
-                    'Débit': abs(ttc) if is_avoir else 0,
-                    'Crédit': abs(ttc) if not is_avoir else 0,
+                    'Date': entry['Date'],
+                    'Journal': 'ACH',
+                    'N° Pièce': entry['N° Pièce'],
+                    'N° Compte': entry['N° Compte'],
+                    'Libellé compte': entry['Libellé compte'],
+                    'Libellé écriture': entry['Libellé écriture'],
+                    'Débit': entry['Débit'],
+                    'Crédit': entry['Crédit'],
                 })
 
             pd.DataFrame(journal_rows).to_excel(writer, sheet_name='Journal des Achats', index=False)
@@ -336,45 +371,14 @@ class Exporter:
 
             # ── Feuille 5 : Grand Livre ───────────────────────────────────────
             grand_livre_rows = []
-            for inv in all_invoices:
-                compte, libelle_compte = _COMPTES.get(inv.category or '', _DEFAULT_COMPTE)
-                supplier = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
-                piece = inv.invoice_number
-                date_str = inv.date.strftime('%d/%m/%Y') if inv.date else ''
-                tva = round(inv.amount_tax or 0, 2)
-                ttc = round(inv.amount or 0, 2)
-                ht = round(inv.amount_ht or 0, 2) or round(ttc - tva, 2)
-                is_avoir = ttc < 0
-
-                libelle_base = f"{'Avoir' if is_avoir else 'Facture'} {supplier} — {piece}"
-
-                # Ligne 1 : Compte de charge (6xx) — débit HT
+            for entry in self._generate_accounting_entries(all_invoices, _COMPTES, _DEFAULT_COMPTE, _TVA_COMPTE, _FOURN_COMPTE):
                 grand_livre_rows.append({
-                    'Date': date_str,
-                    'N° Compte': compte,
-                    'Libellé compte': libelle_compte,
-                    'Libellé écriture': libelle_base,
-                    'Débit': abs(ht) if not is_avoir else 0,
-                    'Crédit': abs(ht) if is_avoir else 0,
-                })
-                # Ligne 2 : TVA déductible (445660) — débit TVA
-                if tva:
-                    grand_livre_rows.append({
-                        'Date': date_str,
-                        'N° Compte': _TVA_COMPTE[0],
-                        'Libellé compte': _TVA_COMPTE[1],
-                        'Libellé écriture': f"TVA — {libelle_base}",
-                        'Débit': abs(tva) if not is_avoir else 0,
-                        'Crédit': abs(tva) if is_avoir else 0,
-                    })
-                # Ligne 3 : Fournisseur (401000) — crédit TTC
-                grand_livre_rows.append({
-                    'Date': date_str,
-                    'N° Compte': _FOURN_COMPTE[0],
-                    'Libellé compte': _FOURN_COMPTE[1],
-                    'Libellé écriture': f"Fournisseur — {supplier}",
-                    'Débit': abs(ttc) if is_avoir else 0,
-                    'Crédit': abs(ttc) if not is_avoir else 0,
+                    'Date': entry['Date'],
+                    'N° Compte': entry['N° Compte'],
+                    'Libellé compte': entry['Libellé compte'],
+                    'Libellé écriture': entry['Libellé écriture'],
+                    'Débit': entry['Débit'],
+                    'Crédit': entry['Crédit'],
                 })
 
             pd.DataFrame(grand_livre_rows).to_excel(writer, sheet_name='Grand Livre', index=False)
