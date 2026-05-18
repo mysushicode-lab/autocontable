@@ -15,12 +15,12 @@ export const PoweredByMysushicode = ({ className = '' }) => {
       <GlassMorphCard className="relative">
       <div className="px-5 py-4 text-center text-sm text-gray-700">
         <div className="flex items-center justify-center gap-2">
-          <span className="text-white">Powered by </span>
           <img 
             src="/logo_mysushicode.png" 
             alt="Mysushicode logo" 
             className="h-4 w-auto"
           />
+          <span className="text-white">Powered by </span>
           <a
             href="https://mysushicode.fr"
             target="_blank"
