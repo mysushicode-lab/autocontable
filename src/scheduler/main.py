@@ -1,9 +1,16 @@
 """
-Automated scheduler for periodic invoice processing
+Automated multi-tenant scheduler for periodic invoice processing.
+
+Runs as a standalone process (BlockingScheduler) and iterates over every
+organisation that has IMAP credentials configured. Designed to be deployed
+as a dedicated container alongside the API.
 """
 import os
+import logging
 from datetime import datetime
-from apscheduler.schedulers.background import BackgroundScheduler
+from typing import List, Optional
+
+from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
 
@@ -12,100 +19,120 @@ from src.storage.models import Settings, Organization
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
-from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash
-from src.reconciliation import ReconciliationEngine
+from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash, BankTransaction
+from src.reconciliation import run_auto_reconciliation
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
-SCHEDULER_INTERVAL_MINUTES = int(os.getenv('SCHEDULER_INTERVAL_MINUTES', 5))
+# Default global cadence (seconds) when an org doesn't override via settings
+DEFAULT_INTERVAL_SECONDS = int(os.getenv('SCHEDULER_DEFAULT_INTERVAL', 480))
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+logger = logging.getLogger(__name__)
 
 
-def get_imap_settings():
-    """Read IMAP settings from database"""
+def _settings_dict(session, organization_id: int, keys: List[str]) -> dict:
+    """Return settings as a dict for the given organisation, filtered by keys."""
+    rows = session.query(Settings).filter(
+        Settings.organization_id == organization_id,
+        Settings.key.in_(keys),
+    ).all()
+    return {s.key: s.value for s in rows}
+
+
+def get_imap_settings(organization_id: int) -> Optional[dict]:
+    """Read IMAP credentials for a given organisation. Returns None if not configured."""
     session = db.get_session()
     try:
-        settings = session.query(Settings).filter(
-            Settings.key.in_(['imap_server', 'imap_port', 'email_address', 'email_password', 'email_folder'])
-        ).all()
-        settings_dict = {s.key: s.value for s in settings}
+        d = _settings_dict(session, organization_id, [
+            'imap_server', 'imap_port', 'email_address', 'email_password', 'email_folder',
+        ])
+        email_address = d.get('email_address')
+        password = d.get('email_password')
+        if not email_address or not password:
+            return None
+        try:
+            port = int(d.get('imap_port') or 993)
+        except (TypeError, ValueError):
+            port = 993
         return {
-            'server': settings_dict.get('imap_server', 'imap.gmail.com'),
-            'port': int(settings_dict.get('imap_port', 993)),
-            'email': settings_dict.get('email_address'),
-            'password': settings_dict.get('email_password'),
-            'folder': settings_dict.get('email_folder', 'INBOX')
+            'server': d.get('imap_server', 'imap.gmail.com'),
+            'port': port,
+            'email': email_address,
+            'password': password,
+            'folder': d.get('email_folder', 'INBOX'),
         }
     finally:
         session.close()
 
 
-def get_scheduler_settings():
-    """Read scheduler settings from database"""
+def get_org_scheduler_settings(organization_id: int) -> dict:
+    """Read scheduler options (interval / auto-reconciliation) for an organisation."""
     session = db.get_session()
     try:
-        settings = session.query(Settings).filter(
-            Settings.key.in_(['scheduler_interval', 'auto_reconciliation'])
-        ).all()
-        settings_dict = {s.key: s.value for s in settings}
-        interval_minutes = float(settings_dict.get('scheduler_interval', '0.166'))  # default 10 seconds
-        auto_reconciliation = settings_dict.get('auto_reconciliation', 'true').lower() == 'true'
+        d = _settings_dict(session, organization_id, ['scheduler_interval', 'auto_reconciliation'])
+        try:
+            interval_minutes = float(d.get('scheduler_interval', '8'))
+        except (TypeError, ValueError):
+            interval_minutes = 8.0
         return {
-            'interval_seconds': int(interval_minutes * 60),
-            'auto_reconciliation': auto_reconciliation
+            'interval_seconds': max(60, int(interval_minutes * 60)),
+            'auto_reconciliation': (d.get('auto_reconciliation', 'true').lower() == 'true'),
         }
     finally:
         session.close()
 
 
-def get_organization_id():
-    """Get the organization ID to use for scheduler operations"""
+def list_active_organizations() -> List[int]:
+    """Return ids of organisations that have IMAP credentials configured."""
     session = db.get_session()
     try:
-        # Try to get from settings first
-        setting = session.query(Settings).filter(Settings.key == 'scheduler_organization_id').first()
-        if setting and setting.value:
-            return int(setting.value)
-        # Fallback to first organization
-        org = session.query(Organization).first()
-        return org.id if org else 1
+        orgs = session.query(Organization).all()
+        active = []
+        for org in orgs:
+            d = _settings_dict(session, org.id, ['email_address', 'email_password'])
+            if d.get('email_address') and d.get('email_password'):
+                active.append(org.id)
+        return active
     finally:
         session.close()
 
 
 class InvoiceScheduler:
-    """Scheduler for automated invoice processing"""
-    
+    """Multi-tenant scheduler. One periodic job iterates over all configured orgs."""
+
     def __init__(self):
-        self.scheduler = BackgroundScheduler()
-        self.interval_minutes = SCHEDULER_INTERVAL_MINUTES
-    
+        self.scheduler = BlockingScheduler(timezone='UTC')
+
+    # ------------------------------------------------------------------
+    # Per-org processing
+    # ------------------------------------------------------------------
     def _is_already_processed(self, session, content_hash: str, organization_id: int) -> bool:
-        """Check permanent hash registry — returns True if file was ever processed, even if invoice was later deleted."""
         if not content_hash:
             return False
         return session.query(ProcessedFileHash).filter(
             ProcessedFileHash.content_hash == content_hash,
-            ProcessedFileHash.organization_id == organization_id
+            ProcessedFileHash.organization_id == organization_id,
         ).first() is not None
 
     def _register_hash(self, session, content_hash: str, filename: str, organization_id: int):
-        """Permanently register a file hash so it is never re-processed."""
         if not content_hash:
             return
-        if not session.query(ProcessedFileHash).filter(
+        exists = session.query(ProcessedFileHash).filter(
             ProcessedFileHash.content_hash == content_hash,
-            ProcessedFileHash.organization_id == organization_id
-        ).first():
-            session.add(ProcessedFileHash(content_hash=content_hash, filename=filename, organization_id=organization_id))
+            ProcessedFileHash.organization_id == organization_id,
+        ).first()
+        if not exists:
+            session.add(ProcessedFileHash(
+                content_hash=content_hash,
+                filename=filename,
+                organization_id=organization_id,
+            ))
 
     def _build_invoice(self, invoice_data: dict, organization_id: int) -> Invoice:
         extraction_confidence = invoice_data.get('extraction_confidence', 'low')
-        
-        # AI is fully responsible for invoice number extraction (from PDF or email subject)
-        # If AI returns null, generate a fallback number
         invoice_number = invoice_data.get('invoice_number') or f"INV-{datetime.now().timestamp()}"
-        
         return Invoice(
             invoice_number=invoice_number,
             supplier_id=invoice_data.get('supplier_id'),
@@ -127,94 +154,78 @@ class InvoiceScheduler:
             email_date=invoice_data.get('email_date'),
             message_id=invoice_data.get('message_id'),
             content_hash=invoice_data.get('content_hash'),
-            status=InvoiceStatus.PROCESSED if extraction_confidence in {'high', 'medium'} else InvoiceStatus.PENDING
+            status=InvoiceStatus.PROCESSED if extraction_confidence in {'high', 'medium'} else InvoiceStatus.PENDING,
         )
-    
-    def process_new_invoices(self, since_date: datetime = None):
-        """Fetch and process new invoices from email
-        
-        Args:
-            since_date: Only fetch emails after this date (for initial startup fetch)
+
+    def process_org_invoices(self, organization_id: int, since_date: Optional[datetime] = None) -> int:
+        """Fetch and process new invoices for a single organisation.
+
+        Returns the number of invoices created.
         """
-        print(f"[{datetime.now()}] Starting invoice processing...")
+        imap_settings = get_imap_settings(organization_id)
+        if not imap_settings:
+            logger.debug(f"Org {organization_id}: no IMAP configured, skipping")
+            return 0
+
+        logger.info(f"Org {organization_id}: starting invoice processing")
         if since_date:
-            print(f"[{datetime.now()}] Fetching emails since {since_date.strftime('%Y-%m-%d')}...")
-        
+            logger.info(f"Org {organization_id}: fetching emails since {since_date.strftime('%Y-%m-%d')}")
+
         session = db.get_session()
-        
+        email_client = None
+        processed_count = 0
         try:
-            # Get organization ID
-            organization_id = get_organization_id()
-            print(f"[{datetime.now()}] Using organization_id: {organization_id}")
-            
-            # Fetch emails (with optional date filter for startup)
-            imap_settings = get_imap_settings()
             email_client = EmailClient(**imap_settings)
             emails = email_client.fetch_invoices(mark_as_read=True, since_date=since_date)
-            
-            print(f"[{datetime.now()}] Found {len(emails)} invoice emails")
-            
-            # Initialize processors
+            logger.info(f"Org {organization_id}: found {len(emails)} invoice emails")
+
             invoice_processor = InvoiceProcessor()
             supplier_classifier = SupplierClassifier(session, org_id=organization_id)
             category_classifier = CategoryClassifier()
-            
-            processed_count = 0
-            
-            for email in emails:
-                message_id = email.get('message_id', '')
-                
-                # Download attachments
-                attachments = email_client.download_attachments(email, 'data/invoices')
-                
+
+            for mail in emails:
+                message_id = mail.get('message_id', '')
+                attachments = email_client.download_attachments(mail, 'data/invoices')
                 for idx, attachment_path in enumerate(attachments):
-                    attachment = email['attachments'][idx] if idx < len(email['attachments']) else {}
+                    attachment = mail['attachments'][idx] if idx < len(mail['attachments']) else {}
                     content_hash = attachment.get('content_hash', '')
                     filename = attachment.get('filename', '')
 
                     if self._is_already_processed(session, content_hash, organization_id):
-                        print(f"[{datetime.now()}] Skipping already-processed file: {filename} (hash: {content_hash[:8]}...)")
+                        logger.info(f"Org {organization_id}: skipping already-processed {filename}")
                         continue
-                    
-                    # Prepare email metadata for AI
+
                     email_metadata = {
-                        'email_from': email['from'],
-                        'email_subject': email['subject'],
-                        'email_body': email.get('body', '')
+                        'email_from': mail['from'],
+                        'email_subject': mail['subject'],
+                        'email_body': mail.get('body', ''),
                     }
-                    
-                    # Process invoice with AI (if enabled) and metadata
                     invoice_data = invoice_processor.process_invoice(
-                        attachment_path,
-                        email_metadata=email_metadata
+                        attachment_path, email_metadata=email_metadata,
                     )
-                    
-                    # Add email metadata
-                    invoice_data['email_subject'] = email['subject']
-                    invoice_data['email_from'] = email['from']
-                    invoice_data['email_date'] = email['date']
-                    invoice_data['file_path'] = attachment_path
-                    invoice_data['message_id'] = message_id
-                    invoice_data['content_hash'] = content_hash
-                    
-                    # Skip non-invoice documents identified by AI
+                    invoice_data.update({
+                        'email_subject': mail['subject'],
+                        'email_from': mail['from'],
+                        'email_date': mail['date'],
+                        'file_path': attachment_path,
+                        'message_id': message_id,
+                        'content_hash': content_hash,
+                    })
+
                     if invoice_data.get('not_an_invoice'):
-                        print(f"[{datetime.now()}] Skipping non-invoice document: {filename} (type: {invoice_data.get('ai_document_type', 'unknown')})")
+                        logger.info(f"Org {organization_id}: skipping non-invoice document {filename}")
                         continue
-                    
-                    # Skip if AI extraction failed (confidence=low or error) — don't register hash to allow retry
+
                     extraction_confidence = invoice_data.get('extraction_confidence', 'low')
                     if extraction_confidence == 'low' or invoice_data.get('is_invoice') is None:
-                        print(f"[{datetime.now()}] Skipping file due to AI extraction failure: {filename} (confidence={extraction_confidence})")
+                        logger.info(f"Org {organization_id}: skipping low-confidence extraction {filename}")
                         continue
-                    
+
                     supplier = supplier_classifier.detect_supplier(invoice_data)
                     if supplier:
                         invoice_data['supplier_id'] = supplier.id
-                        # Also set organization_id on supplier
                         supplier.organization_id = organization_id
-                    
-                    # Classify category — AI provides directly; keyword classifier as fallback only
+
                     if not invoice_data.get('category'):
                         category = category_classifier.classify(invoice_data)
                         if category:
@@ -224,112 +235,88 @@ class InvoiceScheduler:
                     session.add(invoice)
                     self._register_hash(session, content_hash, filename, organization_id)
                     processed_count += 1
-            
+
             session.commit()
-            
-            print(f"[{datetime.now()}] Processed {processed_count} new invoices")
-            
-        except Exception as e:
-            print(f"[{datetime.now()}] Error processing invoices: {e}")
+            logger.info(f"Org {organization_id}: processed {processed_count} new invoices")
+        except Exception as exc:
+            logger.exception(f"Org {organization_id}: error processing invoices: {exc}")
             session.rollback()
         finally:
-            if 'email_client' in locals():
-                email_client.disconnect()
+            if email_client is not None:
+                try:
+                    email_client.disconnect()
+                except Exception:
+                    pass
             session.close()
-    
-    def run_reconciliation(self):
-        """Run reconciliation on processed invoices"""
-        print(f"[{datetime.now()}] Starting reconciliation...")
-        
-        session = db.get_session()
-        
-        try:
-            organization_id = get_organization_id()
-            print(f"[{datetime.now()}] Using organization_id: {organization_id}")
-            
-            # Get invoices and transactions for this organization
-            invoices = session.query(Invoice).filter(
-                Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
-                Invoice.organization_id == organization_id
-            ).all()
-            
-            from src.storage.models import BankTransaction
-            transactions = session.query(BankTransaction).filter(
-                BankTransaction.organization_id == organization_id
-            ).all()
-            
-            engine = ReconciliationEngine(session)
-            matches = engine.reconcile(invoices, transactions, organization_id)
-            
-            print(f"[{datetime.now()}] Created {len(matches)} reconciliation matches")
-            
-        except Exception as e:
-            print(f"[{datetime.now()}] Error during reconciliation: {e}")
-            session.rollback()
-        finally:
-            session.close()
-    
+        return processed_count
+
+    # ------------------------------------------------------------------
+    # Tick: iterate over every configured org
+    # ------------------------------------------------------------------
+    def tick(self):
+        """Single scheduler tick: iterate over every configured organisation."""
+        org_ids = list_active_organizations()
+        if not org_ids:
+            logger.debug("No organisation has IMAP configured; nothing to do")
+            return
+
+        for org_id in org_ids:
+            try:
+                created = self.process_org_invoices(org_id)
+                # If anything was created, also try to reconcile when enabled
+                opts = get_org_scheduler_settings(org_id)
+                if created and opts.get('auto_reconciliation'):
+                    matches = run_auto_reconciliation(org_id)
+                    if matches:
+                        logger.info(f"Org {org_id}: auto-reconciliation created {matches} matches")
+            except Exception as exc:
+                logger.exception(f"Org {org_id}: tick failed: {exc}")
+
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
     def start(self):
-        """Start the scheduler with initial current-month fetch"""
-        print(f"[{datetime.now()}] === Starting Invoice Scheduler ===")
+        logger.info("=== Starting multi-tenant Invoice Scheduler ===")
 
-        # Read scheduler settings from DB
-        sched_settings = get_scheduler_settings()
-        interval_seconds = sched_settings['interval_seconds'] or 10  # fallback to 10 seconds
-        auto_reconciliation = sched_settings['auto_reconciliation']
-        print(f"[{datetime.now()}] Interval: {interval_seconds}s | Auto-reconciliation: {auto_reconciliation}")
-
-        # STEP 1: Initial fetch - get emails from start of current month
-        today = datetime.now()
+        # Initial fetch: emails since the start of the current month
+        today = datetime.utcnow()
         start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        
-        print(f"[{datetime.now()}] Step 1: Initial fetch - processing emails since {start_of_month.strftime('%Y-%m-%d')}...")
         try:
-            self.process_new_invoices(since_date=start_of_month)
-            print(f"[{datetime.now()}] Initial fetch completed.")
-        except Exception as e:
-            print(f"[{datetime.now()}] Error during initial fetch: {e}")
-            print(f"[{datetime.now()}] Continuing with scheduler anyway...")
-        
-        # STEP 2: Schedule regular jobs
-        print(f"[{datetime.now()}] Step 2: Setting up scheduled jobs...")
-        
-        # Schedule invoice processing
+            org_ids = list_active_organizations()
+            logger.info(f"Initial fetch for {len(org_ids)} organisation(s) since {start_of_month.strftime('%Y-%m-%d')}")
+            for org_id in org_ids:
+                try:
+                    self.process_org_invoices(org_id, since_date=start_of_month)
+                    opts = get_org_scheduler_settings(org_id)
+                    if opts.get('auto_reconciliation'):
+                        run_auto_reconciliation(org_id)
+                except Exception as exc:
+                    logger.exception(f"Org {org_id}: initial fetch failed: {exc}")
+        except Exception as exc:
+            logger.exception(f"Initial fetch failed: {exc}")
+
+        # Recurring tick
+        interval = DEFAULT_INTERVAL_SECONDS
+        logger.info(f"Scheduling recurring tick every {interval}s")
         self.scheduler.add_job(
-            self.process_new_invoices,
-            trigger=IntervalTrigger(seconds=interval_seconds),
-            id='process_invoices',
-            name='Process New Invoices',
+            self.tick,
+            trigger=IntervalTrigger(seconds=interval),
+            id='multi_tenant_tick',
+            name='Multi-tenant invoice fetch',
             replace_existing=True,
             max_instances=1,
-            misfire_grace_time=300
+            misfire_grace_time=300,
         )
-        
-        # Schedule reconciliation only if enabled
-        if auto_reconciliation:
-            self.scheduler.add_job(
-                self.run_reconciliation,
-                trigger=IntervalTrigger(seconds=interval_seconds * 2),
-                id='run_reconciliation',
-                name='Run Reconciliation',
-                replace_existing=True,
-                max_instances=1,
-                misfire_grace_time=300
-            )
-        
-        print(f"[{datetime.now()}] Scheduler ready. Running every {interval_seconds}s.")
-        
-        # STEP 3: Start scheduler (blocking)
+
         try:
-            self.scheduler.start()
+            self.scheduler.start()  # BlockingScheduler — keeps the process alive
         except (KeyboardInterrupt, SystemExit):
-            print(f"[{datetime.now()}] Scheduler stopped.")
+            logger.info("Scheduler stopped.")
 
 
 def start_scheduler():
-    """Start the invoice scheduler"""
-    scheduler = InvoiceScheduler()
-    scheduler.start()
+    """Entrypoint used when running `python -m src.scheduler.main`."""
+    InvoiceScheduler().start()
 
 
 if __name__ == "__main__":

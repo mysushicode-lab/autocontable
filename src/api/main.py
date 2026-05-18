@@ -35,25 +35,15 @@ from src.api.payments import router as stripe_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan: run startup migrations and launch the scheduler."""
+    """Application lifespan: run startup migrations.
+
+    The invoice scheduler runs in its own dedicated container (see
+    docker-compose service `scheduler`), so we don't launch it here to avoid
+    double-execution and resource contention.
+    """
     # --- Startup ---
     startup_event()
-
-    try:
-        from src.scheduler.main import InvoiceScheduler
-
-        def start_scheduler_bg():
-            try:
-                scheduler = InvoiceScheduler()
-                scheduler.start()
-            except Exception as e:
-                logger.error(f"Scheduler failed to start: {e}")
-
-        thread = threading.Thread(target=start_scheduler_bg, daemon=True)
-        thread.start()
-        logger.info("Scheduler starting in background thread")
-    except Exception as e:
-        logger.error(f"Scheduler failed to initialize: {e}")
+    logger.info("API ready")
 
     yield
 
@@ -98,37 +88,34 @@ def root():
 
 @app.post("/api/emails/fetch")
 def trigger_email_fetch(since_days: int = 30, current_user: dict = Depends(get_current_user)):
-    """
-    Trigger immediate email fetching and processing.
-    Called on frontend startup or on demand.
+    """Trigger immediate email fetching for the caller's organisation only.
 
     Args:
         since_days: Fetch emails from last N days (default: 30)
     """
     from src.scheduler.main import InvoiceScheduler
 
-    try:
-        scheduler = InvoiceScheduler()
-        since_date = datetime.now() - timedelta(days=since_days)
+    org_id = current_user.get("organization_id")
+    if not org_id:
+        raise HTTPException(status_code=400, detail="No organisation associated with this account")
 
-        # Run processing in background thread to not block API
-        def run_fetch():
-            try:
-                scheduler.process_new_invoices(since_date=since_date)
-            except Exception as e:
-                logger.error(f"Background email fetch error: {e}")
+    since_date = datetime.utcnow() - timedelta(days=since_days)
 
-        thread = threading.Thread(target=run_fetch, daemon=True)
-        thread.start()
+    def run_fetch():
+        try:
+            scheduler = InvoiceScheduler()
+            scheduler.process_org_invoices(org_id, since_date=since_date)
+        except Exception as e:
+            logger.error(f"Background email fetch error for org {org_id}: {e}")
 
-        return {
-            "message": f"Email fetch triggered for last {since_days} days",
-            "since_date": since_date.isoformat(),
-            "status": "processing"
-        }
-    except Exception as e:
-        logger.exception("trigger_email_fetch failed")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    thread = threading.Thread(target=run_fetch, daemon=True)
+    thread.start()
+
+    return {
+        "message": f"Email fetch triggered for organisation {org_id} (last {since_days} days)",
+        "since_date": since_date.isoformat(),
+        "status": "processing",
+    }
 
 
 # Register routers

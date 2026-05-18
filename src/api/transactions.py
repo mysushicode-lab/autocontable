@@ -13,6 +13,7 @@ from src.storage.models import BankTransaction, ReconciliationMatch, Invoice, In
 from src.bank_importer.bank_importer import BankImporter
 from src.api.utils import save_uploaded_file
 from src.api.auth import get_current_user, check_trial_active
+from src.reconciliation import run_auto_reconciliation
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -189,25 +190,7 @@ def update_transaction(
         session.commit()
 
         # Run automatic reconciliation after transaction amount update
-        try:
-            from src.reconciliation.reconciliation_engine import ReconciliationEngine
-            from src.storage.models import Invoice, InvoiceStatus
-            recon_session = db.get_session()
-            try:
-                recon_invoices = recon_session.query(Invoice).filter(
-                    Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
-                    Invoice.organization_id == org_id
-                ).all()
-                recon_transactions = recon_session.query(BankTransaction).filter(
-                    BankTransaction.organization_id == org_id
-                ).all()
-                engine = ReconciliationEngine(recon_session)
-                engine.reconcile(recon_invoices, recon_transactions, org_id)
-                recon_session.commit()
-            finally:
-                recon_session.close()
-        except Exception as recon_err:
-            logger.warning(f"Auto-reconcile after transaction update failed: {recon_err}")
+        run_auto_reconciliation(org_id)
 
         return {"message": "Transaction updated successfully"}
     finally:

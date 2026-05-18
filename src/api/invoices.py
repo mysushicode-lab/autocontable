@@ -18,7 +18,7 @@ from src.invoice_processor import InvoiceProcessor
 from src.api.utils import save_uploaded_file, create_or_update_invoice
 from src.api.schemas import UpdateInvoiceRequest
 from src.api.auth import get_current_user, check_trial_active
-from src.reconciliation.reconciliation_engine import ReconciliationEngine
+from src.reconciliation import run_auto_reconciliation
 
 router = APIRouter()
 
@@ -80,26 +80,9 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         
         # Store invoice ID before running reconciliation
         invoice_id = invoice.id
-        
-        # Run automatic reconciliation after manual import in a separate session
-        try:
-            from src.storage.models import BankTransaction
-            recon_session = db.get_session()
-            try:
-                recon_invoices = recon_session.query(Invoice).filter(
-                    Invoice.status.in_([InvoiceStatus.PROCESSED, InvoiceStatus.UNMATCHED, InvoiceStatus.PENDING]),
-                    Invoice.organization_id == org_id
-                ).all()
-                recon_transactions = recon_session.query(BankTransaction).filter(
-                    BankTransaction.organization_id == org_id
-                ).all()
-                engine = ReconciliationEngine(recon_session)
-                engine.reconcile(recon_invoices, recon_transactions, org_id)
-                recon_session.commit()
-            finally:
-                recon_session.close()
-        except Exception as recon_err:
-            logger.warning(f"Auto-reconcile after upload failed: {recon_err}")
+
+        # Run automatic reconciliation after manual import (isolated session inside helper)
+        run_auto_reconciliation(org_id)
         
         # Re-fetch the invoice from the database to get the latest status after reconciliation
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
