@@ -11,13 +11,13 @@ import { SettingsCollaborations } from '../components/settings/SettingsCollabora
 import { SettingsBilling } from '../components/settings/SettingsBilling';
 import { SettingsPlan } from '../components/settings/SettingsPlan';
 
-const SECTIONS = [
-  { id: 'profil', label: 'Profil', icon: UserCircle, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700' },
-  { id: 'email', label: 'Configuration Email', icon: Mail, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700' },
-  { id: 'scheduler', label: 'Planificateur', icon: Clock, color: 'purple', bgClass: 'bg-purple-50', textClass: 'text-purple-700' },
-  { id: 'collaborations', label: 'Collaborations', icon: Users, color: 'green', bgClass: 'bg-green-50', textClass: 'text-green-700' },
-  { id: 'billing', label: 'Facturation', icon: CreditCard, color: 'orange', bgClass: 'bg-orange-50', textClass: 'text-orange-700' },
-  { id: 'plan', label: 'Plan', icon: Zap, color: 'yellow', bgClass: 'bg-yellow-50', textClass: 'text-yellow-700' },
+const ALL_SECTIONS = [
+  { id: 'profil', label: 'Profil', icon: UserCircle, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700', adminOnly: false },
+  { id: 'email', label: 'Configuration Email', icon: Mail, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700', adminOnly: true },
+  { id: 'scheduler', label: 'Planificateur', icon: Clock, color: 'purple', bgClass: 'bg-purple-50', textClass: 'text-purple-700', adminOnly: true },
+  { id: 'collaborations', label: 'Collaborations', icon: Users, color: 'green', bgClass: 'bg-green-50', textClass: 'text-green-700', adminOnly: true },
+  { id: 'billing', label: 'Facturation', icon: CreditCard, color: 'orange', bgClass: 'bg-orange-50', textClass: 'text-orange-700', adminOnly: true },
+  { id: 'plan', label: 'Plan', icon: Zap, color: 'yellow', bgClass: 'bg-yellow-50', textClass: 'text-yellow-700', adminOnly: true },
 ];
 
 const Settings = () => {
@@ -27,6 +27,10 @@ const Settings = () => {
   const [emailForm, setEmailForm] = useState({});
   const [schedulerForm, setSchedulerForm] = useState({});
   const [imapTestResult, setImapTestResult] = useState(null);
+
+  // Filter sections based on user role
+  const isAdmin = user?.role === 'admin';
+  const SECTIONS = ALL_SECTIONS.filter(section => !section.adminOnly || isAdmin);
 
   const { data: settingsData, isLoading } = useQuery('settings', () => fetchSettings());
   const { data: usersData } = useQuery('users', () => fetchUsers());
