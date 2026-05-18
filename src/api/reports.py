@@ -151,3 +151,22 @@ def export_monthly_report_excel(year: int, month: int, current_user: dict = Depe
         return FileResponse(output_path, filename=filename)
     finally:
         session.close()
+
+
+@router.get("/export/grand-livre")
+def export_grand_livre_excel(year: int, month: int, current_user: dict = Depends(get_current_user)):
+    """Export Grand Livre to Excel"""
+    import os
+    from fastapi.responses import FileResponse
+    
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        exporter = Exporter(session, org_id=org_id)
+        os.makedirs("data/exports", exist_ok=True)
+        filename = f"grand_livre_{year}_{month:02d}.xlsx"
+        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
+        exporter.export_monthly_report_to_excel(output_path, year, month)
+        return FileResponse(output_path, filename=filename)
+    finally:
+        session.close()

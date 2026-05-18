@@ -315,4 +315,49 @@ class Exporter:
                 })
             pd.DataFrame(category_data).to_excel(writer, sheet_name='Par catégorie', index=False)
 
+            # ── Feuille 5 : Grand Livre ───────────────────────────────────────
+            grand_livre_rows = []
+            for inv in invoices:
+                compte, libelle_compte = _COMPTES.get(inv.category or '', _DEFAULT_COMPTE)
+                supplier = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
+                piece = inv.invoice_number
+                date_str = inv.date.strftime('%d/%m/%Y') if inv.date else ''
+                tva = round(inv.amount_tax or 0, 2)
+                ttc = round(inv.amount or 0, 2)
+                ht = round(inv.amount_ht or 0, 2) or round(ttc - tva, 2)
+                is_avoir = ttc < 0
+
+                libelle_base = f"{'Avoir' if is_avoir else 'Facture'} {supplier} — {piece}"
+
+                # Ligne 1 : Compte de charge (6xx) — débit HT
+                grand_livre_rows.append({
+                    'Date': date_str,
+                    'N° Compte': compte,
+                    'Libellé compte': libelle_compte,
+                    'Libellé écriture': libelle_base,
+                    'Débit': abs(ht) if not is_avoir else 0,
+                    'Crédit': abs(ht) if is_avoir else 0,
+                })
+                # Ligne 2 : TVA déductible (445660) — débit TVA
+                if tva:
+                    grand_livre_rows.append({
+                        'Date': date_str,
+                        'N° Compte': _TVA_COMPTE[0],
+                        'Libellé compte': _TVA_COMPTE[1],
+                        'Libellé écriture': f"TVA — {libelle_base}",
+                        'Débit': abs(tva) if not is_avoir else 0,
+                        'Crédit': abs(tva) if is_avoir else 0,
+                    })
+                # Ligne 3 : Fournisseur (401000) — crédit TTC
+                grand_livre_rows.append({
+                    'Date': date_str,
+                    'N° Compte': _FOURN_COMPTE[0],
+                    'Libellé compte': _FOURN_COMPTE[1],
+                    'Libellé écriture': f"Fournisseur — {supplier}",
+                    'Débit': abs(ttc) if is_avoir else 0,
+                    'Crédit': abs(ttc) if not is_avoir else 0,
+                })
+
+            pd.DataFrame(grand_livre_rows).to_excel(writer, sheet_name='Grand Livre', index=False)
+
         return output_path
