@@ -3,7 +3,6 @@ from sqlalchemy import text
 from src.storage.database import db
 from src.storage.models import Base, Settings, User, UserRole, Organization
 import os
-import hashlib
 
 
 def startup_event():
@@ -194,6 +193,28 @@ def startup_event():
     except Exception as e:
         print(f"Password reset tokens migration: {e}")
 
+    # Add expires_at column to user_tokens table (for token expiration)
+    try:
+        conn.execute(text("ALTER TABLE user_tokens ADD COLUMN expires_at DATETIME"))
+        conn.commit()
+    except Exception:
+        pass  # Column already exists
+
+    # Create index on user_tokens.expires_at for cleanup queries
+    try:
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_user_tokens_expires_at ON user_tokens(expires_at)"))
+        conn.commit()
+    except Exception as e:
+        print(f"user_tokens expires_at index migration: {e}")
+
+    # Cleanup expired tokens at startup
+    try:
+        from datetime import datetime
+        conn.execute(text("DELETE FROM user_tokens WHERE expires_at IS NOT NULL AND expires_at < :now"), {"now": datetime.utcnow()})
+        conn.commit()
+    except Exception as e:
+        print(f"Expired token cleanup: {e}")
+
     conn.close()
 
     session = db.get_session()
@@ -226,7 +247,9 @@ def startup_event():
             default_admin_email = os.environ.get('ADMIN_EMAIL', '')
             admin_exists = session.query(User).filter(User.username == default_admin_username).first()
             if not admin_exists:
-                password_hash = hashlib.sha256(default_admin_password.encode()).hexdigest()
+                # Import locally to avoid circular dependency
+                from src.api.auth import _hash_password
+                password_hash = _hash_password(default_admin_password)
                 admin = User(
                     username=default_admin_username,
                     password_hash=password_hash,

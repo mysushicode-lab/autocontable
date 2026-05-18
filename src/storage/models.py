@@ -43,6 +43,7 @@ class UserToken(Base):
     id = Column(Integer, primary_key=True)
     token = Column(String(64), unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    expires_at = Column(DateTime, nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="tokens")
