@@ -14,8 +14,13 @@ export const PoweredByMysushicode = ({ className = '' }) => {
       <div className="absolute inset-0 translate-x-1 translate-y-1 rounded-lg border border-white/20 bg-white/10 backdrop-blur-md" />
       <GlassMorphCard className="relative">
       <div className="px-5 py-4 text-center text-sm text-gray-700">
-        <div>
+        <div className="flex items-center justify-center gap-2">
           <span className="text-white">Powered by </span>
+          <img 
+            src="/logo_mysushicode.png" 
+            alt="Mysushicode logo" 
+            className="h-4 w-auto"
+          />
           <a
             href="https://mysushicode.fr"
             target="_blank"
