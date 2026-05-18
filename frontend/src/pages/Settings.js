@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { Mail, Clock, Users, CreditCard, Zap, UserCircle } from 'lucide-react';
+import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut } from 'lucide-react';
 import { fetchSettings, fetchUsers, testImap, deleteAccount } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useSettingsMutations } from '../hooks/useSettingsMutations';
@@ -139,6 +139,15 @@ const Settings = () => {
               {section.label}
             </button>
           ))}
+          <div className="border-t border-gray-100 mt-4 pt-4">
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="w-5 h-5" />
+              Déconnexion
+            </button>
+          </div>
         </nav>
       </aside>
 
