@@ -14,6 +14,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
+import { PCG_COMPTES, DEFAULT_COMPTE } from '../constants/pcg';
 import DropdownButton from '../components/DropdownButton';
 import { useFilters } from '../context/FilterContext';
 
@@ -130,19 +131,6 @@ const Reports = () => {
     invoices: values.count,
   })).sort((a, b) => b.amount - a.amount);
 
-  // PCG account mapping (Plan Comptable Général — carrosserie auto)
-  const COMPTE_CHARGES = {
-    'Pièces détachées':              '607100',
-    'Peinture et vernis':            '607200',
-    'Fournitures atelier':           '606400',
-    'Sous-traitance':                '611000',
-    'Équipement et outillage':       '606310',
-    'Énergie et locaux':             '606110',
-    'Assurances et frais':           '616000',
-    'Déplacements et véhicules':     '625100',
-    'Informatique et communication': '626000',
-    'Formation et divers':           '628000',
-  };
   const STATUS_FR = { pending: 'En attente', processed: 'Traité', matched: 'Rapproché', unmatched: 'Non rapproché' };
 
   // Export Grand Livre (all invoices with details)
@@ -155,7 +143,7 @@ const Reports = () => {
       inv.invoice_number,
       inv.supplier || '-',
       inv.category || '-',
-      COMPTE_CHARGES[inv.category] || '608000',
+      PCG_COMPTES[inv.category] || DEFAULT_COMPTE,
       (inv.amount_ht ?? 0).toFixed(2),
       (inv.amount_tax ?? 0).toFixed(2),
       (inv.amount ?? 0).toFixed(2),
@@ -175,7 +163,7 @@ const Reports = () => {
     const chargeMap = {};
     let totalHT = 0, totalTVA = 0, totalTTC = 0;
     invoices.forEach((inv) => {
-      const compte = COMPTE_CHARGES[inv.category] || '608000';
+      const compte = PCG_COMPTES[inv.category] || DEFAULT_COMPTE;
       const label = inv.category || 'Achats divers';
       const tva = inv.amount_tax ?? 0;
       const ttc = inv.amount ?? 0;
@@ -207,7 +195,7 @@ const Reports = () => {
     const rows = [];
 
     invoices.forEach((inv) => {
-      const compte = COMPTE_CHARGES[inv.category] || '608000';
+      const compte = PCG_COMPTES[inv.category] || DEFAULT_COMPTE;
       const supplier = inv.supplier || 'Fournisseur inconnu';
       const date = inv.date ? new Date(inv.date).toLocaleDateString('fr-FR') : '-';
       const tva = inv.amount_tax ?? 0;

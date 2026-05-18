@@ -8,6 +8,7 @@ from typing import List, Dict
 from sqlalchemy.orm import Session
 from src.storage.models import Invoice, BankTransaction, ReconciliationMatch
 import calendar
+from src.constants import PCG_COMPTES, DEFAULT_COMPTE, TVA_COMPTE, FOURN_COMPTE
 
 
 class Exporter:
@@ -237,23 +238,6 @@ class Exporter:
         # Get data
         monthly_totals = report_gen.monthly_totals(year, month)
         reconciliation = report_gen.reconciliation_report(year, month)
-        
-        # PCG account mapping for carrosserie auto
-        _COMPTES = {
-            'Pièces détachées':              ('607100', 'Achats marchandises — pièces auto'),
-            'Peinture et vernis':            ('607200', 'Achats — peinture et vernis'),
-            'Fournitures atelier':           ('606400', 'Fournitures atelier et consommables'),
-            'Sous-traitance':                ('611000', 'Sous-traitance générale'),
-            'Équipement et outillage':       ('606310', 'Petit outillage'),
-            'Énergie et locaux':             ('606110', 'Électricité, gaz, loyer'),
-            'Assurances et frais':           ('616000', "Primes d'assurances"),
-            'Déplacements et véhicules':     ('625100', 'Voyages et déplacements'),
-            'Informatique et communication': ('626000', 'Téléphone et internet'),
-            'Formation et divers':           ('628000', 'Charges diverses de gestion'),
-        }
-        _DEFAULT_COMPTE = ('608000', 'Achats divers non stockés')
-        _TVA_COMPTE    = ('445660', 'TVA déductible — achats et services')
-        _FOURN_COMPTE  = ('401000', 'Fournisseurs')
 
         # Fetch invoices for the period
         first_day = datetime(year, month, 1)
@@ -328,7 +312,7 @@ class Exporter:
 
             # ── Feuille 2 : Journal des Achats (PCG) ────────────────────────
             journal_rows = []
-            for entry in self._generate_accounting_entries(all_invoices, _COMPTES, _DEFAULT_COMPTE, _TVA_COMPTE, _FOURN_COMPTE):
+            for entry in self._generate_accounting_entries(all_invoices, PCG_COMPTES, DEFAULT_COMPTE, TVA_COMPTE, FOURN_COMPTE):
                 journal_rows.append({
                     'Date': entry['Date'],
                     'Journal': 'ACH',
@@ -357,7 +341,7 @@ class Exporter:
             # ── Feuille 4 : Par catégorie ────────────────────────────────────
             category_data = []
             for category, data in monthly_totals['by_category'].items():
-                compte, libelle = _COMPTES.get(category, _DEFAULT_COMPTE)
+                compte, libelle = PCG_COMPTES.get(category, DEFAULT_COMPTE)
                 category_data.append({
                     'N° Compte PCG': compte,
                     'Catégorie': category,
@@ -371,7 +355,7 @@ class Exporter:
 
             # ── Feuille 5 : Grand Livre ───────────────────────────────────────
             grand_livre_rows = []
-            for entry in self._generate_accounting_entries(all_invoices, _COMPTES, _DEFAULT_COMPTE, _TVA_COMPTE, _FOURN_COMPTE):
+            for entry in self._generate_accounting_entries(all_invoices, PCG_COMPTES, DEFAULT_COMPTE, TVA_COMPTE, FOURN_COMPTE):
                 grand_livre_rows.append({
                     'Date': entry['Date'],
                     'N° Compte': entry['N° Compte'],
@@ -382,5 +366,180 @@ class Exporter:
                 })
 
             pd.DataFrame(grand_livre_rows).to_excel(writer, sheet_name='Grand Livre', index=False)
+
+        return output_path
+    
+    def export_grand_livre_to_excel(self, output_path: str, year: int, month: int) -> str:
+        """
+        Export Grand Livre (all accounting entries) to Excel
+        
+        Args:
+            output_path: Path to save Excel file
+            year: Year
+            month: Month
+            
+        Returns:
+            Path to exported file
+        """
+        # Fetch invoices for the period (same logic as export_monthly_report_to_excel)
+        first_day = datetime(year, month, 1)
+        last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
+        
+        # Get invoices from the selected month (by invoice date)
+        inv_q = self.session.query(Invoice).filter(
+            Invoice.date >= first_day, Invoice.date <= last_day
+        )
+        if self.org_id:
+            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
+        invoices = inv_q.all()
+
+        # Also include invoices matched to transactions in the selected month
+        from src.storage.models import ReconciliationMatch, BankTransaction
+        matches = self.session.query(ReconciliationMatch).join(Invoice).join(
+            BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
+        ).filter(
+            BankTransaction.date >= first_day,
+            BankTransaction.date <= last_day
+        )
+        if self.org_id:
+            matches = matches.filter(Invoice.organization_id == self.org_id)
+        
+        # Get matched invoices that are not already in the monthly invoices
+        matched_invoices_prev_month = []
+        for match in matches:
+            if match.status != 'rejected' and match.invoice_id not in {inv.id for inv in invoices}:
+                matched_invoices_prev_month.append(match.invoice)
+        
+        # Combine: monthly invoices + matched invoices from previous months
+        all_invoices = invoices + matched_invoices_prev_month
+
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+            # Generate Grand Livre entries
+            grand_livre_rows = []
+            for entry in self._generate_accounting_entries(all_invoices, PCG_COMPTES, DEFAULT_COMPTE, TVA_COMPTE, FOURN_COMPTE):
+                grand_livre_rows.append({
+                    'Date': entry['Date'],
+                    'N° Compte': entry['N° Compte'],
+                    'Libellé compte': entry['Libellé compte'],
+                    'Libellé écriture': entry['Libellé écriture'],
+                    'Débit': entry['Débit'],
+                    'Crédit': entry['Crédit'],
+                })
+
+            pd.DataFrame(grand_livre_rows).to_excel(writer, sheet_name='Grand Livre', index=False)
+
+        return output_path
+    
+    def export_balance_to_excel(self, output_path: str, year: int, month: int) -> str:
+        """
+        Export Balance (summary by account) to Excel
+        
+        Args:
+            output_path: Path to save Excel file
+            year: Year
+            month: Month
+            
+        Returns:
+            Path to exported file
+        """
+        # Fetch invoices for the period (same logic as export_monthly_report_to_excel)
+        first_day = datetime(year, month, 1)
+        last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
+        
+        # Get invoices from the selected month (by invoice date)
+        inv_q = self.session.query(Invoice).filter(
+            Invoice.date >= first_day, Invoice.date <= last_day
+        )
+        if self.org_id:
+            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
+        invoices = inv_q.all()
+
+        # Also include invoices matched to transactions in the selected month
+        from src.storage.models import ReconciliationMatch, BankTransaction
+        matches = self.session.query(ReconciliationMatch).join(Invoice).join(
+            BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
+        ).filter(
+            BankTransaction.date >= first_day,
+            BankTransaction.date <= last_day
+        )
+        if self.org_id:
+            matches = matches.filter(Invoice.organization_id == self.org_id)
+        
+        # Get matched invoices that are not already in the monthly invoices
+        matched_invoices_prev_month = []
+        for match in matches:
+            if match.status != 'rejected' and match.invoice_id not in {inv.id for inv in invoices}:
+                matched_invoices_prev_month.append(match.invoice)
+        
+        # Combine: monthly invoices + matched invoices from previous months
+        all_invoices = invoices + matched_invoices_prev_month
+
+        # Calculate balance by account
+        chargeMap = {}
+        totalHT = 0
+        totalTVA = 0
+        totalTTC = 0
+        
+        for inv in all_invoices:
+            compte, libelle = PCG_COMPTES.get(inv.category or '', DEFAULT_COMPTE)
+            tva = inv.amount_tax or 0
+            ttc = inv.amount or 0
+            ht = inv.amount_ht or 0 or (ttc - tva)
+            
+            if compte not in chargeMap:
+                chargeMap[compte] = {'label': libelle, 'debit': 0}
+            chargeMap[compte]['debit'] += ht
+            totalHT += ht
+            totalTVA += tva
+            totalTTC += ttc
+
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        balance_rows = []
+        
+        # Ligne par compte de charge (6xx)
+        for compte in sorted(chargeMap.keys()):
+            data = chargeMap[compte]
+            balance_rows.append({
+                'N° Compte': compte,
+                'Libellé compte': data['label'],
+                'Total Débit': round(data['debit'], 2),
+                'Total Crédit': 0.00,
+                'Solde': round(data['debit'], 2),
+            })
+        
+        # Ligne TVA déductible (445660)
+        if totalTVA:
+            balance_rows.append({
+                'N° Compte': TVA_COMPTE[0],
+                'Libellé compte': TVA_COMPTE[1],
+                'Total Débit': round(totalTVA, 2),
+                'Total Crédit': 0.00,
+                'Solde': round(totalTVA, 2),
+            })
+        
+        # Ligne Fournisseurs (401000)
+        balance_rows.append({
+            'N° Compte': FOURN_COMPTE[0],
+            'Libellé compte': FOURN_COMPTE[1],
+            'Total Débit': 0.00,
+            'Total Crédit': round(totalTTC, 2),
+            'Solde': -round(totalTTC, 2),
+        })
+        
+        # Total de contrôle (doit être 0 — partie double)
+        controle = totalHT + totalTVA - totalTTC
+        balance_rows.append({
+            'N° Compte': '',
+            'Libellé compte': 'TOTAL DE CONTRÔLE (doit être 0)',
+            'Total Débit': round(totalHT + totalTVA, 2),
+            'Total Crédit': round(totalTTC, 2),
+            'Solde': round(controle, 2),
+        })
+
+        df = pd.DataFrame(balance_rows)
+        df.to_excel(output_path, index=False)
 
         return output_path
