@@ -197,6 +197,8 @@ class Exporter:
         # Fetch invoices for the period
         first_day = datetime(year, month, 1)
         last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
+        
+        # Get invoices from the selected month (by invoice date)
         inv_q = self.session.query(Invoice).filter(
             Invoice.date >= first_day, Invoice.date <= last_day
         )
@@ -204,23 +206,40 @@ class Exporter:
             inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
         invoices = inv_q.all()
 
+        # Also include invoices matched to transactions in the selected month (like Dashboard metrics)
+        # This captures invoices from previous months that were reconciled with current month bank transactions
+        from src.storage.models import ReconciliationMatch, BankTransaction
+        matches = self.session.query(ReconciliationMatch).join(Invoice).join(
+            BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
+        ).filter(
+            BankTransaction.date >= first_day,
+            BankTransaction.date <= last_day
+        )
+        if self.org_id:
+            matches = matches.filter(Invoice.organization_id == self.org_id)
+        
+        matched_invoice_ids = {match.invoice_id for match in matches if match.status != 'rejected'}
+        
+        # Get matched invoices that are not already in the monthly invoices (from previous months)
+        matched_invoices_prev_month = []
+        for match in matches:
+            if match.status != 'rejected' and match.invoice_id not in {inv.id for inv in invoices}:
+                matched_invoices_prev_month.append(match.invoice)
+        
+        # Combine: monthly invoices + matched invoices from previous months
+        all_invoices = invoices + matched_invoices_prev_month
+
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
 
             # ── Feuille 1 : Résumé ──────────────────────────────────────────
-            total_ht  = sum(i.amount_ht  or 0 for i in invoices)
-            total_tva = sum(i.amount_tax or 0 for i in invoices)
-            total_ttc = sum(i.amount     or 0 for i in invoices)
+            total_ht  = sum(i.amount_ht  or 0 for i in all_invoices)
+            total_tva = sum(i.amount_tax or 0 for i in all_invoices)
+            total_ttc = sum(i.amount     or 0 for i in all_invoices)
             
-            # Calculate matched invoices based on actual reconciliation matches, not invoice status
-            from src.storage.models import ReconciliationMatch, BankTransaction
-            matches = self.session.query(ReconciliationMatch).join(Invoice).filter(
-                Invoice.date >= first_day,
-                Invoice.date <= last_day
-            ).all()
-            matched_invoice_ids = {match.invoice_id for match in matches if match.status != 'rejected'}
-            matched = len([inv for inv in invoices if inv.id in matched_invoice_ids])
+            # Calculate matched invoices based on actual reconciliation matches (filtered by transaction date)
+            matched_count = len(matched_invoice_ids)
             
             summary_data = {
                 'Indicateur': [
@@ -235,20 +254,20 @@ class Exporter:
                 ],
                 'Valeur': [
                     monthly_totals['period'],
-                    monthly_totals['total_invoices'],
+                    len(all_invoices),
                     round(total_ht, 2),
                     round(total_tva, 2),
                     round(total_ttc, 2),
-                    matched,
-                    monthly_totals['total_invoices'] - matched,
-                    round(matched / monthly_totals['total_invoices'] * 100, 1) if monthly_totals['total_invoices'] else 0,
+                    matched_count,
+                    len(all_invoices) - matched_count,
+                    round(matched_count / len(all_invoices) * 100, 1) if all_invoices else 0,
                 ]
             }
             pd.DataFrame(summary_data).to_excel(writer, sheet_name='Résumé', index=False)
 
             # ── Feuille 2 : Journal des Achats (PCG) ────────────────────────
             journal_rows = []
-            for inv in invoices:
+            for inv in all_invoices:
                 compte, libelle_compte = _COMPTES.get(inv.category or '', _DEFAULT_COMPTE)
                 supplier  = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
                 piece     = inv.invoice_number
@@ -317,7 +336,7 @@ class Exporter:
 
             # ── Feuille 5 : Grand Livre ───────────────────────────────────────
             grand_livre_rows = []
-            for inv in invoices:
+            for inv in all_invoices:
                 compte, libelle_compte = _COMPTES.get(inv.category or '', _DEFAULT_COMPTE)
                 supplier = inv.supplier.name if inv.supplier else 'Fournisseur inconnu'
                 piece = inv.invoice_number
