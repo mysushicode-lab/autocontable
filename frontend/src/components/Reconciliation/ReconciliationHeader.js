@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, RefreshCw } from 'lucide-react';
+import { CreditCard, Play } from 'lucide-react';
 import DropdownButton from '../DropdownButton';
 
 const ReconciliationHeader = ({ 
@@ -46,7 +46,7 @@ const ReconciliationHeader = ({
           onChange={handleBankFileSelected}
         />
         <button onClick={() => { console.log('Button clicked'); runMutation.mutate(); }} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" />
+          <Play className="w-4 h-4" />
           {runMutation.isLoading ? 'Analyse...' : 'Lancer le rapprochement'}
         </button>
       </div>
