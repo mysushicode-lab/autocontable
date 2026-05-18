@@ -26,9 +26,25 @@ _pwd_context = CryptContext(
     bcrypt__rounds=12,
 )
 
+# bcrypt has a hard 72-byte limit on the input password. Truncate defensively
+# so longer passwords don't raise ValueError (behaviour changed in bcrypt 4.1).
+_BCRYPT_MAX_BYTES = 72
+
+
+def _truncate_for_bcrypt(password: str) -> str:
+    """Truncate the password to fit bcrypt's 72-byte limit."""
+    if password is None:
+        return ""
+    encoded = password.encode("utf-8")
+    if len(encoded) <= _BCRYPT_MAX_BYTES:
+        return password
+    # Decode back, ignoring any partial multibyte char at the boundary
+    return encoded[:_BCRYPT_MAX_BYTES].decode("utf-8", errors="ignore")
+
+
 # Precomputed bcrypt hash used as a constant-time decoy when the username
 # doesn't exist, to make the response time identical and avoid user enumeration.
-_DUMMY_BCRYPT_HASH = _pwd_context.hash("dummy_password_for_timing_protection")
+_DUMMY_BCRYPT_HASH = _pwd_context.hash(_truncate_for_bcrypt("dummy_password_for_timing_protection"))
 
 
 def _is_legacy_sha256(stored_hash: str) -> bool:
@@ -42,7 +58,7 @@ def _is_legacy_sha256(stored_hash: str) -> bool:
 
 def _hash_password(password: str) -> str:
     """Hash a password using bcrypt (cost=12)."""
-    return _pwd_context.hash(password)
+    return _pwd_context.hash(_truncate_for_bcrypt(password))
 
 
 def _verify_password(password: str, stored_hash: str) -> bool:
@@ -57,7 +73,7 @@ def _verify_password(password: str, stored_hash: str) -> bool:
         legacy_hash = hashlib.sha256(password.encode()).hexdigest()
         return hmac.compare_digest(legacy_hash, stored_hash)
     try:
-        return _pwd_context.verify(password, stored_hash)
+        return _pwd_context.verify(_truncate_for_bcrypt(password), stored_hash)
     except Exception:
         return False
 
