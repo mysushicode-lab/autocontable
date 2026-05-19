@@ -100,8 +100,8 @@ const Layout = ({ children }) => {
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="p-6 border-b border-slate-700">
           <img 
-            src="/automatchfact.png" 
-            alt="autofactmatch logo" 
+            src="/logo_mysushicode_blanc.png" 
+            alt="Logo" 
             className="h-8 w-auto"
           />
           <p className="text-sm text-slate-400 mt-1">Gestion Comptable</p>
