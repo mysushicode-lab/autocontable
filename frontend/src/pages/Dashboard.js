@@ -114,7 +114,7 @@ const Dashboard = () => {
           <img 
             src="/logo_mysushicode_blanc.png?v=2" 
             alt="Logo" 
-            className="h-10 w-auto"
+            className="h-20 w-auto"
             onError={(e) => {
               console.error('Logo load error:', e);
               e.target.src = '/logo_mysushicode.png';
