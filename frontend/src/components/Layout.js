@@ -102,9 +102,8 @@ const Layout = ({ children }) => {
           <img 
             src="/logo_mysushicode_blanc.png" 
             alt="Logo" 
-            className="h-8 w-auto"
+            className="h-16 w-auto"
           />
-          <p className="text-sm text-slate-400 mt-1">Gestion Comptable</p>
         </div>
         
         <div className="p-4">
