@@ -112,9 +112,13 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img 
-            src="/logo_mysushicode_blanc.png?v=1" 
+            src="/logo_mysushicode_blanc.png?v=2" 
             alt="Logo" 
             className="h-10 w-auto"
+            onError={(e) => {
+              console.error('Logo load error:', e);
+              e.target.src = '/logo_mysushicode.png';
+            }}
           />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
