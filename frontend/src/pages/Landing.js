@@ -2,11 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import FeaturesSection from '../components/landing/FeaturesSection';
+import HowItWorksSection from '../components/landing/HowItWorksSection';
+import PricingSection from '../components/landing/PricingSection';
+import FaqSection from '../components/landing/FaqSection';
 
 const NAV_LINKS = [
   { href: '#features', label: 'Fonctionnalités', badge: 'NEW' },
-  { href: '#blog', label: 'Blog' },
-  { href: '#contact', label: 'Contact' },
+  { href: '#how-it-works', label: 'Comment ça marche' },
+  { href: '#pricing', label: 'Tarifs' },
+  { href: '#faq', label: 'FAQ' },
 ];
 
 const Landing = () => {
@@ -14,16 +19,36 @@ const Landing = () => {
   const isAuthenticated = !!user;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen flex flex-col bg-white">
+      <PromoBar />
       <LandingHeader isAuthenticated={isAuthenticated} onLogout={logout} />
       <main className="flex-1">
-        <HeroSection isAuthenticated={isAuthenticated} />
-        <CtaSection isAuthenticated={isAuthenticated} />
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <CtaSection />
+        <PricingSection />
+        <FaqSection />
       </main>
       <LandingFooter />
     </div>
   );
 };
+
+const PromoBar = () => (
+  <a
+    href="https://mysushicode.fr"
+    target="_blank"
+    rel="noopener"
+    className="block w-full bg-gradient-to-r from-blue-900 via-slate-900 to-blue-900 text-white text-center text-xs sm:text-sm py-2 px-4 hover:from-blue-800 hover:via-slate-800 hover:to-blue-800 transition-colors"
+  >
+    <span className="inline-flex items-center gap-2">
+      <span>Développez votre application avec</span>
+      <span className="font-semibold text-pink-400">mysushicode.fr</span>
+      <ArrowRight className="w-3.5 h-3.5 text-pink-400" />
+    </span>
+  </a>
+);
 
 const GlassBadge = ({ children }) => (
   <span className="relative inline-flex items-center">
@@ -38,8 +63,8 @@ const GlassBadge = ({ children }) => (
 );
 
 const LandingHeader = ({ isAuthenticated, onLogout }) => (
-  <header className="sticky top-4 z-10 flex justify-center px-4">
-    <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-full shadow-sm px-8 py-3 flex items-center justify-between gap-8 w-full max-w-4xl">
+  <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div className="px-8 py-3 flex items-center justify-between gap-8 w-full">
       <Link to="/" aria-label="Accueil" className="flex-shrink-0">
         <img
           src="/automatchfact.png"
@@ -103,50 +128,87 @@ const LandingHeader = ({ isAuthenticated, onLogout }) => (
   </header>
 );
 
-const HeroSection = ({ isAuthenticated }) => (
-  <section className="max-w-7xl mx-auto px-6 pt-56 pb-20">
-    <div className="text-center max-w-3xl mx-auto">
-      <h1 className="text-5xl font-bold text-slate-900 mb-6">
-        Gestion Comptable Simplifiée
+const HeroSection = () => (
+  <section
+    id="home"
+    className="relative overflow-hidden bg-blue-600 pt-24 pb-28 lg:pt-32 lg:pb-36"
+  >
+    <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+      <h1 className="text-4xl sm:text-5xl lg:text-[56px] leading-tight lg:leading-[1.1] font-bold text-white mb-6">
+        Gestion comptable{' '}
+        simplifiée par l'IA
       </h1>
-      <p className="text-xl text-slate-600 mb-8">
+      <p className="mx-auto max-w-2xl text-lg text-blue-50 mb-10">
         Automatisez le rapprochement de vos factures et transactions bancaires.
         Gagnez du temps et réduisez les erreurs.
       </p>
-      {isAuthenticated && (
-        <div className="flex gap-4 justify-center flex-wrap">
-          <Link
-            to="/dashboard"
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center gap-2 shadow-md hover:shadow-lg"
-          >
-            Accéder au dashboard
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
-      )}
+      <div className="flex gap-4 justify-center flex-wrap">
+        <Link
+          to="/signup"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-medium text-slate-900 shadow-sm hover:bg-slate-100 transition-colors"
+        >
+          Commencer l'essai gratuit
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+        <a
+          href="#features"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-transparent border-2 border-white px-5 py-2.5 text-sm font-medium text-white transition-colors"
+        >
+          Découvrir
+        </a>
+      </div>
     </div>
+    <DecorCircles />
   </section>
 );
 
-const CtaSection = ({ isAuthenticated }) => (
-  <section className="bg-blue-600 py-16">
-    <div className="max-w-7xl mx-auto px-6 text-center">
-      <h2 className="text-3xl font-bold text-white mb-4">
+const DecorCircles = () => (
+  <>
+    <svg
+      aria-hidden="true"
+      className="absolute left-0 top-0 pointer-events-none"
+      width="495"
+      height="470"
+      viewBox="0 0 495 470"
+      fill="none"
+    >
+      <circle cx="55" cy="442" r="138" stroke="white" strokeOpacity="0.06" strokeWidth="50" />
+      <circle cx="446" r="39" stroke="white" strokeOpacity="0.06" strokeWidth="20" />
+      <path d="M245.406 137.609L233.985 94.9852L276.609 106.406L245.406 137.609Z" stroke="white" strokeOpacity="0.1" strokeWidth="12" />
+    </svg>
+    <svg
+      aria-hidden="true"
+      className="absolute bottom-0 right-0 pointer-events-none"
+      width="493"
+      height="470"
+      viewBox="0 0 493 470"
+      fill="none"
+    >
+      <circle cx="462" cy="5" r="138" stroke="white" strokeOpacity="0.06" strokeWidth="50" />
+      <circle cx="49" cy="470" r="39" stroke="white" strokeOpacity="0.06" strokeWidth="20" />
+      <path d="M222.393 226.701L272.808 213.192L259.299 263.607L222.393 226.701Z" stroke="white" strokeOpacity="0.08" strokeWidth="13" />
+    </svg>
+  </>
+);
+
+const CtaSection = () => (
+  <section className="relative z-10 overflow-hidden bg-blue-600 py-20 lg:py-28">
+    <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
+      <h2 className="text-2xl sm:text-3xl md:text-[32px] md:leading-[1.2] font-bold text-white mb-3">
         Prêt à simplifier votre comptabilité ?
       </h2>
-      <p className="text-blue-100 mb-8 text-lg">
-        {isAuthenticated
-          ? 'Retrouvez toutes vos données dans votre dashboard.'
-          : 'Commencez votre essai gratuit de 7 jours dès maintenant.'}
+      <p className="text-blue-50 mb-8 text-base">
+        Commencez votre essai gratuit de 7 jours dès maintenant.
       </p>
       <Link
-        to={isAuthenticated ? '/dashboard' : '/signup'}
-        className="px-8 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-colors inline-flex items-center gap-2"
+        to="/signup?plan=pro"
+        className="inline-flex items-center justify-center gap-2 rounded-md bg-emerald-500 px-7 py-3 text-base font-medium text-white hover:bg-emerald-600 transition-colors"
       >
-        {isAuthenticated ? 'Accéder au dashboard' : 'Créer un compte gratuit'}
+        Simplifier ma gestion comptable
         <ArrowRight className="w-5 h-5" />
       </Link>
     </div>
+    <DecorCircles />
   </section>
 );
 
@@ -167,11 +229,14 @@ const LandingFooter = () => (
         <a href="#features" className="hover:text-white transition-colors">
           Fonctionnalités
         </a>
-        <a href="#blog" className="hover:text-white transition-colors">
-          Blog
+        <a href="#how-it-works" className="hover:text-white transition-colors">
+          Comment ça marche
         </a>
-        <a href="#contact" className="hover:text-white transition-colors">
-          Contact
+        <a href="#pricing" className="hover:text-white transition-colors">
+          Tarifs
+        </a>
+        <a href="#faq" className="hover:text-white transition-colors">
+          FAQ
         </a>
       </div>
     </div>

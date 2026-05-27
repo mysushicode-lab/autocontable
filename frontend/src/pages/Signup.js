@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useMutation } from 'react-query';
 import { useAuth } from '../context/AuthContext';
-import { register } from '../api';
+import { register, createStripeCheckoutSession } from '../api';
 import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const intendedPlan = searchParams.get('plan');
   const { loginFromData } = useAuth();
   const [form, setForm] = useState({ username: '', password: '', confirm: '', name: '', email: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -17,12 +19,34 @@ const Signup = () => {
   const mutation = useMutation(
     () => register(form.username, form.password, form.name, form.email),
     {
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         loginFromData(data);
+        if (intendedPlan === 'pro') {
+          try {
+            const { url } = await createStripeCheckoutSession('pro');
+            if (url) {
+              window.location.href = url;
+              return;
+            }
+          } catch (err) {
+            console.error('Failed to create checkout session:', err);
+          }
+        }
         navigate('/dashboard');
       },
       onError: (err) => {
-        setError(err?.response?.data?.detail || 'Erreur lors de l\'inscription');
+        const detail = err?.response?.data?.detail;
+        let message;
+        if (typeof detail === 'string') {
+          message = detail;
+        } else if (Array.isArray(detail)) {
+          message = detail.map((d) => d.msg || JSON.stringify(d)).join(', ');
+        } else if (detail) {
+          message = JSON.stringify(detail);
+        } else {
+          message = "Erreur lors de l'inscription";
+        }
+        setError(message);
       },
     }
   );
@@ -31,7 +55,11 @@ const Signup = () => {
     e.preventDefault();
     setError('');
     if (form.password !== form.confirm) { setError('Les mots de passe ne correspondent pas.'); return; }
-    if (form.password.length < 6) { setError('Le mot de passe doit contenir au moins 6 caractères.'); return; }
+    if (form.password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return; }
+    if (!/[A-Z]/.test(form.password)) { setError('Le mot de passe doit contenir au moins une majuscule.'); return; }
+    if (!/[a-z]/.test(form.password)) { setError('Le mot de passe doit contenir au moins une minuscule.'); return; }
+    if (!/[0-9]/.test(form.password)) { setError('Le mot de passe doit contenir au moins un chiffre.'); return; }
+    if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(form.password)) { setError('Le mot de passe doit contenir au moins un caractère spécial.'); return; }
     mutation.mutate();
   };
 
