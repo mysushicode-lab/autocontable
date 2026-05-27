@@ -19,7 +19,7 @@ const Signup = () => {
     {
       onSuccess: (data) => {
         loginFromData(data);
-        navigate('/');
+        navigate('/dashboard');
       },
       onError: (err) => {
         setError(err?.response?.data?.detail || 'Erreur lors de l\'inscription');

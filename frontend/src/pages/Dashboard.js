@@ -110,20 +110,9 @@ const Dashboard = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <img 
-            src="/logo_mysushicode_blanc.png?v=2" 
-            alt="Logo" 
-            className="h-20 w-auto"
-            onError={(e) => {
-              console.error('Logo load error:', e);
-              e.target.src = '/logo_mysushicode.png';
-            }}
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
-            <p className="text-gray-500">Vue d'ensemble de votre activité comptable</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
+          <p className="text-gray-500">Vue d'ensemble de votre activité comptable</p>
         </div>
         <div className="flex gap-3 items-center">
           <DropdownButton

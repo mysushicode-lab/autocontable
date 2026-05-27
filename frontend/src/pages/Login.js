@@ -15,7 +15,7 @@ const Login = () => {
   const loginMutation = useMutation(
     ({ username, password }) => login(username, password),
     {
-      onSuccess: () => navigate('/'),
+      onSuccess: () => navigate('/dashboard'),
       onError: (err) => setError(err?.response?.data?.detail || 'Identifiants invalides'),
     }
   );

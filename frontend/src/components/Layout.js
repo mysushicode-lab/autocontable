@@ -71,7 +71,7 @@ const Layout = ({ children }) => {
   const API_BASE_URL = '';
 
   const menuItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Tableau de Bord' },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
     { path: '/invoices', icon: FileText, label: 'Factures' },
     { path: '/reconciliation', icon: CreditCard, label: 'Rapprochement' },
     { path: '/vehicles', icon: Car, label: 'Par Véhicule' },
@@ -98,14 +98,13 @@ const Layout = ({ children }) => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-6 border-b border-slate-700">
+        <div className="p-6 pl-8 text-left">
           <img 
-            src="/logo_mysushicode_blanc.png" 
+            src="/automatchfact_blanc.png" 
             alt="Logo" 
             className="h-16 w-auto"
           />
         </div>
-        
         <div className="p-4">
           <GlassDock items={menuItems} activePath={location.pathname} orientation="vertical" />
         </div>

@@ -1,8 +1,9 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { NotificationProvider } from './context/NotificationContext';
 import { FilterProvider } from './context/FilterContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -15,13 +16,14 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Landing from './pages/Landing';
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, token, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
-  if (!user) return <Navigate to="/login" />;
+  if (!user || !token) return <Navigate to="/login" />;
   return children;
 }
 
@@ -33,6 +35,7 @@ function App() {
       <FilterProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -41,7 +44,7 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/invoices" element={<Invoices />} />
                   <Route path="/reconciliation" element={<Reconciliation />} />
                   <Route path="/reports" element={<Reports />} />
