@@ -257,6 +257,66 @@ def login(request: Request, body: LoginRequest):
         session.close()
 
 
+@router.get("/data-export")
+@limiter.limit("3/hour")
+def export_user_data(request: Request, current_user: dict = Depends(get_current_user)):
+    """Export all data for the authenticated user (RGPD Article 20)"""
+    from fastapi.responses import JSONResponse
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.id == current_user["id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+
+        from src.storage.models import Invoice, Transaction, Settings as SettingsModel
+        invoices = session.query(Invoice).filter(Invoice.organization_id == user.organization_id).all()
+        transactions = session.query(Transaction).filter(Transaction.organization_id == user.organization_id).all()
+        settings = session.query(SettingsModel).filter(SettingsModel.organization_id == user.organization_id).all()
+
+        payload = {
+            "exported_at": datetime.utcnow().isoformat() + "Z",
+            "profile": {
+                "id": user.id,
+                "username": user.username,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role.value if user.role else None,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+            },
+            "invoices": [
+                {
+                    "id": inv.id,
+                    "supplier": inv.supplier_name,
+                    "amount": inv.amount,
+                    "date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+                    "status": inv.status.value if inv.status else None,
+                }
+                for inv in invoices
+            ],
+            "transactions": [
+                {
+                    "id": tr.id,
+                    "description": tr.description,
+                    "amount": tr.amount,
+                    "date": tr.transaction_date.isoformat() if tr.transaction_date else None,
+                }
+                for tr in transactions
+            ],
+            "settings": [{"key": s.key, "value": s.value} for s in settings if s.key not in ("email_password",)],
+        }
+
+        from fastapi.responses import Response
+        import json
+        content = json.dumps(payload, ensure_ascii=False, indent=2)
+        return Response(
+            content=content,
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=autocontable-export-{user.username}.json"}
+        )
+    finally:
+        session.close()
+
+
 @router.delete("/delete-account")
 def delete_own_account(current_user: dict = Depends(get_current_user)):
     """Delete the authenticated user's own account"""

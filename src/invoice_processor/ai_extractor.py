@@ -30,22 +30,22 @@ Field extraction rules:
 - due_date: Payment due date formatted as DD/MM/YYYY. Return null if not found.
 - supplier_name: The VENDOR/SELLER company name — the entity issuing this invoice (the one being PAID). It is ALWAYS found at the very TOP of the document in the letterhead/header block, associated with their SIRET/SIREN/TVA number and address. NEVER pick the company in the "Facturer à", "Client", "Adresse de livraison" or recipient address block — that is the BUYER, not the supplier. IGNORE: accounting software names (Sage, Ciel, EBP, QuickBooks, Pennylane, etc.). Return null if not found.
 - supplier_email: Professional email of the vendor/seller, found in their header block only. IGNORE: emails in client/buyer address blocks. IGNORE: free email services (Gmail, Yahoo, Outlook, Hotmail). Return null if not found.
-- vehicle_registration: French SIV format XX-XXX-XX (e.g. AB-123-CD). No letters O or I allowed. If multiple vehicles on same invoice, return primary one (first mentioned or associated with the work). Return null if not found.
+- vehicle_registration: License plate or vehicle reference number if present on the invoice. Return null if not found.
 - purchase_order: Bon de commande / PO number. Return null if not found.
 - delivery_note: Bon de livraison / BL number. Return null if not found.
-- work_order_reference: Ordre de réparation / OR / dossier / numéro de dossier. Return null if not found.
+- work_order_reference: Internal reference / dossier / numéro de dossier / order reference. Return null if not found.
 - payment_method: Only "virement", "cheque", or "carte". Return null if not specified.
-- category: Classify this expense into ONE of these categories based on the invoice content and supplier:
-  "Pièces détachées" — spare parts, auto parts, pneus, batteries, filtres, optiques, parechocs
-  "Peinture et vernis" — paint, vernis, apprêt, diluant, abrasifs, produits de peinture (Axalta, PPG, Sikkens, Glasurit)
-  "Fournitures atelier" — consommables, colles, mastics, chiffons, ruban, produits nettoyage, protections
-  "Sous-traitance" — prestation externe, expertise, contrôle technique, remorquage, géométrie, climatisation
-  "Équipement et outillage" — machines, outils, élévateurs, valises diagnostic, ponts, éclairage atelier
-  "Énergie et locaux" — électricité, gaz, eau, loyer, charges locatives, sécurité, déchets
-  "Assurances et frais" — assurance, RC pro, mutuelle, frais bancaires, expert-comptable, avocat
-  "Déplacements et véhicules" — carburant, péages, location véhicule, transport, restaurant, hôtel
-  "Informatique et communication" — téléphone, internet, logiciels, logiciel gestion garage, informatique
-  "Formation et divers" — formation, cotisations, carte grise, papeterie, divers
+- category: Classify this expense into ONE of these universal categories based on invoice content and supplier:
+  "Achats de marchandises" — goods, products, merchandise, stock, raw materials, components, parts
+  "Fournitures et consommables" — office supplies, workshop consumables, cleaning products, packaging, hardware
+  "Sous-traitance" — subcontracting, external services, freelance, consulting missions, technical interventions
+  "Équipement et outillage" — tools, machines, equipment, furniture, computers, printers, screens
+  "Énergie et locaux" — electricity, gas, water, rent, property charges, security, waste, building insurance
+  "Assurances et frais" — insurance, bank fees, legal fees, accountant, loans, leasing, social contributions
+  "Déplacements et transports" — fuel, toll, parking, transport, accommodation, meals, travel
+  "Informatique et communication" — phone, internet, software, SaaS, hosting, domain names, IT equipment
+  "Services et prestations" — consulting, audit, marketing, advertising, maintenance, cleaning, delivery
+  "Formation et divers" — training, certifications, memberships, trade shows, miscellaneous
   Return null if unclear.
 - is_invoice: true for facture, avoir, note de frais, note de crédit. false for devis, bon de commande, bon de livraison, contrat, etc.
 - confidence: "high" if invoice_number + date + amount + supplier_name all found; "medium" if most found; "low" if few found."""
@@ -66,15 +66,15 @@ class _InvoiceFields(BaseModel):
     work_order_reference: Optional[str] = None
     payment_method: Optional[Literal['virement', 'cheque', 'carte']] = None
     category: Optional[Literal[
-        'Pièces détachées',
-        'Peinture et vernis',
-        'Fournitures atelier',
+        'Achats de marchandises',
+        'Fournitures et consommables',
         'Sous-traitance',
         'Équipement et outillage',
         'Énergie et locaux',
         'Assurances et frais',
-        'Déplacements et véhicules',
+        'Déplacements et transports',
         'Informatique et communication',
+        'Services et prestations',
         'Formation et divers'
     ]] = None
 

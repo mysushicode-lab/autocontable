@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { CreditCard, FileText, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { CreditCard, FileText, Plus, Trash2, AlertCircle, ExternalLink } from 'lucide-react';
 import { fetchPlanStatus, fetchStripePaymentMethods, fetchStripeInvoices, createStripePortalSession } from '../../api';
+import { formatDate } from '../../utils/formatHelpers';
 
 export const SettingsBilling = () => {
   const [planStatus, setPlanStatus] = useState(null);
@@ -11,12 +12,10 @@ export const SettingsBilling = () => {
   const handleManageBilling = async () => {
     try {
       const { url } = await createStripePortalSession();
-      if (url) {
-        window.location.href = url;
-      }
+      if (url) window.location.href = url;
     } catch (error) {
       console.error('Failed to create portal session:', error);
-      alert('Erreur lors de l\'ouverture du portail de facturation.');
+      alert("Erreur lors de l'ouverture du portail de facturation.");
     }
   };
 
@@ -24,9 +23,7 @@ export const SettingsBilling = () => {
     const loadBillingData = async () => {
       try {
         const [planData, paymentMethodsData, invoicesData] = await Promise.all([
-          fetchPlanStatus(),
-          fetchStripePaymentMethods(),
-          fetchStripeInvoices()
+          fetchPlanStatus(), fetchStripePaymentMethods(), fetchStripeInvoices()
         ]);
         setPlanStatus(planData);
         setPaymentMethods(paymentMethodsData.payment_methods || []);
@@ -41,7 +38,11 @@ export const SettingsBilling = () => {
   }, []);
 
   if (loading) {
-    return <div className="text-sm text-gray-500">Chargement...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   const isTrial = planStatus?.plan_type === 'trial' && planStatus?.is_trial_active;
@@ -49,52 +50,76 @@ export const SettingsBilling = () => {
   const daysRemaining = planStatus?.days_remaining || 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Facturation</h2>
-        <p className="text-sm text-gray-500 mt-1">Gérez vos informations de paiement et vos factures</p>
-      </div>
+    <div className="space-y-4">
 
       {/* Current Plan */}
-      <div className="p-5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">Abonnement actuel</h3>
-        {isPro ? (
-          <div className="flex items-center gap-2 text-blue-600">
-            <span className="font-medium">Plan Pro — 85,90€/mois</span>
+      <div className="bg-white rounded-md p-6 border border-gray-200">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">Facturation</h2>
+        <p className="text-xs text-gray-500 mb-6">Gérez vos informations de paiement et vos factures</p>
+
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md border border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+              <CreditCard className="w-4 h-4 text-blue-500" />
+            </div>
+            <div>
+              {isPro ? (
+                <>
+                  <p className="text-sm font-medium text-gray-900">Plan Pro</p>
+                  <p className="text-xs text-gray-500">85,90€ / mois</p>
+                </>
+              ) : isTrial ? (
+                <>
+                  <p className="text-sm font-medium text-gray-900">Essai gratuit</p>
+                  <p className="text-xs text-gray-500">{daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-900">Plan Standard</p>
+                  <p className="text-xs text-gray-500">Gratuit</p>
+                </>
+              )}
+            </div>
           </div>
-        ) : isTrial ? (
-          <div className="flex items-center gap-2 text-orange-600">
-            <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Essai gratuit — {daysRemaining} jour{daysRemaining > 1 ? 's' : ''} restant{daysRemaining > 1 ? 's' : ''}</span>
-          </div>
-        ) : (
-          <div className="text-gray-600">
-            <span className="font-medium">Plan Standard</span>
+          <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${
+            isPro ? 'text-green-600 bg-green-50 border-green-200' : isTrial ? 'text-orange-600 bg-orange-50 border-orange-200' : 'text-gray-500 bg-gray-100 border-gray-200'
+          }`}>
+            {isPro ? 'Actif' : isTrial ? 'Essai' : 'Standard'}
+          </span>
+        </div>
+
+        {!isTrial && !isPro && (
+          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-md text-xs text-orange-600">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            Votre essai gratuit est expiré. Passez au plan Pro pour continuer.
           </div>
         )}
       </div>
 
       {/* Payment Methods */}
-      <div className="p-5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-900">Méthodes de paiement</h3>
-          <button onClick={handleManageBilling} className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700">
-            <Plus className="w-4 h-4" />
-            Gérer
+      <div className="bg-white rounded-md p-6 border border-gray-200">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-0.5">Méthodes de paiement</h3>
+            <p className="text-xs text-gray-500">Cartes et moyens de paiement enregistrés</p>
+          </div>
+          <button onClick={handleManageBilling}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors">
+            <ExternalLink className="w-3 h-3" />Gérer
           </button>
         </div>
         {paymentMethods.length === 0 ? (
-          <p className="text-sm text-gray-500">Aucune méthode de paiement enregistrée</p>
+          <p className="text-xs text-gray-400">Aucune méthode de paiement enregistrée</p>
         ) : (
           <div className="space-y-2">
             {paymentMethods.map((method) => (
-              <div key={method.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={method.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <CreditCard className="w-5 h-5 text-gray-400" />
+                  <CreditCard className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-700">•••• {method.last4}</span>
                 </div>
-                <button className="text-red-500 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
+                <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
@@ -102,37 +127,27 @@ export const SettingsBilling = () => {
         )}
       </div>
 
-      {/* Invoices */}
-      <div className="p-5 bg-white/70 backdrop-blur-md rounded-xl border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">Factures</h3>
+      {/* Invoice history */}
+      <div className="bg-white rounded-md p-6 border border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Historique des factures</h3>
         {invoices.length === 0 ? (
-          <p className="text-sm text-gray-500">Aucune facture disponible</p>
+          <p className="text-xs text-gray-400">Aucune facture disponible</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-0.5">
             {invoices.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={invoice.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-400" />
+                  <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   <div>
-                    <span className="text-sm text-gray-700">{invoice.number}</span>
-                    <p className="text-xs text-gray-500">
-                      {new Date(invoice.date * 1000).toLocaleDateString('fr-FR')}
-                    </p>
+                    <p className="text-sm text-gray-700">{invoice.number}</p>
+                    <p className="text-[10px] text-gray-400">{formatDate(new Date(invoice.date * 1000))}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-900">
-                    {invoice.amount.toFixed(2)}€
-                  </span>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-900">{invoice.amount.toFixed(2)}€</span>
                   {invoice.hosted_invoice_url && (
-                    <a
-                      href={invoice.hosted_invoice_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 text-sm"
-                    >
-                      Voir
-                    </a>
+                    <a href={invoice.hosted_invoice_url} target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] text-gray-400 hover:text-gray-700 transition-colors">Voir</a>
                   )}
                 </div>
               </div>

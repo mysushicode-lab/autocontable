@@ -3,14 +3,14 @@ import { Search } from 'lucide-react';
 
 const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm, matches, unmatchedInvoices, bankOnly, allTransactions, children }) => {
   return (
-    <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md">
-      <div className="border-b">
-        <div className="flex">
+    <div className="rounded-md border border-gray-100 bg-white shadow-sm">
+      <div className="border-b overflow-x-auto">
+        <div className="flex min-w-max">
           <button
             onClick={() => onTabChange('matches')}
-            className={`px-6 py-4 font-medium border-b-2 ${
-              activeTab === 'matches' 
-                ? 'border-blue-600 text-blue-600' 
+            className={`px-3 py-2.5 sm:px-6 sm:py-4 text-xs sm:text-sm font-medium border-b-2 whitespace-nowrap ${
+              activeTab === 'matches'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -18,9 +18,9 @@ const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm,
           </button>
           <button
             onClick={() => onTabChange('unmatched')}
-            className={`px-6 py-4 font-medium border-b-2 ${
-              activeTab === 'unmatched' 
-                ? 'border-blue-600 text-blue-600' 
+            className={`px-3 py-2.5 sm:px-6 sm:py-4 text-xs sm:text-sm font-medium border-b-2 whitespace-nowrap ${
+              activeTab === 'unmatched'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -28,9 +28,9 @@ const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm,
           </button>
           <button
             onClick={() => onTabChange('bankonly')}
-            className={`px-6 py-4 font-medium border-b-2 ${
-              activeTab === 'bankonly' 
-                ? 'border-blue-600 text-blue-600' 
+            className={`px-3 py-2.5 sm:px-6 sm:py-4 text-xs sm:text-sm font-medium border-b-2 whitespace-nowrap ${
+              activeTab === 'bankonly'
+                ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -38,7 +38,7 @@ const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm,
           </button>
           <button
             onClick={() => onTabChange('transactions')}
-            className={`px-6 py-4 font-medium border-b-2 ${
+            className={`px-3 py-2.5 sm:px-6 sm:py-4 text-xs sm:text-sm font-medium border-b-2 whitespace-nowrap ${
               activeTab === 'transactions'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -50,7 +50,7 @@ const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm,
       </div>
 
       {/* Search Bar */}
-      <div className="px-6 py-4 border-b">
+      <div className="px-3 py-3 sm:px-6 sm:py-4 border-b">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input

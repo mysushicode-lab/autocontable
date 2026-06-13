@@ -2,21 +2,24 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save } from 'lucide-react';
 
-// Predefined categories for car body shop
 const PREDEFINED_CATEGORIES = [
-  'Toutes les catégories',
-  'Pièces détachées',
-  'Peinture et vernis',
-  'Fournitures atelier',
+  'Achats de marchandises',
+  'Fournitures et consommables',
   'Sous-traitance',
-  'Équipement et outillage'
+  'Équipement et outillage',
+  'Énergie et locaux',
+  'Assurances et frais',
+  'Déplacements et transports',
+  'Informatique et communication',
+  'Services et prestations',
+  'Formation et divers',
 ];
 
 const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSave, isLoading }) => {
   if (!editingInvoice) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-md shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-900">Modifier la facture</h3>
@@ -51,7 +54,7 @@ const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSa
               onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
             >
               <option value="">Sélectionner une catégorie</option>
-              {PREDEFINED_CATEGORIES.filter(cat => cat !== 'Toutes les catégories').map(cat => (
+              {PREDEFINED_CATEGORIES.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
@@ -65,11 +68,11 @@ const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSa
             <input type="date" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">Immatriculation</label>
+            <label className="text-xs font-medium text-gray-600">Référence véhicule / immatriculation</label>
             <input className="w-full px-3 py-2 border rounded-md text-sm uppercase" value={editForm.vehicle_registration} onChange={e => setEditForm(f => ({ ...f, vehicle_registration: e.target.value }))} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">N° Dossier / OT</label>
+            <label className="text-xs font-medium text-gray-600">N° Dossier / Référence interne</label>
             <input className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.work_order_reference} onChange={e => setEditForm(f => ({ ...f, work_order_reference: e.target.value }))} />
           </div>
           <div className="space-y-1">
@@ -98,7 +101,7 @@ const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSa
           </div>
         </div>
         <div className="flex gap-3 justify-end p-6 border-t bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 border rounded-md hover:bg-gray-100">Annuler</button>
+          <button onClick={onClose} className="px-4 py-2 border border-gray-200 rounded-md hover:bg-gray-100">Annuler</button>
           <button
             onClick={onSave}
             disabled={isLoading}

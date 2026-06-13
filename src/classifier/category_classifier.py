@@ -8,101 +8,89 @@ from typing import Optional, Dict, List
 class CategoryClassifier:
     """Classify invoices into categories"""
     
-    # Carrosserie auto specific categories (French)
+    # Universal business categories (applicable to any company, any sector)
     CATEGORY_KEYWORDS = {
-        'Pièces détachées': [
-            'pièce', 'pieces', 'piece', 'catalyseur', 'echappement', 'frein', 
-            'plaquette', 'disque', 'amortisseur', 'pare-brise', 'retro', 'optique',
-            'parechoc', 'pare-choc', 'feu arriere', 'feux', 'phare', 'batterie',
-            'pneu', 'pneumatique', 'jante', 'roue', 'alternateur', 'demarreur',
-            'radiateur', 'ventilateur', 'filtre', 'huile', 'carrosserie piece',
-            'autodoc', 'oscaro', 'norauto', 'feu vert', 'euromaster',
-            'pieces auto', 'piece auto', 'tuning', 'garage', 'mister auto',
-            'pieces detachees', 'recambio', 'rechange', 'spare parts'
+        'Achats de marchandises': [
+            'marchandise', 'stock', 'produit', 'article', 'bien',
+            'matiere premiere', 'matériaux', 'materiaux', 'composant',
+            'piece', 'pieces', 'accessoire', 'consommable produit',
+            'approvisionnement', 'commande fournisseur', 'livraison stock',
+            'spare parts', 'goods', 'supply', 'revendeur', 'grossiste',
+            'negoce', 'distribution', 'import', 'export'
         ],
-        'Peinture et vernis': [
-            'peinture', 'vernis', 'apprêt', 'appret', 'couche', 'melange', 
-            'melangeur', 'teinte', 'colorant', 'base', 'clear', 'vernis',
-            'axalta', 'cromax', 'glasurit', 'lesonal', 'sikkens', 'ppg',
-            'spies hecker', 'standox', 'basf', 'paint', 'refinish',
-            'pistolet', 'compresseur', 'cabine', 'aerographe',
-            'diluant', 'durcisseur', 'solvant', 'ponçage', 'abrasif',
-            'papier abrasif', 'disque abrasif', 'polissage', 'polish'
-        ],
-        'Fournitures atelier': [
-            'fourniture', 'consommable', 'atelier', 'chiffon', 'essuie',
-            'masque', 'gant', 'protection', 'produit nettoyage', 'degoudron',
-            'antigravillon', 'graisse', 'lubrifiant', 'colle', 'mastic',
-            'body filler', 'mastiquer', 'joint', 'jointure', 'soudure',
-            'point de soudure', 'soudeur', 'meulage', 'ponceuse', 'meule',
-            'disque flap', 'bouchon', 'ruban', 'scotch', 'adhesif',
-            'bache', 'film', 'protection film', 'cache', 'papier kraft'
+        'Fournitures et consommables': [
+            'fourniture', 'consommable', 'atelier', 'bureau',
+            'papeterie', 'stylo', 'classeur', 'ramette', 'enveloppe',
+            'chiffon', 'gant', 'masque', 'protection', 'emballage',
+            'ruban', 'scotch', 'adhesif', 'etiquette', 'colle',
+            'nettoyage', 'produit entretien', 'produit hygiene',
+            'graisse', 'lubrifiant', 'joint', 'visserie', 'boulonnerie'
         ],
         'Sous-traitance': [
             'sous-traitance', 'sous traitance', 'sous traitant', 'prestataire',
-            'service extérieur', 'prestation', 'expert', 'expertise',
-            'devis expert', 'remorquage', 'depannage', 'depanneur',
-            'location remorque', 'transport vehicule', 'convoyage',
-            'machine à laver', 'nettoyage', 'pressing', 'remise en etat',
-            'preparation technique', 'controle technique', 'ct',
-            'geometrie', 'parallélisme', 'alignement', 'pneu service',
-            'montage pneu', 'equilibrage', 'climatisation', 'recharge clim'
+            'service extérieur', 'service exterrieur', 'prestation',
+            'expertise', 'consultant', 'conseil', 'mission',
+            'freelance', 'independant', 'façonnier', 'faconnier',
+            'interim', 'portage salarial', 'externalisation',
+            'maintenance externe', 'depannage', 'intervention technique'
         ],
         'Équipement et outillage': [
             'outil', 'outillage', 'equipement', 'machine', 'appareil',
-            'soudeuse', 'pointeuse', 'débosselage', 'debosseleur',
-            'marteau', 'dolly', 'marteau dolly', 'extracteur', 'arrache',
-            'verin', 'presse', 'etabli', 'servante', 'servante mobile',
-            'chassis', 'elevateur', 'pont', 'pont elevateur', 'crique',
-            'verin hydraulique', 'banc redresseur', 'centreuse',
-            'ordinateur', 'diagnostic', 'valise', 'scanner',
-            'projecteur', 'lampe', 'eclairage', 'aspiration', 'aspirateur'
+            'materiel', 'instrument', 'dispositif', 'systeme',
+            'mobilier', 'meuble', 'bureau', 'rangement', 'etagere',
+            'ordinateur', 'serveur', 'scanner', 'imprimante', 'ecran',
+            'projecteur', 'lampe', 'eclairage', 'aspiration', 'aspirateur',
+            'verin', 'presse', 'etabli', 'pont', 'elevateur', 'crique'
         ],
         'Énergie et locaux': [
             'électricité', 'electricite', 'edf', 'engie', 'gaz', 'eau',
-            'chauffage', 'climatisation', 'ventilation', 'atelier',
-            'loyer', 'bail', 'immobilier', 'proprietaire', 'locataire',
-            ' charges', 'copropriete', 'taxe fonciere', 'foncier',
-            'assurance local', 'assurance batiment', 'dommage ouvrage',
-            'entretien local', 'menage', 'nettoyage', 'déchets', 'dechetterie',
-            'recyclage', 'environnement', 'securite', 'alarme', 'surveillance'
+            'chauffage', 'climatisation', 'ventilation',
+            'loyer', 'bail', 'immobilier', 'locataire',
+            'charges', 'copropriete', 'taxe fonciere', 'foncier',
+            'assurance batiment', 'entretien local', 'menage',
+            'déchets', 'dechetterie', 'recyclage',
+            'securite', 'alarme', 'surveillance', 'gardiennage'
         ],
         'Assurances et frais': [
-            'assurance', 'assurance pro', 'rc pro', 'responsabilite civile',
-            'assurance decennale', 'dommage', 'protection juridique',
+            'assurance', 'rc pro', 'responsabilite civile',
             'mutuelle', 'prevoyance', 'retraite', 'urssaf', 'cotisation',
-            'comptable', 'expert comptable', 'commissaire aux comptes',
-            'avocat', 'notaire', 'huissier', 'courtier', 'banque',
+            'expert comptable', 'commissaire aux comptes',
+            'avocat', 'notaire', 'huissier', 'courtier',
             'frais bancaire', 'interet', 'emprunt', 'credit', 'leasing',
-            'credit bail', 'location longue duree', 'lld'
+            'credit bail', 'location longue duree', 'lld',
+            'protection juridique', 'assurance pro'
         ],
-        'Déplacements et véhicules': [
+        'Déplacements et transports': [
             'carburant', 'essence', 'diesel', 'gpl', 'station service',
-            'total', 'shell', 'bp', 'elan', 'avia', 'super u',
             'peage', 'autoroute', 'parking', 'taxi', 'uber', 'bolt',
             'location voiture', 'location utilitaire', 'utilitaire',
-            'camion', 'camionnette', 'vehicule service', 'vs',
-            'remboursement km', 'indemnite kilometrique', 'transport',
+            'camion', 'camionnette', 'transport',
             'train', 'sncf', 'bus', 'avion', 'hotel', 'restaurant',
-            'repas', 'deplacement', 'mission', 'client', 'livraison'
+            'repas', 'deplacement', 'mission', 'livraison',
+            'remboursement km', 'indemnite kilometrique'
         ],
         'Informatique et communication': [
             'telephone', 'mobile', 'forfait', 'sfr', 'orange', 'bouygues',
             'free', 'internet', 'fibre', 'adsl', 'box', 'communication',
-            'ordinateur', 'pc', 'portable', 'imprimante', 'scanner',
-            'logiciel', 'programme', 'application', 'gestion',
-            'comptabilite', 'facturation', 'devis', 'planning',
-            'site web', 'hebergement', 'nom de domaine', 'referencement',
-            'crm', 'erp', 'garage management system', 'gestion atelier'
+            'ordinateur', 'pc', 'portable', 'tablette',
+            'logiciel', 'programme', 'application', 'abonnement',
+            'saas', 'cloud', 'hebergement', 'nom de domaine', 'site web',
+            'crm', 'erp', 'facturation', 'referencement', 'cybersecurite'
+        ],
+        'Services et prestations': [
+            'conseil', 'audit', 'etude', 'analyse', 'rapport',
+            'formation externe', 'coaching', 'accompagnement',
+            'communication', 'marketing', 'publicite', 'impression',
+            'graphisme', 'design', 'agence', 'redaction',
+            'nettoyage', 'entretien', 'maintenance', 'reparation',
+            'installation', 'livraison', 'coursier', 'expedition'
         ],
         'Formation et divers': [
             'formation', 'stage', 'certification', 'qualification',
-            'cqp', 'cap', 'bts', 'formation professionnelle',
-            'congres', 'salon', 'equip auto', 'automechanika',
-            'serbotec', 'saga', 'motortec', 'expoprotection',
-            'adhesion', 'syndicat', 'chambre metiers', 'cma',
-            'chambre commerce', 'cci', 'bureau veritas', 'gipa',
-            'carte grise', 'document', 'imprimerie', 'papeterie'
+            'bts', 'formation professionnelle', 'cpf',
+            'congres', 'salon', 'conference', 'seminaire',
+            'adhesion', 'syndicat', 'chambre metiers', 'chambre commerce',
+            'cci', 'bureau veritas', 'document', 'imprimerie', 'papeterie'
         ]
     }
     

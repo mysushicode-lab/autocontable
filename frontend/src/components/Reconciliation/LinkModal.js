@@ -1,5 +1,6 @@
 import React from 'react';
 import DropdownButton from '../DropdownButton';
+import { formatCurrency, formatDate } from '../../utils/formatHelpers';
 
 const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMonthFilter, setLinkMonthFilter, showLinkMonthDropdown, setShowLinkMonthDropdown, linkMonthButtonRef, periodMonths, unmatchedInvoices, bankOnly, linkSelectedIds, setLinkSelectedIds, submitManualLink }) => {
   const isTx2Inv = linkModal.type === 'tx2inv';
@@ -101,8 +102,8 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
                 <div className="flex-1">
                   <span className="font-medium">{item.invoice?.supplier || '—'}</span>
                   <span className="text-gray-500 ml-2">{item.invoice?.number}</span>
-                  <span className="float-right font-bold text-gray-800">{item.invoice?.amount?.toLocaleString('fr-FR')} €</span>
-                  <div className="text-xs text-gray-400 mt-0.5">{item.invoice?.date ? new Date(item.invoice.date).toLocaleDateString('fr-FR') : '—'}</div>
+                  <span className="float-right font-bold text-gray-800">{formatCurrency(item.invoice?.amount)}</span>
+                  <div className="text-xs text-gray-400 mt-0.5">{formatDate(item.invoice?.date)}</div>
                 </div>
               </button>
             ) : (
@@ -116,8 +117,8 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
                 <input type="checkbox" checked={selected} readOnly className="w-4 h-4 rounded border-gray-300" />
                 <div className="flex-1">
                   <span className="font-medium break-words block">{item.description || '—'}</span>
-                  <span className={`float-right font-bold ${ item.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>{item.amount?.toLocaleString('fr-FR')} €</span>
-                  <div className="text-xs text-gray-400 mt-0.5">{item.date ? new Date(item.date).toLocaleDateString('fr-FR') : '—'}</div>
+                  <span className={`float-right font-bold ${item.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>{formatCurrency(item.amount)}</span>
+                  <div className="text-xs text-gray-400 mt-0.5">{formatDate(item.date)}</div>
                 </div>
               </button>
             );

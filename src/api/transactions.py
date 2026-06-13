@@ -1,17 +1,15 @@
 """Transaction endpoints"""
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 import os
-import calendar
 import hashlib
 import logging
 
 from src.storage.database import db
 from src.storage.models import BankTransaction, ReconciliationMatch, Invoice, InvoiceStatus
 from src.bank_importer.bank_importer import BankImporter
-from src.api.utils import save_uploaded_file
+from src.api.utils import save_uploaded_file, get_month_date_range
 from src.api.auth import get_current_user, check_trial_active
 from src.reconciliation import run_auto_reconciliation
 
@@ -49,11 +47,8 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
         first_tx_date = transactions[0].get("date") or datetime.utcnow()
         file_month = first_tx_date.month
         file_year = first_tx_date.year
-        
-        # Find all existing transactions for this month
-        last_day_num = calendar.monthrange(file_year, file_month)[1]
-        first_day = datetime(file_year, file_month, 1)
-        last_day = datetime(file_year, file_month, last_day_num, 23, 59, 59)
+
+        first_day, last_day = get_month_date_range(file_year, file_month)
         
         existing_transactions = session.query(BankTransaction).filter(
             BankTransaction.organization_id == current_user["organization_id"],
@@ -144,11 +139,9 @@ def list_transactions(
         query = session.query(BankTransaction).filter(BankTransaction.organization_id == current_user["organization_id"])
         
         if month and year:
-            last_day_num = calendar.monthrange(year, month)[1]
-            first_day = datetime(year, month, 1)
-            last_day = datetime(year, month, last_day_num, 23, 59, 59)
+            first_day, last_day = get_month_date_range(year, month)
             query = query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
-        
+
         transactions = query.all()
         
         return {
@@ -248,10 +241,8 @@ def delete_transactions_by_month(year: int, month: int, current_user: dict = Dep
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
-        last_day_num = calendar.monthrange(year, month)[1]
-        first_day = datetime(year, month, 1)
-        last_day = datetime(year, month, last_day_num, 23, 59, 59)
-        
+        first_day, last_day = get_month_date_range(year, month)
+
         transactions = session.query(BankTransaction).filter(
             BankTransaction.organization_id == org_id,
             BankTransaction.date >= first_day,

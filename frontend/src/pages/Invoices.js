@@ -3,29 +3,32 @@ import { createPortal } from 'react-dom';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  Loader2
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { fetchInvoices, getExportUrl, uploadInvoiceFile, deleteInvoice, updateInvoice } from '../api';
+import { formatCurrency } from '../utils/formatHelpers';
+import { downloadAuthenticatedFile } from '../utils/downloadHelpers';
+import { INVOICE_STATUS } from '../constants/statusConfig';
+import ConfirmationModal from '../components/ConfirmationModal';
+import { useClientFile } from '../context/ClientFileContext';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
 import InvoiceFilters from '../components/InvoiceFilters';
 import InvoiceTable from '../components/InvoiceTable';
 import InvoiceEditModal from '../components/InvoiceEditModal';
 import InvoiceHeader from '../components/InvoiceHeader';
+import UploadChoiceModal from '../components/UploadChoiceModal';
+import SelectDossierModal from '../components/SelectDossierModal';
+import NoDossierBanner from '../components/NoDossierBanner';
 import { useColumnVisibility } from '../components/ColumnSettings';
+import { fetchClientFilesSummary } from '../api';
 
-const statusConfig = {
-  matched: { label: 'Rapprochée', icon: CheckCircle, color: 'text-green-600 bg-green-50' },
-  pending: { label: 'En attente', icon: Clock, color: 'text-yellow-600 bg-yellow-50' },
-  unmatched: { label: 'Non rapprochée', icon: XCircle, color: 'text-red-600 bg-red-50' },
-  processed: { label: 'Traitée', icon: CheckCircle, color: 'text-blue-600 bg-blue-50' },
-};
+// Map INVOICE_STATUS to the shape InvoiceTable expects (color = colorClass)
+const statusConfig = Object.fromEntries(
+  Object.entries(INVOICE_STATUS).map(([key, v]) => [key, { ...v, color: `${v.color} ${v.bg}` }])
+);
 
 const Invoices = () => {
   const { columnVisibility, handleColumnToggle } = useColumnVisibility();
+  const { activeClientFileId } = useClientFile();
   const {
     searchTerm,
     setSearchTerm,
@@ -57,8 +60,14 @@ const Invoices = () => {
   const [editForm, setEditForm] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showUploadChoice, setShowUploadChoice] = useState(false);
+  const [uploadMode, setUploadMode] = useState(null); // 'ai' | 'manual'
+  const [showSelectDossier, setShowSelectDossier] = useState(false);
+  const [pendingUploadMode, setPendingUploadMode] = useState(null);
+  const [uploadClientFileId, setUploadClientFileId] = useState(null);
 
   const uploadInputRef = useRef(null);
+  const manualUploadInputRef = useRef(null);
   const queryClient = useQueryClient();
 
   // Parse selected month into year and month
@@ -80,10 +89,13 @@ const Invoices = () => {
     amount_max: amountMax ? parseFloat(amountMax) : undefined,
     supplier: supplierFilter || undefined,
     vehicle: vehicleFilter ? vehicleFilter.toUpperCase() : undefined,
-  }), [searchTerm, statusFilter, categoryFilter, parsedMonth, dateFrom, dateTo, amountMin, amountMax, supplierFilter, vehicleFilter]);
+    client_file_id: activeClientFileId ?? undefined,
+  }), [searchTerm, statusFilter, categoryFilter, parsedMonth, dateFrom, dateTo, amountMin, amountMax, supplierFilter, vehicleFilter, activeClientFileId]);
 
   const { add: addNotif } = useNotifications();
   const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));
+  const { data: clientFilesData } = useQuery('client-files-summary', fetchClientFilesSummary);
+  const clientFiles = clientFilesData?.client_files || [];
   const invoices = data?.invoices || [];
   
   // Auto-set month filter to most recent invoice date on initial load
@@ -158,20 +170,25 @@ const Invoices = () => {
     updateMutation.mutate({ id: editingInvoice.id, data: dataToSend });
   };
 
-  const uploadMutation = useMutation(uploadInvoiceFile, {
+  const uploadMutation = useMutation(({ file, clientFileId }) => uploadInvoiceFile(file, clientFileId), {
     onMutate: () => {
       setIsImporting(true);
     },
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries('invoices');
       queryClient.invalidateQueries('dashboard-invoices');
       queryClient.invalidateQueries('dashboard-report');
       const inv = result.invoice;
-      addNotif(
-        NOTIF_TYPES.SUCCESS,
-        'Facture importée',
-        `N° ${inv.invoice_number}${inv.supplier ? ` — ${inv.supplier}` : ''}${inv.amount ? ` — ${Number(inv.amount).toLocaleString('fr-FR')} €` : ''}`
-      );
+      if (variables.mode === 'manual') {
+        // Open edit panel immediately for manual entry
+        handleEditOpen(inv);
+      } else {
+        addNotif(
+          NOTIF_TYPES.SUCCESS,
+          'Facture importée',
+          `N° ${inv.invoice_number}${inv.supplier ? ` — ${inv.supplier}` : ''}${inv.amount ? ` — ${formatCurrency(inv.amount)}` : ''}`
+        );
+      }
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur import facture', error?.response?.data?.detail || 'Impossible d\'importer la facture.');
@@ -182,57 +199,108 @@ const Invoices = () => {
   });
 
   const handleExport = async () => {
-    const token = localStorage.getItem('auth_token');
-    const url = getExportUrl('/api/reports/export/invoices', parsedMonth);
-    
+    const today = new Date();
+    const year = parsedMonth.year || today.getFullYear();
+    const month = parsedMonth.month || today.getMonth() + 1;
     try {
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to export invoices');
-      }
-      
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `invoices_${parsedMonth.year || new Date().getFullYear()}_${parsedMonth.month || new Date().getMonth() + 1}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
+      await downloadAuthenticatedFile(
+        getExportUrl('/api/reports/export/invoices', parsedMonth),
+        `invoices_${year}_${month}.csv`
+      );
     } catch (error) {
       console.error('Error exporting invoices:', error);
     }
   };
 
+  const hasDossier = clientFiles.length > 0;
+
   const handleUploadClick = () => {
-    uploadInputRef.current?.click();
+    if (!hasDossier) return;
+    setShowUploadChoice(true);
+  };
+
+  const resolveClientFileId = (mode) => {
+    // If a dossier is already active, use it directly
+    if (activeClientFileId != null) return activeClientFileId;
+    // If only one dossier exists, auto-assign it
+    if (clientFiles.length === 1) return clientFiles[0].id;
+    // Otherwise ask user to pick
+    setPendingUploadMode(mode);
+    setShowSelectDossier(true);
+    return null; // will be handled after selection
+  };
+
+  const handleChooseAI = () => {
+    setShowUploadChoice(false);
+    const cfId = resolveClientFileId('ai');
+    if (cfId !== null) {
+      setUploadClientFileId(cfId);
+      setUploadMode('ai');
+      uploadInputRef.current?.click();
+    }
+  };
+
+  const handleChooseManual = () => {
+    setShowUploadChoice(false);
+    const cfId = resolveClientFileId('manual');
+    if (cfId !== null) {
+      setUploadClientFileId(cfId);
+      setUploadMode('manual');
+      manualUploadInputRef.current?.click();
+    }
+  };
+
+  const handleDossierSelected = (file) => {
+    setShowSelectDossier(false);
+    setUploadClientFileId(file.id);
+    setUploadMode(pendingUploadMode);
+    if (pendingUploadMode === 'manual') {
+      manualUploadInputRef.current?.click();
+    } else {
+      uploadInputRef.current?.click();
+    }
+    setPendingUploadMode(null);
   };
 
   const handleInvoiceSelected = async (event) => {
     const selectedFiles = event.target.files;
-    if (!selectedFiles || selectedFiles.length === 0) {
-      return;
-    }
-    
-    // Limit to 10 files
+    if (!selectedFiles || selectedFiles.length === 0) return;
     const filesToUpload = Array.from(selectedFiles).slice(0, 10);
-    
-    // Upload each file sequentially
+    const cfId = uploadClientFileId ?? activeClientFileId;
     for (const file of filesToUpload) {
-      await uploadMutation.mutateAsync(file);
+      await uploadMutation.mutateAsync({ file, clientFileId: cfId, mode: 'ai' });
     }
-    
     event.target.value = '';
+    setUploadClientFileId(null);
+  };
+
+  const handleManualInvoiceSelected = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const cfId = uploadClientFileId ?? activeClientFileId;
+    await uploadMutation.mutateAsync({ file, clientFileId: cfId, mode: 'manual' });
+    event.target.value = '';
+    setUploadClientFileId(null);
   };
 
   return (
     <div className={`space-y-6 ${isImporting ? 'blur-sm pointer-events-none' : ''}`}>
+      {showUploadChoice && (
+        <UploadChoiceModal
+          onClose={() => setShowUploadChoice(false)}
+          onChooseAI={handleChooseAI}
+          onChooseManual={handleChooseManual}
+        />
+      )}
+
+      {showSelectDossier && (
+        <SelectDossierModal
+          clientFiles={clientFiles}
+          onSelect={handleDossierSelected}
+          onClose={() => { setShowSelectDossier(false); setPendingUploadMode(null); }}
+        />
+      )}
+
       <InvoiceHeader
         onExport={handleExport}
         onUploadClick={handleUploadClick}
@@ -241,6 +309,18 @@ const Invoices = () => {
         onInvoiceSelected={handleInvoiceSelected}
         columnVisibility={columnVisibility}
         onColumnToggle={handleColumnToggle}
+        disabled={!hasDossier}
+      />
+
+      {!hasDossier && <NoDossierBanner />}
+
+      {/* Hidden input for manual upload (single file) */}
+      <input
+        ref={manualUploadInputRef}
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp"
+        className="hidden"
+        onChange={handleManualInvoiceSelected}
       />
 
       {isLoading && <div className="text-sm text-gray-500">Chargement des factures...</div>}
@@ -286,28 +366,15 @@ const Invoices = () => {
         </p>
       </div>
 
-      {/* Delete Confirmation Modal - rendered at document body level */}
-      {deleteConfirm && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-md shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Supprimer la facture</h3>
-            <p className="text-gray-600 mb-1">Facture : <strong>{deleteConfirm.invoice_number}</strong></p>
-            <p className="text-gray-600 mb-4">Fournisseur : <strong>{deleteConfirm.supplier || '—'}</strong></p>
-            <p className="text-sm text-red-600 bg-red-50 rounded-md p-3 mb-6">Cette action supprimera la facture, ses rapprochements bancaires associés et le fichier PDF. Cette action est irréversible.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-md hover:bg-gray-50">Annuler</button>
-              <button
-                onClick={() => deleteMutation.mutate(deleteConfirm.id)}
-                disabled={deleteMutation.isLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleteMutation.isLoading ? 'Suppression...' : 'Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmationModal
+        show={!!deleteConfirm}
+        title="Supprimer la facture"
+        message={deleteConfirm ? `Facture ${deleteConfirm.invoice_number}${deleteConfirm.supplier ? ` — ${deleteConfirm.supplier}` : ''}. Cette action supprime aussi les rapprochements associés et le fichier PDF. Irréversible.` : ''}
+        confirmLabel="Supprimer"
+        onConfirm={() => deleteMutation.mutate(deleteConfirm.id)}
+        onCancel={() => setDeleteConfirm(null)}
+        loading={deleteMutation.isLoading}
+      />
 
       <InvoiceEditModal
         editingInvoice={editingInvoice}
@@ -320,8 +387,8 @@ const Invoices = () => {
 
       {/* Loading Overlay - rendered at document body level */}
       {isImporting && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-md p-8 flex flex-col items-center gap-4 shadow-xl">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
             <p className="text-gray-700 font-medium">Import en cours...</p>
           </div>

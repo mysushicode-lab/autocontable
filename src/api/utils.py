@@ -119,6 +119,14 @@ def create_or_update_invoice(session: Session, file_path: str, extracted_data: d
     return invoice
 
 
+def get_month_date_range(year: int, month: int):
+    """Return (first_day, last_day) datetime bounds for a calendar month."""
+    import calendar as _cal
+    first_day = datetime(year, month, 1)
+    last_day = datetime(year, month, _cal.monthrange(year, month)[1], 23, 59, 59)
+    return first_day, last_day
+
+
 def get_db():
     """Get database session dependency"""
     from src.storage.database import db

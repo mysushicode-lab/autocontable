@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut } from 'lucide-react';
+import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut, Lock, Shield } from 'lucide-react';
 import { fetchSettings, fetchUsers, testImap, deleteAccount } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useSettingsMutations } from '../hooks/useSettingsMutations';
 import { SettingsProfile } from '../components/settings/SettingsProfile';
+import { SettingsSecurity } from '../components/settings/SettingsSecurity';
+import { SettingsPrivacy } from '../components/settings/SettingsPrivacy';
 import { SettingsEmail } from '../components/settings/SettingsEmail';
 import { SettingsScheduler } from '../components/settings/SettingsScheduler';
 import { SettingsCollaborations } from '../components/settings/SettingsCollaborations';
@@ -12,12 +14,14 @@ import { SettingsBilling } from '../components/settings/SettingsBilling';
 import { SettingsPlan } from '../components/settings/SettingsPlan';
 
 const ALL_SECTIONS = [
-  { id: 'profil', label: 'Profil', icon: UserCircle, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700', adminOnly: false },
-  { id: 'email', label: 'Configuration Email', icon: Mail, color: 'blue', bgClass: 'bg-blue-50', textClass: 'text-blue-700', adminOnly: true },
-  { id: 'scheduler', label: 'Planificateur', icon: Clock, color: 'purple', bgClass: 'bg-purple-50', textClass: 'text-purple-700', adminOnly: true },
-  { id: 'collaborations', label: 'Collaborations', icon: Users, color: 'green', bgClass: 'bg-green-50', textClass: 'text-green-700', adminOnly: true },
-  { id: 'billing', label: 'Facturation', icon: CreditCard, color: 'orange', bgClass: 'bg-orange-50', textClass: 'text-orange-700', adminOnly: true },
-  { id: 'plan', label: 'Plan', icon: Zap, color: 'yellow', bgClass: 'bg-yellow-50', textClass: 'text-yellow-700', adminOnly: true },
+  { id: 'profil',         label: 'Profil',              icon: UserCircle, adminOnly: false },
+  { id: 'security',       label: 'Sécurité',             icon: Lock,       adminOnly: false },
+  { id: 'privacy',        label: 'Confidentialité',      icon: Shield,     adminOnly: false },
+  { id: 'email',          label: 'Configuration Email',  icon: Mail,       adminOnly: true  },
+  { id: 'scheduler',      label: 'Planificateur',        icon: Clock,      adminOnly: true  },
+  { id: 'collaborations', label: 'Collaborations',       icon: Users,      adminOnly: true  },
+  { id: 'billing',        label: 'Facturation',          icon: CreditCard, adminOnly: true  },
+  { id: 'plan',           label: 'Plan',                 icon: Zap,        adminOnly: true  },
 ];
 
 const Settings = () => {
@@ -68,12 +72,24 @@ const Settings = () => {
           <SettingsProfile
             user={user}
             photoMutation={mutations.photoMutation}
-            changePasswordMutation={mutations.changePasswordMutation}
             changeUsernameMutation={mutations.changeUsernameMutation}
             changeEmailMutation={mutations.changeEmailMutation}
+            setSaveStatus={setSaveStatus}
+          />
+        );
+      case 'security':
+        return (
+          <SettingsSecurity
+            changePasswordMutation={mutations.changePasswordMutation}
+            setSaveStatus={setSaveStatus}
+          />
+        );
+      case 'privacy':
+        return (
+          <SettingsPrivacy
             deleteAccount={deleteAccount}
             logout={logout}
-            setSaveStatus={setSaveStatus}
+            isAdmin={isAdmin}
           />
         );
       case 'email':
@@ -118,51 +134,82 @@ const Settings = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white flex flex-col">
-        <div className="p-6 border-b border-gray-100">
-          <h1 className="text-xl font-bold text-gray-900">Paramètres</h1>
+    <div className="max-w-4xl mx-auto">
+      {/* Header outside cards */}
+      <div className="mb-6">
+        <h1 className="text-lg font-semibold text-gray-900">Paramètres</h1>
+        <p className="text-xs text-gray-500 mt-0.5">Gérez vos préférences et la sécurité de votre compte</p>
+      </div>
+
+      {saveStatus && (
+        <div className={`mb-4 px-3 py-2.5 rounded-lg text-xs border ${
+          saveStatus.type === 'success' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-500 border-red-200'
+        }`}>
+          {saveStatus.message}
         </div>
-        <nav className="p-4 space-y-1">
-          {SECTIONS.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeSection === section.id
-                  ? `${section.bgClass} ${section.textClass}`
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <section.icon className="w-5 h-5" />
-              {section.label}
-            </button>
-          ))}
-          <div className="border-t border-gray-100 mt-4 pt-4">
-            <button
-              onClick={logout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-red-600 hover:bg-red-50"
-            >
-              <LogOut className="w-5 h-5" />
-              Déconnexion
-            </button>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Sidebar card */}
+        <nav className="lg:col-span-1">
+          <div className="bg-white rounded-lg p-3 border border-gray-200 space-y-3">
+            {/* Main sections */}
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400 px-2 mb-1">Compte</p>
+              <ul className="space-y-0.5">
+                {SECTIONS.filter(s => ['profil', 'security', 'privacy', 'email', 'scheduler', 'collaborations'].includes(s.id)).map((section) => (
+                  <li key={section.id}>
+                    <button
+                      onClick={() => setActiveSection(section.id)}
+                      className={`w-full flex items-center gap-2.5 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                        activeSection === section.id
+                          ? 'bg-gray-100 text-gray-900 font-medium'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <section.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                      {section.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {SECTIONS.some(s => ['billing', 'plan'].includes(s.id)) && (
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400 px-2 mb-1">Abonnement</p>
+                <ul className="space-y-0.5">
+                  {SECTIONS.filter(s => ['billing', 'plan'].includes(s.id)).map((section) => (
+                    <li key={section.id}>
+                      <button
+                        onClick={() => setActiveSection(section.id)}
+                        className={`w-full flex items-center gap-2.5 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                          activeSection === section.id
+                            ? 'bg-gray-100 text-gray-900 font-medium'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <section.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                        {section.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="border-t border-gray-100 pt-2">
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-2.5 px-2 py-1.5 text-xs rounded-md font-medium transition-colors text-red-500 hover:bg-red-50"
+              >
+                <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
+                Déconnexion
+              </button>
+            </div>
           </div>
         </nav>
-      </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto p-8">
-          {/* Save Status */}
-          {saveStatus && (
-            <div className={`mb-6 px-4 py-3 rounded-md text-sm ${
-              saveStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-            }`}>
-              {saveStatus.message}
-            </div>
-          )}
-
+        {/* Content */}
+        <div className="lg:col-span-2">
           {renderContent()}
         </div>
       </div>

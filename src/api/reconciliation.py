@@ -1,15 +1,12 @@
 """Reconciliation endpoints"""
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
 from typing import Optional
 from datetime import datetime
-import calendar
 
 from src.storage.database import db
 from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus
 from src.reconciliation.reconciliation_engine import ReconciliationEngine
-from src.api.utils import serialize_match
+from src.api.utils import serialize_match, get_month_date_range
 from src.api.schemas import ManualLinkPayload
 from src.api.auth import get_current_user, check_trial_active
 
@@ -143,9 +140,7 @@ def get_reconciliation_details(
         transaction_query = session.query(BankTransaction).filter(BankTransaction.organization_id == org_id)
 
         if month and year:
-            last_day_num = calendar.monthrange(year, month)[1]
-            first_day = datetime(year, month, 1)
-            last_day = datetime(year, month, last_day_num, 23, 59, 59)
+            first_day, last_day = get_month_date_range(year, month)
             invoice_query = invoice_query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
             match_query = match_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
             transaction_query = transaction_query.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
@@ -241,9 +236,7 @@ def get_reconciliation_status(
         ).join(Invoice).join(BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id)
 
         if month and year:
-            last_day_num = calendar.monthrange(year, month)[1]
-            first_day = datetime(year, month, 1)
-            last_day = datetime(year, month, last_day_num, 23, 59, 59)
+            first_day, last_day = get_month_date_range(year, month)
             invoice_q = invoice_q.filter(Invoice.date >= first_day, Invoice.date <= last_day)
             match_q = match_q.filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
 

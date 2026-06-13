@@ -232,47 +232,20 @@ class Exporter:
             Path to exported file
         """
         from src.reporting.report_generator import ReportGenerator
-        
+
         report_gen = ReportGenerator(self.session, org_id=self.org_id)
-        
-        # Get data
         monthly_totals = report_gen.monthly_totals(year, month)
         reconciliation = report_gen.reconciliation_report(year, month)
 
-        # Fetch invoices for the period
-        first_day = datetime(year, month, 1)
-        last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
-        
-        # Get invoices from the selected month (by invoice date)
-        inv_q = self.session.query(Invoice).filter(
-            Invoice.date >= first_day, Invoice.date <= last_day
-        )
-        if self.org_id:
-            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
-        invoices = inv_q.all()
+        first_day, last_day, all_invoices = self._fetch_period_invoices(year, month)
 
-        # Also include invoices matched to transactions in the selected month (like Dashboard metrics)
-        # This captures invoices from previous months that were reconciled with current month bank transactions
         from src.storage.models import ReconciliationMatch, BankTransaction
         matches = self.session.query(ReconciliationMatch).join(Invoice).join(
             BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
-        ).filter(
-            BankTransaction.date >= first_day,
-            BankTransaction.date <= last_day
-        )
+        ).filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
         if self.org_id:
             matches = matches.filter(Invoice.organization_id == self.org_id)
-        
-        matched_invoice_ids = {match.invoice_id for match in matches if match.status != 'rejected'}
-        
-        # Get matched invoices that are not already in the monthly invoices (from previous months)
-        matched_invoices_prev_month = []
-        for match in matches:
-            if match.status != 'rejected' and match.invoice_id not in {inv.id for inv in invoices}:
-                matched_invoices_prev_month.append(match.invoice)
-        
-        # Combine: monthly invoices + matched invoices from previous months
-        all_invoices = invoices + matched_invoices_prev_month
+        matched_invoice_ids = {m.invoice_id for m in matches if m.status != 'rejected'}
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -369,49 +342,30 @@ class Exporter:
 
         return output_path
     
-    def export_grand_livre_to_excel(self, output_path: str, year: int, month: int) -> str:
-        """
-        Export Grand Livre (all accounting entries) to Excel
-        
-        Args:
-            output_path: Path to save Excel file
-            year: Year
-            month: Month
-            
-        Returns:
-            Path to exported file
-        """
-        # Fetch invoices for the period (same logic as export_monthly_report_to_excel)
+    def _fetch_period_invoices(self, year: int, month: int):
+        """Return invoices for the period, including cross-month matched invoices."""
         first_day = datetime(year, month, 1)
-        last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
-        
-        # Get invoices from the selected month (by invoice date)
-        inv_q = self.session.query(Invoice).filter(
-            Invoice.date >= first_day, Invoice.date <= last_day
-        )
+        last_day = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
+
+        inv_q = self.session.query(Invoice).filter(Invoice.date >= first_day, Invoice.date <= last_day)
         if self.org_id:
             inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
         invoices = inv_q.all()
 
-        # Also include invoices matched to transactions in the selected month
         from src.storage.models import ReconciliationMatch, BankTransaction
-        matches = self.session.query(ReconciliationMatch).join(Invoice).join(
+        matches_q = self.session.query(ReconciliationMatch).join(Invoice).join(
             BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
-        ).filter(
-            BankTransaction.date >= first_day,
-            BankTransaction.date <= last_day
-        )
+        ).filter(BankTransaction.date >= first_day, BankTransaction.date <= last_day)
         if self.org_id:
-            matches = matches.filter(Invoice.organization_id == self.org_id)
-        
-        # Get matched invoices that are not already in the monthly invoices
-        matched_invoices_prev_month = []
-        for match in matches:
-            if match.status != 'rejected' and match.invoice_id not in {inv.id for inv in invoices}:
-                matched_invoices_prev_month.append(match.invoice)
-        
-        # Combine: monthly invoices + matched invoices from previous months
-        all_invoices = invoices + matched_invoices_prev_month
+            matches_q = matches_q.filter(Invoice.organization_id == self.org_id)
+
+        existing_ids = {inv.id for inv in invoices}
+        extra = [m.invoice for m in matches_q if m.status != 'rejected' and m.invoice_id not in existing_ids]
+        return first_day, last_day, invoices + extra
+
+    def export_grand_livre_to_excel(self, output_path: str, year: int, month: int) -> str:
+        """Export Grand Livre (all accounting entries) to Excel"""
+        _, _, all_invoices = self._fetch_period_invoices(year, month)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -433,48 +387,8 @@ class Exporter:
         return output_path
     
     def export_balance_to_excel(self, output_path: str, year: int, month: int) -> str:
-        """
-        Export Balance (summary by account) to Excel
-        
-        Args:
-            output_path: Path to save Excel file
-            year: Year
-            month: Month
-            
-        Returns:
-            Path to exported file
-        """
-        # Fetch invoices for the period (same logic as export_monthly_report_to_excel)
-        first_day = datetime(year, month, 1)
-        last_day  = datetime(year, month, calendar.monthrange(year, month)[1], 23, 59, 59)
-        
-        # Get invoices from the selected month (by invoice date)
-        inv_q = self.session.query(Invoice).filter(
-            Invoice.date >= first_day, Invoice.date <= last_day
-        )
-        if self.org_id:
-            inv_q = inv_q.filter(Invoice.organization_id == self.org_id)
-        invoices = inv_q.all()
-
-        # Also include invoices matched to transactions in the selected month
-        from src.storage.models import ReconciliationMatch, BankTransaction
-        matches = self.session.query(ReconciliationMatch).join(Invoice).join(
-            BankTransaction, ReconciliationMatch.transaction_id == BankTransaction.id
-        ).filter(
-            BankTransaction.date >= first_day,
-            BankTransaction.date <= last_day
-        )
-        if self.org_id:
-            matches = matches.filter(Invoice.organization_id == self.org_id)
-        
-        # Get matched invoices that are not already in the monthly invoices
-        matched_invoices_prev_month = []
-        for match in matches:
-            if match.status != 'rejected' and match.invoice_id not in {inv.id for inv in invoices}:
-                matched_invoices_prev_month.append(match.invoice)
-        
-        # Combine: monthly invoices + matched invoices from previous months
-        all_invoices = invoices + matched_invoices_prev_month
+        """Export Balance (summary by account) to Excel"""
+        _, _, all_invoices = self._fetch_period_invoices(year, month)
 
         # Calculate balance by account
         chargeMap = {}

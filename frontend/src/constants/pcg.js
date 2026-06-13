@@ -1,14 +1,14 @@
-// PCG account mapping for carrosserie auto
+// PCG account mapping — catégories universelles applicables à toute entreprise
 export const PCG_COMPTES = {
-  'Pièces détachées': '607100',
-  'Peinture et vernis': '607200',
-  'Fournitures atelier': '606400',
+  'Achats de marchandises': '607000',
+  'Fournitures et consommables': '606000',
   'Sous-traitance': '611000',
   'Équipement et outillage': '606310',
   'Énergie et locaux': '606110',
   'Assurances et frais': '616000',
-  'Déplacements et véhicules': '625100',
+  'Déplacements et transports': '625100',
   'Informatique et communication': '626000',
+  'Services et prestations': '628100',
   'Formation et divers': '628000',
 };
 

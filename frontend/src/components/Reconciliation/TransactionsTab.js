@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { CreditCard, XCircle, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { CreditCard, XCircle, Trash2, RefreshCw } from 'lucide-react';
+import { formatCurrency, formatDate } from '../../utils/formatHelpers';
+import ConfirmationModal from '../ConfirmationModal';
 
 const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, updateTransactionMutation, onDeleteAll }) => {
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -8,17 +9,12 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
   const [loadingTxId, setLoadingTxId] = useState(null);
 
   const handleToggleSign = async (tx) => {
-    console.log('[Toggle Sign] Transaction object:', tx);
-    console.log('[Toggle Sign] tx.amount:', tx.amount);
     if (tx.amount === undefined || tx.amount === null || isNaN(tx.amount)) {
-      console.error('Transaction amount is invalid:', tx);
       alert('Erreur: Le montant de la transaction est invalide.');
       return;
     }
     setLoadingTxId(tx.id);
-    const newAmount = tx.amount * -1;
-    console.log('[Toggle Sign] New amount:', newAmount);
-    await updateTransactionMutation.mutateAsync({ transactionId: tx.id, amount: newAmount });
+    await updateTransactionMutation.mutateAsync({ transactionId: tx.id, amount: tx.amount * -1 });
     setLoadingTxId(null);
   };
   
@@ -111,9 +107,9 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
           </div>
           <div className="text-right flex-shrink-0">
             <p className={`font-bold text-lg ${tx.amount < 0 ? 'text-red-600' : 'text-green-700'}`}>
-              {tx.amount < 0 ? '' : '+'}{tx.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+              {tx.amount >= 0 ? '+' : ''}{formatCurrency(tx.amount)}
             </p>
-            <p className="text-xs text-gray-500">{tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '—'}</p>
+            <p className="text-xs text-gray-500">{formatDate(tx.date)}</p>
           </div>
           <button
             onClick={() => handleToggleSign(tx)}
@@ -137,37 +133,14 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
         </div>
       ))}
 
-      {/* Confirmation Modal - rendered at document body level */}
-      {showConfirmModal && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 rounded-full">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Confirmer la suppression</h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer {selectedIds.size} transaction(s) ? Cette action est irréversible.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmBulkDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmationModal
+        show={showConfirmModal}
+        title="Supprimer les transactions"
+        message={`Supprimer ${selectedIds.size} transaction(s) sélectionnée(s) ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        onConfirm={confirmBulkDelete}
+        onCancel={() => setShowConfirmModal(false)}
+      />
     </div>
   );
 };

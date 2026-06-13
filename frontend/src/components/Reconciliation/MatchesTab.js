@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, XCircle, ExternalLink } from 'lucide-react';
+import { formatCurrency, formatDate } from '../../utils/formatHelpers';
 
 const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
   return (
@@ -14,10 +15,10 @@ const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
             <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200">
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-600 break-words">{matchGroup.transaction?.description || '—'}</p>
-                <p className="text-xs text-gray-400">{matchGroup.transaction?.date ? new Date(matchGroup.transaction.date).toLocaleDateString('fr-FR') : '—'}</p>
+                <p className="text-xs text-gray-400">{formatDate(matchGroup.transaction?.date)}</p>
               </div>
               <p className={`text-sm font-bold ${isDebit ? 'text-red-600' : 'text-green-600'}`}>
-                {isDebit ? '▼' : '▲'} {Math.abs(txAmount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                {isDebit ? '▼' : '▲'} {formatCurrency(Math.abs(txAmount))}
                 <span className="ml-1 text-xs font-normal">{isDebit ? 'Débit' : 'Crédit'}</span>
               </p>
             </div>
@@ -30,13 +31,13 @@ const MatchesTab = ({ filteredMatches, rejectMutation, viewInvoice }) => {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 break-words">{invoice.supplier || '—'}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-xs text-gray-400">{invoice.number} · {invoice.date ? new Date(invoice.date).toLocaleDateString('fr-FR') : '—'}</span>
+                      <span className="text-xs text-gray-400">{invoice.number} · {formatDate(invoice.date)}</span>
                       <span className={`text-xs font-semibold shrink-0 ${invoice.score >= 80 ? 'text-green-600' : invoice.score >= 60 ? 'text-orange-500' : 'text-red-500'}`}>{invoice.score}%</span>
                       <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
                         {invoice.match_type === 'manual' ? 'Manuel' : 'Auto'}
                       </span>
                     </div>
-                    <p className="text-sm font-bold text-gray-800 mt-1">{(invoice.amount ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</p>
+                    <p className="text-sm font-bold text-gray-800 mt-1">{formatCurrency(invoice.amount)}</p>
                   </div>
 
                   {/* ── Actions ── */}

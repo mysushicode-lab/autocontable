@@ -1,8 +1,9 @@
 {
-  "name": "carrosserie-compta-ui",
+  "name": "autocontable-ui",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@radix-ui/react-tooltip": "^1.2.9",
     "@stripe/stripe-js": "^9.5.0",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",

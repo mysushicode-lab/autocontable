@@ -118,16 +118,24 @@ def export_dossier_zip(year: int, month: int, current_user: dict = Depends(get_c
         def safe_name(s: str) -> str:
             return re.sub(r'[\\/:*?"<>|]', '_', s or '')
 
+        safe_data_root = os.path.realpath("data")
+
+        def _safe_file(p):
+            """Return realpath if within data/, else None."""
+            r = os.path.realpath(p if os.path.isabs(p) else os.path.join(os.getcwd(), p.lstrip('/\\')))
+            return r if r.startswith(safe_data_root + os.sep) and os.path.exists(r) else None
+
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
             zf.write(excel_path, excel_filename)
             for inv in invoices:
-                if inv.file_path and os.path.exists(inv.file_path):
-                    ext = os.path.splitext(inv.file_path)[1].lower() or '.pdf'
+                file_path = _safe_file(inv.file_path) if inv.file_path else None
+                if file_path:
+                    ext = os.path.splitext(file_path)[1].lower() or '.pdf'
                     date_str = inv.date.strftime('%Y%m%d') if inv.date else 'nodate'
                     supplier_str = safe_name(inv.supplier.name if inv.supplier else 'inconnu')
                     inv_num = safe_name(inv.invoice_number or 'nofacture')
                     arcname = f"factures/{date_str}_{supplier_str}_{inv_num}{ext}"
-                    zf.write(inv.file_path, arcname)
+                    zf.write(file_path, arcname)
 
         return FileResponse(zip_path, media_type="application/zip", filename=zip_filename)
     finally:

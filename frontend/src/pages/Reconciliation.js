@@ -2,13 +2,13 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
+import { useClientFile } from '../context/ClientFileContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { 
   Link,
   RefreshCw,
   CheckCircle,
   Unlink,
-  AlertTriangle,
   Loader2,
 } from 'lucide-react';
 import {
@@ -27,6 +27,9 @@ import {
 } from '../api';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
 import { matchAmount } from '../utils/searchHelpers';
+import { formatCurrency, formatDate } from '../utils/formatHelpers';
+import { generateMonthOptions } from '../utils/dateHelpers';
+import ConfirmationModal from '../components/ConfirmationModal';
 import ReconciliationHeader from '../components/Reconciliation/ReconciliationHeader';
 import ReconciliationTabs from '../components/Reconciliation/ReconciliationTabs';
 import MatchesTab from '../components/Reconciliation/MatchesTab';
@@ -38,6 +41,7 @@ import LinkModal from '../components/Reconciliation/LinkModal';
 
 const Reconciliation = () => {
   const { selectedMonth, setSelectedMonth } = useFilters();
+  const { activeClientFileId } = useClientFile();
   const [activeTab, setActiveTab] = useState('matches');
   const [linkModal, setLinkModal] = useState(null); // { type: 'tx2inv'|'inv2tx', id, label }
   const [linkSearch, setLinkSearch] = useState('');
@@ -62,16 +66,16 @@ const Reconciliation = () => {
   // Check if selectedMonth is explicitly set (including empty string for "all periods")
   const globalPeriod = selectedMonth !== undefined ? selectedMonth : currentPeriod;
   
-  const periodMonths = Array.from({ length: 18 }, (_, i) => {
-    const d = new Date(today.getFullYear(), today.getMonth() - i);
-    return { value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) };
-  });
-  
+  const periodMonths = generateMonthOptions(18);
+
   const periodOptions = [
     { value: '', label: 'Toutes périodes' },
-    ...periodMonths
+    ...periodMonths,
   ];
-  const filters = globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {};
+  const filters = {
+    ...(globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {}),
+    ...(activeClientFileId != null ? { client_file_id: activeClientFileId } : {}),
+  };
 
   const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
   const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
@@ -246,7 +250,7 @@ const Reconciliation = () => {
     // Upload each file and auto-link to the transaction
     try {
       for (const file of filesToUpload) {
-        const result = await uploadInvoiceFile(file);
+        const result = await uploadInvoiceFile(file, activeClientFileId);
         const invoiceId = result.invoice?.id;
         if (invoiceId) {
           await manualLinkMutation.mutateAsync({
@@ -267,8 +271,8 @@ const Reconciliation = () => {
 
   const openLinkFromTransaction = (tx) => {
     const txDbId = tx.db_id || tx.id;
-    const amount = tx.amount != null ? `${Math.abs(tx.amount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
-    const date = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : '';
+    const amount = tx.amount != null ? `${formatCurrency(Math.abs(tx.amount))} (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
+    const date = formatDate(tx.date);
     const label = [tx.description, amount, date].filter(Boolean).join(' · ');
     setLinkSearch('');
     setLinkSelectedIds(new Set());
@@ -423,42 +427,19 @@ const Reconciliation = () => {
         />
       )}
 
-      {/* Delete All Transactions Confirmation Modal - rendered at document body level */}
-      {showDeleteAllModal && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 rounded-full">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">Confirmer la suppression</h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer toutes les transactions de {periodOptions.find(o => o.value === globalPeriod)?.label || 'cette période'} ? Cette action est irréversible.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteAllModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmDeleteAllTransactions}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmationModal
+        show={showDeleteAllModal}
+        title="Supprimer toutes les transactions"
+        message={`Supprimer toutes les transactions de ${periodOptions.find(o => o.value === globalPeriod)?.label || 'cette période'} ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        onConfirm={confirmDeleteAllTransactions}
+        onCancel={() => setShowDeleteAllModal(false)}
+      />
 
       {/* Loading Overlay - rendered at document body level */}
       {(isImporting || isRunningReconciliation) && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-md p-8 flex flex-col items-center gap-4 shadow-xl">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
             <p className="text-gray-700 font-medium">{isRunningReconciliation ? 'Rapprochement en cours...' : 'Import en cours...'}</p>
           </div>

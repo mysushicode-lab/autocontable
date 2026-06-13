@@ -3,7 +3,7 @@ import { RefreshCw, Save } from 'lucide-react';
 import { handleChange } from '../../utils/formHelpers';
 
 const SCHEDULER_FIELDS = [
-  { key: 'scheduler_interval', label: 'Intervalle de vérification (minutes, ex: 0.166 = 10 secondes)', placeholder: '0.166', type: 'number' },
+  { key: 'scheduler_interval', label: 'Intervalle de vérification (minutes)', placeholder: '0.166', type: 'number' },
   { key: 'auto_reconciliation', label: 'Rapprochement automatique', placeholder: 'true/false', type: 'select', options: ['true', 'false'] },
 ];
 
@@ -19,41 +19,44 @@ export const SettingsScheduler = ({ schedulerForm, setSchedulerForm, updateMutat
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Planificateur</h2>
-        <p className="text-sm text-gray-500 mt-1">Paramètres du scheduler automatique de récupération</p>
-      </div>
-      <form onSubmit={handleSchedulerSubmit} className="space-y-4">
-        {SCHEDULER_FIELDS.map((field) => (
-          <div key={field.key}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>
-            {field.type === 'select' ? (
-              <select
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
-                value={schedulerForm[field.key] || ''}
-                onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
-              >
-                {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
-            ) : (
-              <input
-                type={field.type}
-                placeholder={field.placeholder}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
-                value={schedulerForm[field.key] || ''}
-                onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
-              />
-            )}
+    <div className="space-y-4">
+      <div className="bg-white rounded-md p-6 border border-gray-200">
+        <h2 className="text-sm font-semibold text-gray-900 mb-1">Planificateur</h2>
+        <p className="text-xs text-gray-500 mb-6">Paramètres du scheduler automatique de récupération</p>
+
+        <form onSubmit={handleSchedulerSubmit} className="space-y-4">
+          {SCHEDULER_FIELDS.map((field) => (
+            <div key={field.key}>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">{field.label}</label>
+              {field.type === 'select' ? (
+                <select
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:border-blue-400 transition-colors"
+                  value={schedulerForm[field.key] || ''}
+                  onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
+                >
+                  {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              ) : (
+                <input
+                  type={field.type}
+                  placeholder={field.placeholder}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 transition-colors"
+                  value={schedulerForm[field.key] || ''}
+                  onChange={(e) => handleChange(schedulerForm, setSchedulerForm, field.key, e.target.value)}
+                />
+              )}
+            </div>
+          ))}
+          <div className="flex justify-end pt-2">
+            <button type="submit" disabled={updateMutation.isLoading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
+              {updateMutation.isLoading
+                ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Sauvegarde...</>
+                : <><Save className="w-3.5 h-3.5" />Sauvegarder</>}
+            </button>
           </div>
-        ))}
-        <div className="flex justify-end pt-2">
-          <button type="submit" disabled={updateMutation.isLoading}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50 font-medium">
-            {updateMutation.isLoading ? <><RefreshCw className="w-4 h-4 animate-spin" />Sauvegarde...</> : <><Save className="w-4 h-4" />Sauvegarder</>}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

@@ -3,7 +3,6 @@ FastAPI REST API for invoice processing system
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -31,6 +30,7 @@ from src.api.settings import router as settings_router
 from src.api.reports import router as reports_router
 from src.api.vehicles import router as vehicles_router
 from src.api.payments import router as stripe_router
+from src.api.client_files import router as client_files_router
 
 
 @asynccontextmanager
@@ -72,9 +72,45 @@ app.add_middleware(
     max_age=600,
 )
 
-# Mount profile photos directory for public static serving (profile photos only)
 os.makedirs("data/uploads/profile_photos", exist_ok=True)
-app.mount("/api/uploads/profile_photos", StaticFiles(directory="data/uploads/profile_photos"), name="profile_photos")
+
+
+@app.get("/api/uploads/profile_photos/{filename}")
+def serve_profile_photo(filename: str, current_user: dict = Depends(get_current_user)):
+    """Serve profile photo only if the requesting user belongs to the same organisation."""
+    from fastapi.responses import FileResponse
+    from src.storage.database import db
+    from src.storage.models import User
+
+    # Reject path traversal attempts
+    if ".." in filename or "/" in filename or "\\" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # Only user_{id}.ext filenames are generated — enforce the pattern
+    import re
+    if not re.fullmatch(r"user_\d+\.(jpg|jpeg|png|gif|webp)", filename, re.IGNORECASE):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    user_id = int(filename.split("_")[1].split(".")[0])
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(
+            User.id == user_id,
+            User.organization_id == current_user["organization_id"],
+        ).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Photo not found")
+    finally:
+        session.close()
+
+    safe_root = os.path.realpath(os.path.join("data", "uploads", "profile_photos"))
+    file_path = os.path.realpath(os.path.join(safe_root, filename))
+    if not (file_path == safe_root or file_path.startswith(safe_root + os.sep)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    return FileResponse(file_path)
 
 
 @app.get("/")
@@ -128,6 +164,7 @@ app.include_router(settings_router, prefix="/api/settings", tags=["Settings"])
 app.include_router(reports_router, prefix="/api/reports", tags=["Reports"])
 app.include_router(vehicles_router, prefix="/api/vehicles", tags=["Vehicles"])
 app.include_router(stripe_router, prefix="/api/stripe", tags=["Stripe"])
+app.include_router(client_files_router, prefix="/api/client-files", tags=["ClientFiles"])
 
 
 if __name__ == "__main__":

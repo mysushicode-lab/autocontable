@@ -10,7 +10,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   };
 
   return (
-    <div className="rounded-md border border-white/30 bg-white/50 shadow-sm backdrop-blur-md p-4">
+    <div className="rounded-md border border-gray-100 bg-white shadow-sm p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600">{title}</p>

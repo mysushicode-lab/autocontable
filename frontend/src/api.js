@@ -72,9 +72,36 @@ export const fetchVehicleHistory = async (registration) => {
   return response.data;
 };
 
-export const uploadInvoiceFile = async (file) => {
+// ── Dossiers clients (pivot cabinet comptable) ────────────────────────────────
+export const fetchClientFiles = async () => {
+  const response = await api.get('/api/client-files');
+  return response.data;
+};
+
+export const fetchClientFilesSummary = async () => {
+  const response = await api.get('/api/client-files/summary');
+  return response.data;
+};
+
+export const createClientFile = async (data) => {
+  const response = await api.post('/api/client-files', data);
+  return response.data;
+};
+
+export const updateClientFile = async (id, data) => {
+  const response = await api.put(`/api/client-files/${id}`, data);
+  return response.data;
+};
+
+export const deleteClientFile = async (id) => {
+  const response = await api.delete(`/api/client-files/${id}`);
+  return response.data;
+};
+
+export const uploadInvoiceFile = async (file, clientFileId = null) => {
   const formData = new FormData();
   formData.append('file', file);
+  if (clientFileId != null) formData.append('client_file_id', clientFileId);
   const response = await api.post('/api/invoices/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });

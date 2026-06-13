@@ -1,13 +1,11 @@
 """Invoice endpoints"""
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
 from datetime import datetime
 import os
 import hashlib
-import calendar
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +13,7 @@ logger = logging.getLogger(__name__)
 from src.storage.database import db
 from src.storage.models import Invoice, Supplier, ReconciliationMatch, InvoiceStatus, ProcessedFileHash
 from src.invoice_processor import InvoiceProcessor
-from src.api.utils import save_uploaded_file, create_or_update_invoice
+from src.api.utils import save_uploaded_file, create_or_update_invoice, get_month_date_range
 from src.api.schemas import UpdateInvoiceRequest
 from src.api.auth import get_current_user, check_trial_active
 from src.reconciliation import run_auto_reconciliation
@@ -24,11 +22,36 @@ router = APIRouter()
 
 UPLOAD_ROOT = os.path.join("data", "uploads")
 INVOICE_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "invoices")
+# Both upload paths that the app writes invoice files to (uploads/ for manual, invoices/ for email)
+_SAFE_DATA_ROOT = os.path.realpath("data")
+
+
+def _resolve_invoice_file_path(raw_path: str) -> str:
+    """Resolve and validate an invoice file path against the data root.
+
+    Raises HTTPException 400 on path traversal, 404 if file not found.
+    """
+    if not os.path.isabs(raw_path):
+        resolved = os.path.realpath(os.path.join(os.getcwd(), raw_path.lstrip('/\\')))
+    else:
+        resolved = os.path.realpath(raw_path)
+
+    if not (resolved == _SAFE_DATA_ROOT or resolved.startswith(_SAFE_DATA_ROOT + os.sep)):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+
+    if not os.path.exists(resolved):
+        raise HTTPException(status_code=404, detail="PDF file not found")
+
+    return resolved
 
 
 @router.post("/upload")
-async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depends(check_trial_active)):
-    """Import a supplier invoice manually."""
+async def upload_invoice(
+    file: UploadFile = File(...),
+    client_file_id: Optional[int] = None,
+    current_user: dict = Depends(check_trial_active),
+):
+    """Import a supplier invoice manually, optionally tied to a dossier client."""
     allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
     extension = os.path.splitext(file.filename or "")[1].lower()
     if extension not in allowed_extensions:
@@ -69,6 +92,8 @@ async def upload_invoice(file: UploadFile = File(...), current_user: dict = Depe
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
         invoice = create_or_update_invoice(session, saved_path, extracted_data, org_id)
+        if client_file_id is not None:
+            invoice.client_file_id = client_file_id
         
         invoice.content_hash = content_hash
         if not session.query(ProcessedFileHash).filter(
@@ -114,13 +139,17 @@ def list_invoices(
     month: Optional[int] = None,
     year: Optional[int] = None,
     include_reconciled: Optional[bool] = False,
+    client_file_id: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """List all invoices with optional filters"""
     session = db.get_session()
     try:
         query = session.query(Invoice).filter(Invoice.organization_id == current_user["organization_id"])
-        
+
+        if client_file_id is not None:
+            query = query.filter(Invoice.client_file_id == client_file_id)
+
         if status:
             query = query.filter(Invoice.status == InvoiceStatus(status))
 
@@ -129,6 +158,10 @@ def list_invoices(
 
         if vehicle_registration:
             query = query.filter(Invoice.vehicle_registration == vehicle_registration.upper())
+
+        if supplier:
+            from sqlalchemy.orm import joinedload
+            query = query.join(Invoice.supplier).filter(Supplier.name.ilike(f"%{supplier}%"))
 
         if search:
             pattern = f"%{search}%"
@@ -142,9 +175,7 @@ def list_invoices(
             )
         
         if month and year:
-            last_day_num = calendar.monthrange(year, month)[1]
-            first_day = datetime(year, month, 1)
-            last_day = datetime(year, month, last_day_num, 23, 59, 59)
+            first_day, last_day = get_month_date_range(year, month)
             query = query.filter(Invoice.date >= first_day, Invoice.date <= last_day)
         
         invoices = query.all()
@@ -203,10 +234,13 @@ def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_use
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
-        # Delete the file if it exists
-        if invoice.file_path and os.path.exists(invoice.file_path):
+        # Delete the file if it exists and is within the safe data root
+        if invoice.file_path:
             try:
-                os.remove(invoice.file_path)
+                safe = os.path.realpath(invoice.file_path if os.path.isabs(invoice.file_path)
+                                        else os.path.join(os.getcwd(), invoice.file_path.lstrip('/\\')))
+                if safe.startswith(_SAFE_DATA_ROOT + os.sep) and os.path.exists(safe):
+                    os.remove(safe)
             except Exception:
                 pass
         # Delete the processed file hash to allow re-import
@@ -382,20 +416,9 @@ def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_curre
         
         if not invoice.file_path:
             raise HTTPException(status_code=404, detail="PDF file not found")
-        
-        # Convert relative path to absolute if needed
-        file_path = invoice.file_path
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(os.getcwd(), file_path.lstrip('/'))
-        
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="PDF file not found")
-        
-        return FileResponse(
-            file_path,
-            media_type="application/pdf",
-            filename=os.path.basename(file_path)
-        )
+
+        file_path = _resolve_invoice_file_path(invoice.file_path)
+        return FileResponse(file_path, media_type="application/pdf", filename=os.path.basename(file_path))
     finally:
         session.close()
 
@@ -405,25 +428,21 @@ def view_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_u
     """View invoice PDF file in browser"""
     session = db.get_session()
     try:
-        invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
+        invoice = session.query(Invoice).filter(
+            Invoice.id == invoice_id,
+            Invoice.organization_id == current_user["organization_id"],
+        ).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
-        
+
         if not invoice.file_path:
             raise HTTPException(status_code=404, detail="PDF file not found")
-        
-        # Convert relative path to absolute if needed
-        file_path = invoice.file_path
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(os.getcwd(), file_path.lstrip('/'))
-        
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="PDF file not found")
-        
+
+        file_path = _resolve_invoice_file_path(invoice.file_path)
         return FileResponse(
             file_path,
             media_type="application/pdf",
-            headers={"Content-Disposition": "inline; filename=" + os.path.basename(file_path)}
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(file_path)}"},
         )
     finally:
         session.close()

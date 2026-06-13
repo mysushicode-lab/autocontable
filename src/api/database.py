@@ -279,6 +279,31 @@ def startup_event():
     except Exception as e:
         print(f"Expired token cleanup: {e}")
 
+    # --- Pivot cabinet comptable : ajout table client_files et colonnes client_file_id ---
+    try:
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS client_files (
+            id INTEGER PRIMARY KEY,
+            organization_id INTEGER NOT NULL REFERENCES organizations(id),
+            name VARCHAR(200) NOT NULL,
+            siret VARCHAR(14),
+            activity VARCHAR(200),
+            contact_email VARCHAR(200),
+            notes TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            created_at DATETIME,
+            updated_at DATETIME
+        )"""))
+        conn.commit()
+    except Exception as e:
+        print(f"client_files table migration: {e}")
+
+    for tbl in ("invoices", "bank_transactions", "reconciliation_matches"):
+        try:
+            conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN client_file_id INTEGER REFERENCES client_files(id)"))
+            conn.commit()
+        except Exception:
+            pass  # column already exists
+
     conn.close()
 
     session = db.get_session()
@@ -295,13 +320,9 @@ def startup_event():
             default_org_id = default_org.id
 
         # Assign existing users without org to default org
-        session.execute(text(f"UPDATE users SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
-        session.execute(text(f"UPDATE invoices SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
-        session.execute(text(f"UPDATE suppliers SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
-        session.execute(text(f"UPDATE bank_transactions SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
-        session.execute(text(f"UPDATE reconciliation_matches SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
-        session.execute(text(f"UPDATE settings SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
-        session.execute(text(f"UPDATE processed_file_hashes SET organization_id = {default_org_id} WHERE organization_id IS NULL"))
+        params = {"org_id": default_org_id}
+        for table in ("users", "invoices", "suppliers", "bank_transactions", "reconciliation_matches", "settings", "processed_file_hashes"):
+            session.execute(text(f"UPDATE {table} SET organization_id = :org_id WHERE organization_id IS NULL"), params)
         session.commit()
 
         # Create default admin user if not exists

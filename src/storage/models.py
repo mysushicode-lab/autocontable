@@ -10,6 +10,26 @@ import enum
 Base = declarative_base()
 
 
+class ClientFile(Base):
+    """Dossier client géré par le cabinet comptable.
+
+    Un cabinet (Organization) gère N dossiers.  Toutes les pièces comptables
+    (factures, relevés bancaires, rapprochements) sont rattachées à un dossier.
+    """
+    __tablename__ = 'client_files'
+
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
+    name = Column(String(200), nullable=False)           # "Boulangerie Martin"
+    siret = Column(String(14), nullable=True)
+    activity = Column(String(200), nullable=True)        # "Boulangerie-pâtisserie"
+    contact_email = Column(String(200), nullable=True)   # email du client
+    notes = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class InvoiceStatus(enum.Enum):
     PENDING = "pending"
     PROCESSED = "processed"
@@ -105,6 +125,8 @@ class Invoice(Base):
     category = Column(String(100), nullable=True)
     status = Column(Enum(InvoiceStatus), default=InvoiceStatus.PENDING)
     
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
+
     purchase_order = Column(String(100), nullable=True)
     delivery_note = Column(String(100), nullable=True)
     vehicle_registration = Column(String(20), nullable=True)
@@ -164,10 +186,11 @@ class ProcessedFileHash(Base):
 
 class BankTransaction(Base):
     __tablename__ = 'bank_transactions'
-    
+
     id = Column(Integer, primary_key=True)
     transaction_id = Column(String(100), nullable=False)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     date = Column(DateTime, nullable=False)
     amount = Column(Float, nullable=False)
     description = Column(Text, nullable=False)
@@ -183,11 +206,12 @@ class BankTransaction(Base):
 
 class ReconciliationMatch(Base):
     __tablename__ = 'reconciliation_matches'
-    
+
     id = Column(Integer, primary_key=True)
     invoice_id = Column(Integer, ForeignKey('invoices.id'), nullable=False)
     transaction_id = Column(Integer, ForeignKey('bank_transactions.id'), nullable=False)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     match_score = Column(Float, nullable=True)
     match_type = Column(String(50), default='automatic')
     status = Column(String(50), default='confirmed')

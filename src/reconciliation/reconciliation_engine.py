@@ -38,16 +38,17 @@ class ReconciliationEngine:
         self.date_window = timedelta(days=MATCHING_DATE_WINDOW_DAYS)
         openai.api_key = os.getenv('OPENAI_API_KEY')
     
-    def reconcile(self, invoices: List[Invoice], transactions: List[BankTransaction], organization_id: int = None) -> List[ReconciliationMatch]:
+    def reconcile(self, invoices: List[Invoice], transactions: List[BankTransaction], organization_id: int) -> List[ReconciliationMatch]:
         """Reconcile invoices with bank transactions. Uses AI with rule-based fallback."""
+        if not organization_id:
+            raise ValueError("organization_id is required for reconciliation")
+
         print(f"[Reconciliation] Starting: {len(invoices)} invoices, {len(transactions)} transactions")
 
-        # Fetch non-rejected existing matches to avoid re-processing
-        # Manual matches are also skipped to protect user-created links
-        match_query = self.session.query(ReconciliationMatch).filter(ReconciliationMatch.status != 'rejected')
-        if organization_id:
-            match_query = match_query.filter(ReconciliationMatch.organization_id == organization_id)
-        existing = match_query.all()
+        existing = self.session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.status != 'rejected',
+            ReconciliationMatch.organization_id == organization_id,
+        ).all()
         already_matched_tx_ids = {m.transaction_id for m in existing}
         already_matched_invoice_ids = {m.invoice_id for m in existing}
 
@@ -84,7 +85,7 @@ class ReconciliationEngine:
                 match_score=score,
                 match_type='automatic',
                 status='confirmed',
-                organization_id=organization_id or invoice.organization_id,
+                organization_id=organization_id,
             )
             self.session.add(match)
             invoice.status = InvoiceStatus.MATCHED
@@ -316,11 +317,17 @@ class ReconciliationEngine:
     # Utility queries
     # ------------------------------------------------------------------
 
-    def get_unmatched_invoices(self) -> List[Invoice]:
-        return self.session.query(Invoice).filter(Invoice.status == InvoiceStatus.UNMATCHED).all()
+    def get_unmatched_invoices(self, organization_id: int) -> List[Invoice]:
+        return self.session.query(Invoice).filter(
+            Invoice.status == InvoiceStatus.UNMATCHED,
+            Invoice.organization_id == organization_id,
+        ).all()
 
-    def get_unmatched_transactions(self) -> List[BankTransaction]:
-        matched_ids = {m[0] for m in self.session.query(ReconciliationMatch.transaction_id).all()}
+    def get_unmatched_transactions(self, organization_id: int) -> List[BankTransaction]:
+        matched_ids = {m[0] for m in self.session.query(ReconciliationMatch.transaction_id).filter(
+            ReconciliationMatch.organization_id == organization_id,
+        ).all()}
         return self.session.query(BankTransaction).filter(
-            ~BankTransaction.id.in_(matched_ids) if matched_ids else True
+            BankTransaction.organization_id == organization_id,
+            ~BankTransaction.id.in_(matched_ids) if matched_ids else True,
         ).all()
