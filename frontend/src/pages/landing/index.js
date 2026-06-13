@@ -8,6 +8,7 @@ import PricingSection from '../../components/landing/PricingSection';
 import TestimonialsSection from './TestimonialsSection';
 import FAQSection from './FAQSection';
 import CTASection from './CTASection';
+import Footer from './Footer';
 
 export default function Landing() {
   const { user, logout } = useAuth();
@@ -20,11 +21,12 @@ export default function Landing() {
         <FeaturesSection />
         <ToolsSection />
         <CoreFeaturesSection />
-        <PricingSection />
         <TestimonialsSection />
+        <PricingSection />
         <FAQSection />
         <CTASection />
       </main>
+      <Footer />
     </div>
   );
 }

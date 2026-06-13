@@ -1,20 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
+import { sectionBadge, sectionHeading } from './_styles';
 
 const TESTIMONIALS = [
   {
-    quote: "Autocontable a divisé par 3 le temps passé sur la saisie. Nos collaborateurs se concentrent enfin sur des tâches à valeur ajoutée.",
+    quote: "On avait 2 collaborateurs à temps plein sur la saisie. Aujourd'hui c'est l'IA qui le fait. Ils font du conseil. Le cabinet a grandi sans recruter.",
     name: "Sophie Martin",
     role: "Expert-comptable, Cabinet Martin & Associés",
+    initials: "SM",
   },
   {
-    quote: "Le rapprochement bancaire automatique est bluffant. Ce qui nous prenait une journée se fait maintenant en 10 minutes.",
+    quote: "Le rapprochement d'un dossier complet prenait une journée entière. Maintenant tout un mois tient en 10 minutes. J'ai du mal à croire que c'était aussi long avant.",
     name: "Thomas Legrand",
     role: "DAF, Groupe Legrand Industries",
+    initials: "TL",
   },
   {
-    quote: "L'onboarding est simple et le support réactif. On a été opérationnels en moins d'une semaine.",
+    quote: "J'avais peur que ce soit compliqué à mettre en place. On était opérationnels en moins d'une heure. Le support répond en moins de 2h.",
     name: "Claire Dubois",
     role: "Responsable comptable, SCI Dubois",
+    initials: "CD",
   },
 ];
 
@@ -33,10 +37,17 @@ function Counter({ end, prefix, suffix, decimals = 0, duration = 1800 }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !started.current) {
           started.current = true;
+          if (prefersReduced) {
+            setCount(end);
+            return;
+          }
           const startTime = performance.now();
           const tick = (now) => {
             const elapsed = now - startTime;
@@ -63,41 +74,42 @@ function Counter({ end, prefix, suffix, decimals = 0, duration = 1800 }) {
 
 export default function TestimonialsSection() {
   return (
-    <section className="bg-[#181818]">
+    <section id="testimonials" className="bg-[#181818] scroll-mt-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
 
         <div className="text-center mb-16">
-          <span className="inline-block px-3 py-1 text-xs text-white/50 bg-white/10 border border-white/10 rounded-full mb-4">
+          <span className="inline-block px-3 py-1 text-xs text-white/60 bg-white/10 border border-white/10 rounded-full mb-4">
             Témoignages
           </span>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-            Ils nous font confiance
+            Ce que disent ceux qui ont arrêté la saisie manuelle
           </h2>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="bg-white/5 border border-white/10 p-6 flex flex-col gap-6">
-              <p className="text-sm text-white/70 leading-relaxed">"{t.quote}"</p>
+            <blockquote key={t.name} className="bg-white/5 border border-white/10 p-6 flex flex-col gap-6 shadow-[0_1px_3px_rgba(255,255,255,0.04)]">
+              <p className="text-sm text-white/80 leading-relaxed">"{t.quote}"</p>
               <div className="flex items-center gap-3 mt-auto">
-                <div className="w-9 h-9 rounded-full bg-white/10 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/40">{t.role}</p>
+                <div className="w-9 h-9 rounded-full bg-white/10 shrink-0 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-white/80">{t.initials}</span>
                 </div>
+                <cite className="not-italic">
+                  <p className="text-sm font-semibold text-white">{t.name}</p>
+                  <p className="text-xs text-white/50">{t.role}</p>
+                </cite>
               </div>
-            </div>
+            </blockquote>
           ))}
         </div>
 
-        {/* Counters strip */}
         <div className="mt-20 border-t border-white/10 pt-16 grid grid-cols-2 lg:grid-cols-4 gap-10 text-center">
           {STATS.map((s) => (
             <div key={s.label} className="flex flex-col items-center gap-2">
               <p className="text-2xl sm:text-3xl font-semibold text-white tracking-tight tabular-nums">
-                <Counter end={s.end} prefix={s.prefix} suffix={s.suffix} />
+                <Counter end={s.end} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} />
               </p>
-              <p className="text-xs text-white/40 leading-snug max-w-[120px]">{s.label}</p>
+              <p className="text-xs text-white/60 leading-snug max-w-[120px]">{s.label}</p>
             </div>
           ))}
         </div>

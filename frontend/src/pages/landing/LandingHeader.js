@@ -11,14 +11,6 @@ function NavLink({ href, children }) {
   return <Link to={href} className={navLinkClass}>{children}</Link>;
 }
 
-function Pill({ children, className = '' }) {
-  return (
-    <div className={`flex items-center bg-[#f5f5f5] border border-black/5 rounded-full p-1 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
 export default function LandingHeader({ isAuthenticated, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -38,16 +30,24 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
   }, []);
 
   return (
-    <header className={`sticky top-0 z-50 bg-transparent transition-transform duration-500 ease-in-out ${visible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <header className={`sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-black/5 transition-transform duration-500 ease-in-out ${visible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
-        <Pill className="flex-1 hidden md:flex mx-64 bg-white/70 backdrop-blur-md">
-          <div className="flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <NavLink key={link.href} href={link.href}>{link.label}</NavLink>
-            ))}
-          </div>
-          <div className="flex-1" />
-          <div className="w-px h-4 bg-black/10 mx-2 shrink-0" />
+
+        {/* Logo */}
+        <Link to="/" className="text-sm font-semibold text-[#181818] shrink-0 hover:opacity-70 transition-opacity">
+          Autocontable
+        </Link>
+
+        {/* Desktop nav */}
+        <nav aria-label="Navigation principale" className="hidden md:flex items-center gap-1 flex-1">
+          {NAV_LINKS.map((link) => (
+            <NavLink key={link.href} href={link.href}>{link.label}</NavLink>
+          ))}
+        </nav>
+
+        {/* Desktop auth */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
+          <div className="w-px h-4 bg-black/10 mx-1" />
           {isAuthenticated ? (
             <>
               <NavLink href="/dashboard">Dashboard</NavLink>
@@ -59,42 +59,45 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
               <Link to="/signup" className={ctaClass}>Essai gratuit</Link>
             </>
           )}
-        </Pill>
+        </div>
 
+        {/* Mobile hamburger */}
         <button
           type="button"
-          className="md:hidden p-2 rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+          className="md:hidden ml-auto p-2 rounded-full text-[#46484d] hover:bg-[#f5f5f5] transition-colors"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
+      {/* Mobile menu */}
       {mobileOpen && (
-        <nav className="md:hidden border-t border-gray-100 bg-white px-4 py-3 flex flex-col gap-1">
+        <nav aria-label="Menu mobile" className="md:hidden border-t border-[#6c6f761f] bg-white px-4 py-3 flex flex-col gap-1">
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} onClick={closeMobile}
-              className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-xl hover:bg-gray-50 transition-colors">
+              className="px-4 py-2.5 text-sm font-medium text-[#46484d] hover:text-[#181818] rounded-full hover:bg-[#f5f5f5] transition-colors">
               {link.label}
             </a>
           ))}
-          <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-2">
+          <div className="mt-2 pt-2 border-t border-[#6c6f761f] flex flex-col gap-2">
             {isAuthenticated ? (
               <>
-                <Link to="/dashboard" onClick={closeMobile} className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                <Link to="/dashboard" onClick={closeMobile} className="px-4 py-2.5 text-sm font-medium text-[#46484d] hover:bg-[#f5f5f5] rounded-full transition-colors">
                   Dashboard
                 </Link>
-                <button type="button" onClick={() => { onLogout(); closeMobile(); }} className="px-4 py-2.5 text-sm font-semibold text-white bg-[#181818] rounded-xl hover:opacity-80 transition-opacity">
+                <button type="button" onClick={() => { onLogout(); closeMobile(); }} className="px-4 py-2.5 text-sm font-semibold text-white bg-[#181818] rounded-full hover:opacity-80 transition-opacity">
                   Déconnexion
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" onClick={closeMobile} className="px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                <Link to="/login" onClick={closeMobile} className="px-4 py-2.5 text-sm font-medium text-[#46484d] hover:bg-[#f5f5f5] rounded-full transition-colors">
                   Connexion
                 </Link>
-                <Link to="/signup" onClick={closeMobile} className="px-4 py-2.5 text-sm font-semibold text-white bg-[#181818] rounded-xl text-center hover:opacity-80 transition-opacity">
+                <Link to="/signup" onClick={closeMobile} className="px-4 py-2.5 text-sm font-semibold text-white bg-[#181818] rounded-full text-center hover:opacity-80 transition-opacity">
                   Essai gratuit
                 </Link>
               </>

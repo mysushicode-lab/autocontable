@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Users, Zap, Target, Clock } from 'lucide-react';
 import { FEATURES, STATS } from './_data';
+import { sectionBadge, sectionHeading } from './_styles';
 
 const STAT_ICONS   = { users: Users, zap: Zap, target: Target, clock: Clock };
 const STAT_ANIMATE = {
@@ -14,22 +15,21 @@ export default function FeaturesSection() {
   const [active, setActive] = useState(0);
 
   return (
-    <section id="features" className="bg-[#f7f7f5]">
+    <section id="features" className="bg-[#f7f7f5] scroll-mt-20">
       <style>{`
         @keyframes progress-fill {
           from { width: 0%; }
           to   { width: 100%; }
         }
+        @media (prefers-reduced-motion: reduce) {
+          .progress-fill-bar { animation: none !important; width: 100% !important; }
+        }
       `}</style>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 lg:pt-28">
         <div className="text-center mb-12">
-          <span className="inline-block px-3 py-1 text-xs text-[#46484d] bg-white/60 backdrop-blur-md border border-white shadow-sm rounded-full mb-4">
-            Fonctionnalités
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight">
-            Tout ce qu'il faut pour gagner du temps
-          </h2>
+          <span className={sectionBadge}>Fonctionnalités</span>
+          <h2 className={sectionHeading}>Tout ce que vous faites encore à la main — automatisé</h2>
         </div>
       </div>
 
@@ -42,13 +42,14 @@ export default function FeaturesSection() {
                   key={f.title}
                   type="button"
                   onClick={() => setActive(i)}
+                  aria-pressed={active === i}
                   className={`relative flex-1 text-left px-6 py-6 flex flex-col justify-center transition-colors ${active === i ? 'bg-white' : 'bg-[#fafafa]'}`}
                 >
                   <p className={`text-sm font-semibold mb-2 ${active === i ? 'text-[#181818]' : 'text-[#46484d]'}`}>{f.title}</p>
-                  <p className="text-sm text-[#46484d]/60">{f.description}</p>
+                  <p className="text-sm text-[#6b7280]">{f.description}</p>
                   {active === i && (
                     <span
-                      className="absolute bottom-0 left-0 h-[2px] bg-[#466cf3]"
+                      className="progress-fill-bar absolute bottom-0 left-0 h-[2px] bg-[#466cf3]"
                       style={{ animation: 'progress-fill 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards' }}
                     />
                   )}
@@ -73,10 +74,10 @@ export default function FeaturesSection() {
               return (
                 <div key={s.label} className="text-center px-6 py-5 flex flex-col items-center gap-1">
                   <div className="flex items-center gap-1.5">
-                    <StatIcon className={`w-4 h-4 text-[#466cf3] ${STAT_ANIMATE[s.icon]}`} strokeWidth={1.5} />
+                    <StatIcon className={`w-4 h-4 text-[#466cf3] ${STAT_ANIMATE[s.icon]}`} strokeWidth={1.5} aria-hidden="true" />
                     <p className="text-xl font-medium text-[#181818] leading-none">{s.value}</p>
                   </div>
-                  <p className="text-xs text-[#46484d]/60">{s.label}</p>
+                  <p className="text-xs text-[#6b7280]">{s.label}</p>
                 </div>
               );
             })}

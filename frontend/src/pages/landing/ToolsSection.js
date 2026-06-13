@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FEATURES } from './_data';
+import { sectionBadge, sectionSubtext } from './_styles';
 
 export default function ToolsSection() {
   const [active, setActive] = useState(0);
@@ -24,13 +25,11 @@ export default function ToolsSection() {
 
         {/* Mobile header */}
         <div className="lg:hidden mb-8">
-          <span className="inline-block px-3 py-1 text-xs text-[#46484d] bg-white/60 backdrop-blur-md border border-[#6c6f761f] shadow-sm rounded-full mb-4">
-            Boîte à outils
-          </span>
+          <span className={sectionBadge}>Boîte à outils</span>
           <h2 className="text-2xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
             Tout ce dont vous avez besoin
           </h2>
-          <p className="text-sm text-[#46484d]/60">
+          <p className={sectionSubtext}>
             Autocontable simplifie la gestion comptable grâce à l'intelligence artificielle.
           </p>
         </div>
@@ -40,20 +39,18 @@ export default function ToolsSection() {
           {/* Left — sticky (desktop only) */}
           <div className="hidden lg:flex flex-col">
             <div className="sticky top-28">
-              <span className="inline-block px-3 py-1 text-xs text-[#46484d] bg-white/60 backdrop-blur-md border border-white shadow-sm rounded-full mb-6">
-                Boîte à outils
-              </span>
+              <span className={sectionBadge}>Boîte à outils</span>
               <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight leading-tight mb-3">
                 Tout ce dont vous avez besoin
               </h2>
-              <p className="text-sm text-[#46484d]/60 mb-10 max-w-xs">
+              <p className={`mb-10 max-w-xs ${sectionSubtext}`}>
                 Autocontable simplifie la gestion comptable grâce à l'intelligence artificielle.
               </p>
               <div className="flex flex-col">
                 {FEATURES.map((f, i) => (
                   <div key={f.title} className="relative py-4 pl-5">
                     <div className={`absolute left-0 top-0 bottom-0 w-[2px] rounded-full transition-all duration-300 ${active === i ? 'bg-[#466cf3]' : 'bg-[#6c6f761f]'}`} />
-                    <p className={`text-sm font-medium transition-colors duration-300 ${active === i ? 'text-[#181818]' : 'text-[#46484d]/40'}`}>
+                    <p className={`text-sm font-medium transition-colors duration-300 ${active === i ? 'text-[#181818]' : 'text-[#6b7280]'}`}>
                       {f.title}
                     </p>
                   </div>
@@ -72,7 +69,7 @@ export default function ToolsSection() {
               >
                 <div>
                   <h3 className="text-sm font-semibold text-[#181818] mb-1">{f.title}</h3>
-                  <p className="text-xs text-[#46484d]/70 leading-relaxed">{f.description}</p>
+                  <p className={`text-xs ${sectionSubtext}`}>{f.description}</p>
                 </div>
                 <div className="relative border border-[#6c6f761f] overflow-hidden bg-[#fafafa] min-h-[180px] sm:min-h-[220px] lg:min-h-[280px]">
                   <div className="absolute top-4 left-4 w-[130%] rounded-xl border border-[#6c6f761f] overflow-hidden shadow-sm">

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight, Star } from 'lucide-react';
 import { TRUSTED_BY } from './_data';
+import { btnPrimary, btnGhost } from './_styles';
 
 export default function HeroSection() {
   return (
@@ -8,26 +10,41 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
           <div>
-            <span className="inline-block px-3 py-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-full mb-6 lg:mb-8">
-              Rejoignez +500 comptables
-            </span>
+            {/* Social proof badge */}
+            <div className="flex items-center gap-3 mb-6 lg:mb-8">
+              <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span className="text-xs text-[#6b7280]">4,9/5 · 500+ cabinets comptables</span>
+            </div>
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-[#181818] leading-[1.05] tracking-tight mb-4 lg:mb-6">
-              Gérer plus de dossiers, sans recruter.
+              Vos factures saisies.<br />Vos relevés rapprochés.<br />Sans vous.
             </h1>
-            <p className="text-sm sm:text-base text-gray-500 mb-8 lg:mb-10 max-w-md">
-              L'IA automatise la saisie, le rapprochement et les relances — vos heures reviennent là où elles ont de la valeur.
+            <p className="text-sm sm:text-base text-[#6b7280] mb-8 lg:mb-10 max-w-md">
+              Autocontable récupère les factures de vos clients, les lit, les rapproche avec la banque et génère les exports PCG — pendant que vous vous concentrez sur ce qui fait vraiment grandir votre cabinet.
             </p>
-            <Link
-              to="/signup"
-              className="inline-flex items-center px-4 py-2 text-xs lg:px-6 lg:py-3 lg:text-sm font-semibold text-white bg-[#181818] rounded-full hover:opacity-80 transition-opacity"
-            >
-              Commencer l'essai gratuit
-            </Link>
+
+            {/* CTAs */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <Link to="/signup" className={btnPrimary}>
+                Essayer gratuitement 7 jours
+              </Link>
+              <a href="#features" className={btnGhost}>
+                Voir comment ça marche
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            <p className="mt-3 text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>
+
+            {/* Trusted by */}
             <div className="mt-10 lg:mt-32">
-              <p className="text-xs sm:text-sm text-gray-400 mb-3 lg:mb-4">Approuvé par 500+ experts comptables & cabinets</p>
+              <p className="text-xs sm:text-sm text-[#6b7280] mb-3 lg:mb-4">Utilisé dans des cabinets partout en France</p>
               <div className="flex flex-wrap items-center gap-4 lg:gap-8">
                 {TRUSTED_BY.map((name) => (
-                  <span key={name} className="text-xs sm:text-sm font-semibold text-gray-400">{name}</span>
+                  <span key={name} className="text-xs sm:text-sm font-semibold text-[#6b7280]">{name}</span>
                 ))}
               </div>
             </div>
@@ -37,7 +54,7 @@ export default function HeroSection() {
             <div className="absolute left-[40px] top-[40px] w-[900px] lg:left-[200px] lg:top-0 lg:w-[1200px]">
               <div className="absolute -inset-6 bg-gradient-to-b from-[#f5f5f5] to-white border border-black/5 rounded-2xl" />
               <div className="relative rounded-2xl overflow-hidden">
-                <img src="/capture-161601.png" alt="Aperçu du dashboard" className="w-full h-auto block" />
+                <img src="/capture-161601.png" alt="Aperçu du dashboard Autocontable" className="w-full h-auto block" />
               </div>
               <div className="absolute inset-y-0 -right-6 w-56 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
               <div className="absolute inset-x-[-24px] bottom-[-24px] h-48 lg:h-80 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none" />
