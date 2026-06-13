@@ -18,7 +18,7 @@ const PRO_FEATURES = [
 ];
 
 const PricingCard = ({ name, price, period, tagline, features, ctaLabel, ctaTo, highlighted, badge }) => (
-  <div className="relative z-10 overflow-hidden rounded-xl bg-white border border-slate-100 shadow-[0_0_40px_0_rgba(0,0,0,0.08)] px-8 py-10 lg:px-10 lg:py-12">
+  <div className="relative z-10 overflow-hidden rounded-xl bg-white border border-slate-100 px-8 py-10 lg:px-10 lg:py-12">
     {badge && (
       <p className="absolute right-[-50px] top-[60px] inline-block -rotate-90 rounded-bl-md rounded-tl-md bg-blue-600 px-5 py-2 text-sm font-medium text-white">
         {badge}

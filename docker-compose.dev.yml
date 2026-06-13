@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_URL=sqlite:///data/accounting.db
+      - PYTHONPATH=/app
+      - CORS_ORIGINS=http://localhost:3005,http://127.0.0.1:3005
+      - FRONTEND_URL=http://localhost:3005
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+
+  scheduler:
+    build: .
+    restart: unless-stopped
+    command: python -m src.scheduler.main
+    env_file: .env
+    environment:
+      - DATABASE_URL=sqlite:///data/accounting.db
+      - PYTHONPATH=/app
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=/api
+    restart: unless-stopped
+    ports:
+      - "3005:80"
+    depends_on:
+      - backend
