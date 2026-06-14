@@ -24,7 +24,7 @@ export default function HeroSection() {
               Vos factures saisies.<br />Vos relevés rapprochés.<br />Sans vous.
             </h1>
             <p className="text-sm sm:text-base text-[#6b7280] mb-8 lg:mb-10 max-w-md">
-              Autocontable récupère les factures de vos clients, les lit, les rapproche avec la banque et génère les exports PCG — pendant que vous vous concentrez sur ce qui fait vraiment grandir votre cabinet.
+              L'IA saisit, rapproche, et exporte. Vous conseillez. Vous signez. Vous grandissez.
             </p>
 
             {/* CTAs */}

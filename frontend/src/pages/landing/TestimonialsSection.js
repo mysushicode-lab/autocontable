@@ -3,10 +3,10 @@ import { sectionBadge, sectionHeading } from './_styles';
 
 const TESTIMONIALS = [
   {
-    quote: "On avait 2 collaborateurs à temps plein sur la saisie. Aujourd'hui c'est l'IA qui le fait. Ils font du conseil. Le cabinet a grandi sans recruter.",
-    name: "Sophie Martin",
-    role: "Expert-comptable, Cabinet Martin & Associés",
-    initials: "SM",
+    quote: "On a réduit le temps de clôture mensuelle de 3 jours à une demi-journée. Les collaborateurs font enfin du vrai travail d'expert-comptable, pas de la ressaisie.",
+    name: "Laurent Morel",
+    role: "Expert-comptable, Cabinet Morel & Fils",
+    initials: "LM",
   },
   {
     quote: "Le rapprochement d'un dossier complet prenait une journée entière. Maintenant tout un mois tient en 10 minutes. J'ai du mal à croire que c'était aussi long avant.",

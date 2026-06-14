@@ -27,10 +27,10 @@ export default function ToolsSection() {
         <div className="lg:hidden mb-8">
           <span className={sectionBadge}>Boîte à outils</span>
           <h2 className="text-2xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
-            Tout ce dont vous avez besoin
+            Ce que vos concurrents font encore à la main
           </h2>
           <p className={sectionSubtext}>
-            Autocontable simplifie la gestion comptable grâce à l'intelligence artificielle.
+            Pendant qu'ils saisissent, vous conseillez.
           </p>
         </div>
 
@@ -41,10 +41,10 @@ export default function ToolsSection() {
             <div className="sticky top-28">
               <span className={sectionBadge}>Boîte à outils</span>
               <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight leading-tight mb-3">
-                Tout ce dont vous avez besoin
+                Ce que vos concurrents font encore à la main
               </h2>
               <p className={`mb-10 max-w-xs ${sectionSubtext}`}>
-                Autocontable simplifie la gestion comptable grâce à l'intelligence artificielle.
+                Pendant qu'ils saisissent, vous conseillez.
               </p>
               <div className="flex flex-col">
                 {FEATURES.map((f, i) => (

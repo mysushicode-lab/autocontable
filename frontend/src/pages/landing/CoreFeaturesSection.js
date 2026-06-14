@@ -33,7 +33,7 @@ export default function CoreFeaturesSection() {
           <span className={sectionBadge}>Ce que ça fait concrètement</span>
           <h2 className={sectionHeading}>Moins de saisie. Moins d'erreurs. Plus de dossiers.</h2>
           <p className={`mt-3 max-w-md mx-auto ${sectionSubtext}`}>
-            Chaque fonctionnalité a été conçue pour éliminer une tâche que vous faites encore à la main.
+            Dext capture vos documents. Pennylane gère votre tréso. Autocontable fait la comptabilité elle-même.
           </p>
         </div>
 

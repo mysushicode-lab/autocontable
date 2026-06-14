@@ -85,7 +85,7 @@ export default function PricingSection() {
           <span className={sectionBadge}>Tarifs</span>
           <h2 className={`${sectionHeading} mt-0`}>Commencez à récupérer du temps dès aujourd'hui</h2>
           <p className="mt-3 text-sm text-[#6b7280]">
-            7 jours gratuits, sans carte bancaire. La plupart des cabinets récupèrent leur investissement dès le premier mois.
+            7 jours gratuits, sans carte bancaire. 40h récupérées par mois à 50 €/h — c'est 2 000 € dégagés. L'abonnement coûte 85,99 €.
           </p>
         </div>
 
