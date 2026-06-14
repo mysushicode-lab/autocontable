@@ -103,12 +103,14 @@ def list_client_files_summary(current_user: dict = Depends(get_current_user)):
             matched = sum(1 for inv in invoices if inv.status == InvoiceStatus.MATCHED)
             pending = sum(1 for inv in invoices if inv.status in (InvoiceStatus.PENDING, InvoiceStatus.UNMATCHED))
 
-            # Status traffic-light
+            # Status traffic-light based on match rate
             if not invoices:
                 status = "empty"
             elif pending == 0:
                 status = "ok"
-            elif pending <= 3:
+            elif matched / len(invoices) >= 0.6:
+                status = "ok"
+            elif matched / len(invoices) >= 0.35:
                 status = "warning"
             else:
                 status = "alert"

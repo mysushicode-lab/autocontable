@@ -101,25 +101,12 @@ const Portfolio = () => {
         {data?.client_files?.length > 0 && (
           <button
             onClick={() => { setShowForm(true); setEditingFile(null); setForm(EMPTY_FORM); }}
-            className="flex items-center gap-2 px-2 py-2 sm:px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+            className="flex items-center gap-2 px-2 py-2 sm:px-4 bg-gray-900 text-white rounded-md hover:bg-gray-800 text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nouveau dossier</span>
           </button>
         )}
-      </div>
-
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Object.entries(statusCounts).map(([status, count]) => {
-          const cfg = STATUS_CONFIG[status];
-          return (
-            <div key={status} className={`rounded-md border p-4 ${cfg.bg}`}>
-              <p className={`text-2xl font-bold ${cfg.color}`}>{count}</p>
-              <p className={`text-sm ${cfg.color} mt-0.5`}>{cfg.label}</p>
-            </div>
-          );
-        })}
       </div>
 
       {/* Search */}
@@ -143,7 +130,7 @@ const Portfolio = () => {
           <p className="text-gray-500 mb-4">Aucun dossier client. Créez votre premier dossier.</p>
           <button
             onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+            className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800"
           >
             Créer un dossier
           </button>
@@ -157,61 +144,58 @@ const Portfolio = () => {
               <div
                 key={file.id}
                 onClick={() => openDossier(file)}
-                className="rounded-md border border-gray-100 bg-white p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all group"
+                className="rounded-md border border-gray-100 bg-white p-5 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-200 transition-all group"
               >
-                <div className="flex items-start justify-between gap-2 mb-3">
+                {/* Top row: name + badge + actions */}
+                <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
                     <h3 className="font-semibold text-gray-900 truncate">{file.name}</h3>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button
-                      onClick={e => startEdit(file, e)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md"
-                      title="Modifier"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); setArchiveConfirm(file); }}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
+                      {cfg.label}
+                    </span>
+                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={e => startEdit(file, e)}
+                        className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                        title="Modifier"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setArchiveConfirm(file); }}
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {file.activity && (
-                  <p className="text-xs text-gray-500 mb-3">{file.activity}</p>
+                  <p className="text-xs text-gray-400 mb-3">{file.activity}</p>
                 )}
 
-                {file.total_amount > 0 && (
-                  <p className="text-sm font-semibold text-gray-800 mb-3">
-                    {formatCurrency(file.total_amount)}
-                  </p>
-                )}
-
-                <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                  <div className="bg-gray-50 rounded p-2">
-                    <p className="text-lg font-bold text-gray-900">{file.invoice_count}</p>
-                    <p className="text-[10px] text-gray-500">factures</p>
+                <div className="flex gap-4 text-center mb-3 mt-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{file.invoice_count}</p>
+                    <p className="text-[10px] text-gray-400">factures</p>
                   </div>
-                  <div className="bg-gray-50 rounded p-2">
-                    <p className="text-lg font-bold text-green-600">{file.matched_count}</p>
-                    <p className="text-[10px] text-gray-500">rapprochées</p>
+                  <div>
+                    <p className="text-sm font-semibold text-green-600">{file.matched_count}</p>
+                    <p className="text-[10px] text-gray-400">rapprochées</p>
                   </div>
-                  <div className={`rounded p-2 ${file.pending_count > 0 ? 'bg-yellow-50' : 'bg-gray-50'}`}>
-                    <p className={`text-lg font-bold ${file.pending_count > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>{file.pending_count}</p>
-                    <p className="text-[10px] text-gray-500">en attente</p>
+                  <div>
+                    <p className={`text-sm font-semibold ${file.pending_count > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{file.pending_count}</p>
+                    <p className="text-[10px] text-gray-400">en attente</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
-                    {cfg.label}
-                  </span>
-                  <div className="flex items-center gap-1 text-gray-400 group-hover:text-blue-600 transition-colors text-xs">
+                <div className="flex items-center justify-end">
+                  <div className="flex items-center gap-1 text-gray-400 group-hover:text-gray-900 transition-colors text-xs">
                     Ouvrir
                     <ChevronRight className="w-3.5 h-3.5" />
                   </div>
@@ -318,7 +302,7 @@ const Portfolio = () => {
                 <button
                   type="submit"
                   disabled={createMutation.isLoading || updateMutation.isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
                 >
                   {editingFile ? 'Enregistrer' : 'Créer le dossier'}
                 </button>

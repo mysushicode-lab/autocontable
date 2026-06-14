@@ -6,19 +6,19 @@ const TESTIMONIALS = [
     quote: "On a réduit le temps de clôture mensuelle de 3 jours à une demi-journée. Les collaborateurs font enfin du vrai travail d'expert-comptable, pas de la ressaisie.",
     name: "Laurent Morel",
     role: "Expert-comptable, Cabinet Morel & Fils",
-    initials: "LM",
+    avatar: "https://i.pravatar.cc/80?img=11",
   },
   {
     quote: "Le rapprochement d'un dossier complet prenait une journée entière. Maintenant tout un mois tient en 10 minutes. J'ai du mal à croire que c'était aussi long avant.",
     name: "Thomas Legrand",
     role: "DAF, Groupe Legrand Industries",
-    initials: "TL",
+    avatar: "https://i.pravatar.cc/80?img=33",
   },
   {
     quote: "J'avais peur que ce soit compliqué à mettre en place. On était opérationnels en moins d'une heure. Le support répond en moins de 2h.",
     name: "Claire Dubois",
     role: "Responsable comptable, SCI Dubois",
-    initials: "CD",
+    avatar: "https://i.pravatar.cc/80?img=47",
   },
 ];
 
@@ -91,9 +91,7 @@ export default function TestimonialsSection() {
             <blockquote key={t.name} className="bg-white/5 border border-white/10 p-6 flex flex-col gap-6 shadow-[0_1px_3px_rgba(255,255,255,0.04)]">
               <p className="text-sm text-white/80 leading-relaxed">"{t.quote}"</p>
               <div className="flex items-center gap-3 mt-auto">
-                <div className="w-9 h-9 rounded-full bg-white/10 shrink-0 flex items-center justify-center">
-                  <span className="text-xs font-semibold text-white/80">{t.initials}</span>
-                </div>
+                <img src={t.avatar} alt={t.name} className="w-9 h-9 rounded-full shrink-0 object-cover" />
                 <cite className="not-italic">
                   <p className="text-sm font-semibold text-white">{t.name}</p>
                   <p className="text-xs text-white/50">{t.role}</p>

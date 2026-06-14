@@ -1,20 +1,23 @@
 import { sectionBadge, sectionHeading, sectionSubtext } from './_styles';
 
 const TOP_FEATURES = [
-  { title: 'Lecture de factures',    description: "PDF, email, photo, Factur-X — l'IA lit tout, extrait fournisseur, montant HT/TTC, TVA et date, et enregistre sans que vous touchiez au clavier. Même les scans de mauvaise qualité passent à 98% de précision." },
-  { title: 'Rapprochement bancaire', description: "Connectez votre banque via DSP2 ou importez votre relevé. L'IA fait les correspondances sur tout le mois. Les écarts sont signalés immédiatement. Un dossier complet — un mois entier — traité en 10 minutes." },
+  { title: 'Correction et validation manuelle', description: "L'IA traite 98% des factures automatiquement. Pour les cas ambigus, elle vous soumet la facture pour relecture. Vous corrigez en un clic — montant, fournisseur, TVA — sans repartir de zéro.", image: '/modification-facture.png' },
+  { title: 'Import manuel de documents',        description: "Glissez-déposez un PDF, une photo ou un relevé bancaire directement dans l'interface. Aucune boîte mail requise. Utile pour les pièces reçues en retard ou hors circuit automatique.", image: '/nouvelle-facture.png' },
 ];
 
 const BOTTOM_FEATURES = [
-  { title: "Exports comptables prêts à l'emploi", description: "Grand Livre, Balance, Journal des Achats avec numéros de compte PCG — générés en un clic, exportables en CSV, Excel ou ZIP. Vos dossiers sont prêts à être transmis directement." },
-  { title: 'Portefeuille clients centralisé',      description: "Tous vos dossiers sur un seul écran avec leur statut en temps réel : à jour, en attente, pièces manquantes. Alertes avant les deadlines. Aucune relance manuelle, aucune surprise." },
+  { title: 'Rapprochement manuel assisté', description: "L'IA propose les correspondances. Vous avez le dernier mot : acceptez, rejetez ou liez manuellement une facture à une transaction en deux clics. Aucun écart ne passe entre les mailles.", image: '/rapprochement-manuelle.png' },
+  { title: 'Référentiel fournisseurs',     description: "Chaque fournisseur est reconnu, normalisé et catégorisé automatiquement. Retrouvez l'historique, le montant cumulé et les factures associées pour chaque tiers en un coup d'œil.", image: '/reférence.png' },
 ];
 
-function FeatureCard({ title, description }) {
+function FeatureCard({ title, description, image }) {
   return (
     <div className="p-4 sm:p-6 flex flex-col gap-4 min-h-[320px] sm:min-h-[480px] lg:min-h-[600px] bg-white">
-      <div className="flex-1 rounded-lg bg-[#f7f7f5] border border-[#6c6f761f] flex items-center justify-center">
-        <span className="text-xs text-[#6b7280] font-medium">{title} — aperçu</span>
+      <div className="rounded-lg bg-[#f7f7f5] border border-[#6c6f761f] overflow-hidden" style={{ height: '260px' }}>
+        {image
+          ? <img src={image} alt={title} className="w-full h-full object-cover object-top" />
+          : <div className="w-full h-full flex items-center justify-center"><span className="text-xs text-[#6b7280] font-medium">{title} — aperçu</span></div>
+        }
       </div>
       <div>
         <h3 className="text-base sm:text-xl font-semibold text-[#181818] mb-1 sm:mb-2">{title}</h3>
@@ -51,9 +54,7 @@ export default function CoreFeaturesSection() {
               </p>
             </blockquote>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <span className="text-xs sm:text-sm font-semibold text-white">SM</span>
-              </div>
+              <img src="https://i.pravatar.cc/80?img=23" alt="Sophie Martin" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 object-cover" />
               <cite className="not-italic">
                 <p className="text-xs sm:text-sm font-semibold text-white">Sophie Martin</p>
                 <p className="text-xs text-white/50">Expert-comptable, Cabinet Martin & Associés</p>

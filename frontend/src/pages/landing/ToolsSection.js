@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FEATURES } from './_data';
+import { TOOLS } from './_data';
 import { sectionBadge, sectionSubtext } from './_styles';
 
 export default function ToolsSection() {
@@ -27,10 +27,10 @@ export default function ToolsSection() {
         <div className="lg:hidden mb-8">
           <span className={sectionBadge}>Boîte à outils</span>
           <h2 className="text-2xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
-            Ce que vos concurrents font encore à la main
+            Les outils qui tournent pendant que vous dormez
           </h2>
           <p className={sectionSubtext}>
-            Pendant qu'ils saisissent, vous conseillez.
+            Exports, scheduler, analytics — automatisés, sans intervention.
           </p>
         </div>
 
@@ -41,13 +41,13 @@ export default function ToolsSection() {
             <div className="sticky top-28">
               <span className={sectionBadge}>Boîte à outils</span>
               <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight leading-tight mb-3">
-                Ce que vos concurrents font encore à la main
+                Les outils qui tournent pendant que vous dormez
               </h2>
               <p className={`mb-10 max-w-xs ${sectionSubtext}`}>
-                Pendant qu'ils saisissent, vous conseillez.
+                Exports, scheduler, analytics — automatisés, sans intervention.
               </p>
               <div className="flex flex-col">
-                {FEATURES.map((f, i) => (
+                {TOOLS.map((f, i) => (
                   <div key={f.title} className="relative py-4 pl-5">
                     <div className={`absolute left-0 top-0 bottom-0 w-[2px] rounded-full transition-all duration-300 ${active === i ? 'bg-[#466cf3]' : 'bg-[#6c6f761f]'}`} />
                     <p className={`text-sm font-medium transition-colors duration-300 ${active === i ? 'text-[#181818]' : 'text-[#6b7280]'}`}>
@@ -61,7 +61,7 @@ export default function ToolsSection() {
 
           {/* Right — scrollable items */}
           <div className="border-x border-[#6c6f761f] divide-y divide-[#6c6f761f] -mx-4 sm:-mx-6 lg:mx-0 lg:-my-28 lg:py-28">
-            {FEATURES.map((f, i) => (
+            {TOOLS.map((f, i) => (
               <div
                 key={f.title}
                 ref={(el) => (itemRefs.current[i] = el)}
