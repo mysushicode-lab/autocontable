@@ -49,6 +49,23 @@ const PLANS = [
     ctaLabel: 'Démarrer l\'essai gratuit',
     ctaTo: '/signup',
   },
+  {
+    name: 'Réseau',
+    monthlyPrice: 'Sur devis',
+    annualPrice: 'Sur devis',
+    tagline: 'Dossiers & factures illimités',
+    features: [
+      'Tout Cabinet, plus :',
+      'Dossiers illimités',
+      'Gestion avancée des permissions',
+      'Accès API complet',
+      'Webhooks & notifications',
+      'Support dédié & onboarding',
+      'SLA garanti',
+    ],
+    ctaLabel: 'Nous contacter',
+    ctaTo: '/signup',
+  },
 ];
 
 function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, highlighted, savings }) {
@@ -142,7 +159,7 @@ export default function PricingSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-lg sm:max-w-none mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-lg sm:max-w-none mx-auto">
           {PLANS.map((plan) => {
             const price = annual ? plan.annualPrice : plan.monthlyPrice;
             const isNumeric = price !== 'Sur devis';
