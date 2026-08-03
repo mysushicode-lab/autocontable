@@ -4,8 +4,10 @@ import HeroSection from './HeroSection';
 import FeaturesSection from './FeaturesSection';
 import ToolsSection from './ToolsSection';
 import CoreFeaturesSection from './CoreFeaturesSection';
+import ReformeSection from './ReformeSection';
 import PricingSection from '../../components/landing/PricingSection';
 import TestimonialsSection from './TestimonialsSection';
+import VideoSection from './VideoSection';
 import FAQSection from './FAQSection';
 import CTASection from './CTASection';
 import Footer from './Footer';
@@ -21,8 +23,10 @@ export default function Landing() {
         <FeaturesSection />
         <ToolsSection />
         <CoreFeaturesSection />
+        <ReformeSection />
         <TestimonialsSection />
         <PricingSection />
+        <VideoSection />
         <FAQSection />
         <CTASection />
       </main>

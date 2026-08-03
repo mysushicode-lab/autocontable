@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut, Lock, Shield } from 'lucide-react';
+import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut, Lock, Shield, Webhook } from 'lucide-react';
 import { fetchSettings, fetchUsers, testImap, deleteAccount } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useSettingsMutations } from '../hooks/useSettingsMutations';
@@ -12,6 +12,7 @@ import { SettingsScheduler } from '../components/settings/SettingsScheduler';
 import { SettingsCollaborations } from '../components/settings/SettingsCollaborations';
 import { SettingsBilling } from '../components/settings/SettingsBilling';
 import { SettingsPlan } from '../components/settings/SettingsPlan';
+import { SettingsWebhooks } from '../components/settings/SettingsWebhooks';
 
 const ALL_SECTIONS = [
   { id: 'profil',         label: 'Profil',              icon: UserCircle, adminOnly: false },
@@ -20,6 +21,7 @@ const ALL_SECTIONS = [
   { id: 'email',          label: 'Configuration Email',  icon: Mail,       adminOnly: true  },
   { id: 'scheduler',      label: 'Planificateur',        icon: Clock,      adminOnly: true  },
   { id: 'collaborations', label: 'Collaborations',       icon: Users,      adminOnly: true  },
+  { id: 'webhooks',       label: 'Webhooks',             icon: Webhook,    adminOnly: true  },
   { id: 'billing',        label: 'Facturation',          icon: CreditCard, adminOnly: true  },
   { id: 'plan',           label: 'Plan',                 icon: Zap,        adminOnly: true  },
 ];
@@ -121,6 +123,12 @@ const Settings = () => {
             createUserMutation={mutations.createUserMutation}
             deleteUserMutation={mutations.deleteUserMutation}
             updateUserMutation={mutations.updateUserMutation}
+            setSaveStatus={setSaveStatus}
+          />
+        );
+      case 'webhooks':
+        return (
+          <SettingsWebhooks
             setSaveStatus={setSaveStatus}
           />
         );

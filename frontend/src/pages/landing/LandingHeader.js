@@ -33,10 +33,6 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
     <header className={`sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-black/5 transition-transform duration-500 ease-in-out ${visible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
 
-        {/* Logo */}
-        <Link to="/" className="text-sm font-semibold text-[#181818] shrink-0 hover:opacity-70 transition-opacity">
-          Autocontable
-        </Link>
 
         {/* Desktop nav */}
         <nav aria-label="Navigation principale" className="hidden md:flex items-center gap-1 flex-1">
@@ -47,7 +43,6 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
 
         {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2 shrink-0">
-          <div className="w-px h-4 bg-black/10 mx-1" />
           {isAuthenticated ? (
             <>
               <NavLink href="/dashboard">Dashboard</NavLink>
@@ -75,14 +70,14 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <nav aria-label="Menu mobile" className="md:hidden border-t border-[#6c6f761f] bg-white px-4 py-3 flex flex-col gap-1">
+        <nav aria-label="Menu mobile" className="md:hidden border-t border-[#6c6f7635] bg-white px-4 py-3 flex flex-col gap-1">
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} onClick={closeMobile}
               className="px-4 py-2.5 text-sm font-medium text-[#46484d] hover:text-[#181818] rounded-full hover:bg-[#f5f5f5] transition-colors">
               {link.label}
             </a>
           ))}
-          <div className="mt-2 pt-2 border-t border-[#6c6f761f] flex flex-col gap-2">
+          <div className="mt-2 pt-2 border-t border-[#6c6f7635] flex flex-col gap-2">
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard" onClick={closeMobile} className="px-4 py-2.5 text-sm font-medium text-[#46484d] hover:bg-[#f5f5f5] rounded-full transition-colors">

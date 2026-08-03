@@ -16,8 +16,7 @@ from src.reconciliation import run_auto_reconciliation
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-UPLOAD_ROOT = os.path.join("data", "uploads")
-BANK_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "bank_statements")
+from src.utils.paths import BANK_UPLOAD_DIR
 
 
 @router.post("/import")

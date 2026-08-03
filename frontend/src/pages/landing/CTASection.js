@@ -6,14 +6,14 @@ export default function CTASection() {
     <section className="bg-[#181818]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-24 lg:py-32 text-center flex flex-col items-center gap-8">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-white tracking-tight leading-tight">
-          La saisie manuelle, c'est du temps<br className="hidden sm:block" /> que vous ne récupérerez jamais.
+          Prêt à arrêter la saisie manuelle ?
         </h2>
         <p className="text-sm text-white/60 max-w-md">
-          +500 cabinets ont arrêté de saisir leurs factures à la main. L'essai prend 7 jours. La différence se voit dès le premier rapprochement.
+          Commencez votre essai gratuit en 2 minutes. Pas de carte bancaire requise.
         </p>
         <div className="flex items-center gap-3 flex-wrap justify-center">
           <Link to="/signup" className={btnPrimaryInverted}>
-            Commencer gratuitement — 7 jours
+            Commencer gratuitement
           </Link>
           <Link
             to="/login"

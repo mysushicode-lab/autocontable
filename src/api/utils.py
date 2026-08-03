@@ -18,12 +18,20 @@ def ensure_directory(path: str) -> None:
 
 def save_uploaded_file(upload: UploadFile, target_dir: str) -> str:
     """Save uploaded file to target directory with timestamp"""
+    from src.utils.encryption import encrypt_file, ENCRYPTION_AVAILABLE
+
     ensure_directory(target_dir)
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
     filename = f"{timestamp}_{os.path.basename(upload.filename)}"
     output_path = os.path.join(target_dir, filename)
     with open(output_path, "wb") as buffer:
         shutil.copyfileobj(upload.file, buffer)
+
+    # Encrypt after saving if encryption is enabled
+    if ENCRYPTION_AVAILABLE:
+        if encrypt_file(output_path):
+            output_path = output_path + '.enc'
+
     return output_path
 
 
@@ -45,7 +53,7 @@ def serialize_match(match: ReconciliationMatch) -> dict:
             "supplier": match.invoice.supplier.name if match.invoice.supplier else None,
             "amount": match.invoice.amount,
             "date": match.invoice.date.isoformat() if match.invoice.date else None,
-            "vehicle": match.invoice.vehicle_registration,
+            "reference": match.invoice.reference_number,
         },
         "transaction": {
             "db_id": match.transaction.id,
@@ -105,7 +113,7 @@ def create_or_update_invoice(session: Session, file_path: str, extracted_data: d
         invoice.status = InvoiceStatus.PROCESSED if extraction_confidence in {"high", "medium"} else InvoiceStatus.PENDING
     invoice.purchase_order = extracted_data.get("purchase_order")
     invoice.delivery_note = extracted_data.get("delivery_note")
-    invoice.vehicle_registration = extracted_data.get("vehicle_registration")
+    invoice.reference_number = extracted_data.get("reference_number")
     invoice.work_order_reference = extracted_data.get("work_order_reference")
     invoice.payment_method = extracted_data.get("payment_method")
     invoice.file_path = file_path

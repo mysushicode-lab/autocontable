@@ -89,8 +89,9 @@ class IMAPClient:
             email_ids = messages[0].split()
             emails = []
             
-            # Limit to last 20 emails to avoid long processing times
-            email_ids = email_ids[-20:]
+            # Limit to last N emails to avoid long processing times
+            _max_emails = int(os.getenv("IMAP_MAX_EMAILS_PER_FETCH", 20))
+            email_ids = email_ids[-_max_emails:]
             
             for email_id in email_ids:
                 # Fetch email
@@ -247,7 +248,13 @@ class IMAPClient:
             if not os.path.exists(filepath):
                 with open(filepath, 'wb') as f:
                     f.write(content)
-            
+
+                # Encrypt after saving if encryption is enabled
+                from src.utils.encryption import encrypt_file, ENCRYPTION_AVAILABLE
+                if ENCRYPTION_AVAILABLE:
+                    if encrypt_file(filepath):
+                        filepath = filepath + '.enc'
+
             saved_files.append(filepath)
         
         return saved_files

@@ -106,7 +106,8 @@ def handle_subscription_active(subscription, session):
     if org:
         status = subscription.get('status')
         if status in ('active', 'trialing'):
-            org.plan_type = 'paid'
+            plan = subscription.get('metadata', {}).get('plan_type', 'pro')
+            org.plan_type = plan
             org.is_trial_active = False
 
 
@@ -122,7 +123,7 @@ def handle_subscription_deleted(subscription, session):
         org = session.query(Organization).filter(Organization.id == int(org_id)).first()
 
     if org:
-        org.plan_type = 'free'
+        org.plan_type = 'starter'
         org.is_trial_active = False
 
 
@@ -177,7 +178,8 @@ async def verify_checkout_session(
 
         # If payment is successful, upgrade the plan
         if payment_status == 'paid' or status == 'complete':
-            org.plan_type = 'paid'
+            plan_from_meta = checkout_session.get('metadata', {}).get('plan_type', 'pro')
+            org.plan_type = plan_from_meta
             org.is_trial_active = False
             db_session.commit()
             return {
@@ -216,19 +218,17 @@ async def create_checkout_session(
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe is not configured (STRIPE_SECRET_KEY missing)")
 
-    price_id = os.getenv('STRIPE_PRO_PRICE_ID')
+    PRICE_MAP = {
+        "pro": os.getenv("STRIPE_PRICE_PRO", ""),
+        "cabinet": os.getenv("STRIPE_PRICE_CABINET", ""),
+        "reseau": os.getenv("STRIPE_PRICE_RESEAU", ""),
+    }
+    price_id = PRICE_MAP.get(request.plan_type, "")
     if not price_id or not price_id.startswith('price_'):
         raise HTTPException(
-            status_code=500,
-            detail=(
-                "STRIPE_PRO_PRICE_ID is invalid. It must be a Stripe Price ID "
-                "(starting with 'price_'), not a Product ID. Create a recurring price "
-                "in the Stripe dashboard for your product and use its Price ID."
-            ),
+            status_code=400,
+            detail=f"Plan '{request.plan_type}' invalide ou Price ID non configuré dans .env",
         )
-
-    if request.plan_type != 'pro':
-        raise HTTPException(status_code=400, detail="Invalid plan type")
 
     db_session = db.get_session()
     try:

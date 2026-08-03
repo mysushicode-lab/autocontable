@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Filter, Search, Calendar, Hash } from 'lucide-react';
 import DropdownButton from './DropdownButton';
 import { generateMonthOptions } from '../utils/dateHelpers';
+import { PREDEFINED_CATEGORIES } from '../constants/categories';
 
 const AdvancedFiltersDropdown = ({
   show,
@@ -17,8 +18,8 @@ const AdvancedFiltersDropdown = ({
   setAmountMax,
   supplierFilter,
   setSupplierFilter,
-  vehicleFilter,
-  setVehicleFilter,
+  referenceFilter,
+  setReferenceFilter,
   resetAdvancedFilters,
   buttonRef,
 }) => {
@@ -108,8 +109,8 @@ const AdvancedFiltersDropdown = ({
             type="text"
             placeholder="Immatriculation, dossier, ref…"
             className="w-full px-3 py-2 border rounded-md uppercase text-sm"
-            value={vehicleFilter}
-            onChange={(e) => setVehicleFilter(e.target.value)}
+            value={referenceFilter}
+            onChange={(e) => setReferenceFilter(e.target.value)}
             maxLength={30}
           />
         </div>
@@ -155,8 +156,8 @@ const InvoiceFilters = ({
   setAmountMax,
   supplierFilter,
   setSupplierFilter,
-  vehicleFilter,
-  setVehicleFilter,
+  referenceFilter,
+  setReferenceFilter,
   hasActiveAdvancedFilters,
   resetAdvancedFilters,
 }) => {
@@ -184,16 +185,7 @@ const InvoiceFilters = ({
 
   const categoryOptions = [
     { value: 'all', label: 'Toutes les catégories' },
-    { value: 'Achats de marchandises', label: 'Achats de marchandises' },
-    { value: 'Fournitures et consommables', label: 'Fournitures et consommables' },
-    { value: 'Sous-traitance', label: 'Sous-traitance' },
-    { value: 'Équipement et outillage', label: 'Équipement et outillage' },
-    { value: 'Énergie et locaux', label: 'Énergie et locaux' },
-    { value: 'Assurances et frais', label: 'Assurances et frais' },
-    { value: 'Déplacements et transports', label: 'Déplacements et transports' },
-    { value: 'Informatique et communication', label: 'Informatique et communication' },
-    { value: 'Services et prestations', label: 'Services et prestations' },
-    { value: 'Formation et divers', label: 'Formation et divers' },
+    ...PREDEFINED_CATEGORIES.map(cat => ({ value: cat, label: cat })),
   ];
 
   return (
@@ -272,8 +264,8 @@ const InvoiceFilters = ({
         setAmountMax={setAmountMax}
         supplierFilter={supplierFilter}
         setSupplierFilter={setSupplierFilter}
-        vehicleFilter={vehicleFilter}
-        setVehicleFilter={setVehicleFilter}
+        referenceFilter={referenceFilter}
+        setReferenceFilter={setReferenceFilter}
         resetAdvancedFilters={resetAdvancedFilters}
         buttonRef={advancedFiltersButtonRef}
       />

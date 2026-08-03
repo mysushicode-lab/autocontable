@@ -144,7 +144,7 @@ for month in MONTHS:
                 due_date=date + timedelta(days=30),
                 category=sup.category,
                 status=status,
-                vehicle_registration=random.choice(vehicles),
+                reference_number=random.choice(vehicles),
                 payment_method=random.choice(["Virement", "Prélèvement", "Chèque", None]),
             )
             db.add(inv)

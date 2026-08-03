@@ -26,7 +26,7 @@ const InvoiceTable = ({ invoices, statusConfig, onEdit, onDelete, columnVisibili
             {columnVisibility?.amount_tax !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-14 sm:w-20">TVA</th>}
             {columnVisibility?.amount !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-16 sm:w-24">TTC</th>}
             {columnVisibility?.date !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-16 sm:w-28">Date</th>}
-            {columnVisibility?.vehicle !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-20 sm:w-32">Référence</th>}
+            {columnVisibility?.reference !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-20 sm:w-32">Référence</th>}
             {columnVisibility?.status !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-20 sm:w-32">Statut</th>}
             {columnVisibility?.actions !== false && <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase w-16 sm:w-24">Actions</th>}
           </tr>
@@ -60,9 +60,9 @@ const InvoiceTable = ({ invoices, statusConfig, onEdit, onDelete, columnVisibili
                 {columnVisibility?.date !== false && <td className="px-2 py-1.5 sm:px-4 sm:py-3 whitespace-nowrap text-gray-500 text-xs sm:text-sm">
                   {formatDate(invoice.date)}
                 </td>}
-                {columnVisibility?.vehicle !== false && <td className="px-2 py-1.5 sm:px-4 sm:py-3 whitespace-nowrap">
-                  {invoice.vehicle_registration ? (
-                    <span className="font-mono text-xs sm:text-sm truncate block">{invoice.vehicle_registration}</span>
+                {columnVisibility?.reference !== false && <td className="px-2 py-1.5 sm:px-4 sm:py-3 whitespace-nowrap">
+                  {invoice.reference_number ? (
+                    <span className="font-mono text-xs sm:text-sm truncate block">{invoice.reference_number}</span>
                   ) : invoice.work_order_reference ? (
                     <span className="text-xs text-gray-600 truncate block">{invoice.work_order_reference}</span>
                   ) : <span className="text-gray-400">-</span>}

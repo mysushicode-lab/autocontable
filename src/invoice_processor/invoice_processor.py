@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from .pdf_parser import PDFParser
 from .ocr_engine import OCREngine
 from .ai_extractor import AIInvoiceExtractor
+from .facturx_extractor import extract_from_facturx
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -56,6 +57,34 @@ class InvoiceProcessor:
         # Scanned = less than 80 chars of real text extracted (no OCR layer)
         is_scanned = len(text.strip()) < 80
 
+        # Try Factur-X extraction first (free, instant, 100% accurate)
+        facturx_data = extract_from_facturx(pdf_path)
+        if facturx_data:
+            print(f"[Factur-X] Extracted from XML: {facturx_data.get('invoice_number')} — {facturx_data.get('amount')}")
+            return {
+                'invoice_number': facturx_data.get('invoice_number'),
+                'date': facturx_data.get('date'),
+                'amount': facturx_data.get('amount'),
+                'amount_ht': facturx_data.get('amount_ht'),
+                'amount_tax': facturx_data.get('amount_tax'),
+                'due_date': facturx_data.get('due_date'),
+                'supplier_name': facturx_data.get('supplier_name'),
+                'supplier_email': facturx_data.get('supplier_email'),
+                'reference_number': None,
+                'purchase_order': None,
+                'delivery_note': None,
+                'work_order_reference': None,
+                'payment_method': None,
+                'category': facturx_data.get('category'),
+                'extraction_warnings': [],
+                'extraction_confidence': 'high',
+                'is_invoice': True,
+                'ai_used': False,
+                'vision_used': False,
+                'facturx_used': True,
+                'raw_text': text
+            }
+
         if self.use_ai and self.ai_extractor and self.ai_extractor.is_enabled():
             # Always use Vision API for better accuracy
             print(f"[AI] Using Vision API for PDF: {filename}")
@@ -79,7 +108,7 @@ class InvoiceProcessor:
                     'due_date': fields.get('due_date'),
                     'supplier_name': fields.get('supplier_name'),
                     'supplier_email': fields.get('supplier_email'),
-                    'vehicle_registration': fields.get('vehicle_registration'),
+                    'reference_number': fields.get('reference_number'),
                     'purchase_order': fields.get('purchase_order'),
                     'delivery_note': fields.get('delivery_note'),
                     'work_order_reference': fields.get('work_order_reference'),
@@ -142,7 +171,7 @@ class InvoiceProcessor:
                     'due_date': fields.get('due_date'),
                     'supplier_name': fields.get('supplier_name'),
                     'supplier_email': fields.get('supplier_email'),
-                    'vehicle_registration': fields.get('vehicle_registration'),
+                    'reference_number': fields.get('reference_number'),
                     'purchase_order': fields.get('purchase_order'),
                     'delivery_note': fields.get('delivery_note'),
                     'work_order_reference': fields.get('work_order_reference'),

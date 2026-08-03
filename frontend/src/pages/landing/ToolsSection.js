@@ -25,12 +25,12 @@ export default function ToolsSection() {
 
         {/* Mobile header */}
         <div className="lg:hidden mb-8">
-          <span className={sectionBadge}>Boîte à outils</span>
+          <span className={sectionBadge}>Proposition de valeur</span>
           <h2 className="text-2xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
-            Les outils qui tournent pendant que vous dormez
+            Conçu pour les PME françaises
           </h2>
           <p className={sectionSubtext}>
-            Exports, scheduler, analytics — automatisés, sans intervention.
+            Ingestion email, WhatsApp, IA — tout est inclus.
           </p>
         </div>
 
@@ -39,17 +39,17 @@ export default function ToolsSection() {
           {/* Left — sticky (desktop only) */}
           <div className="hidden lg:flex flex-col">
             <div className="sticky top-28">
-              <span className={sectionBadge}>Boîte à outils</span>
+              <span className={sectionBadge}>Proposition de valeur</span>
               <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight leading-tight mb-3">
-                Les outils qui tournent pendant que vous dormez
+                Conçu pour les PME françaises
               </h2>
               <p className={`mb-10 max-w-xs ${sectionSubtext}`}>
-                Exports, scheduler, analytics — automatisés, sans intervention.
+                Ingestion email, WhatsApp, IA — tout est inclus.
               </p>
               <div className="flex flex-col">
                 {TOOLS.map((f, i) => (
                   <div key={f.title} className="relative py-4 pl-5">
-                    <div className={`absolute left-0 top-0 bottom-0 w-[2px] rounded-full transition-all duration-300 ${active === i ? 'bg-[#466cf3]' : 'bg-[#6c6f761f]'}`} />
+                    <div className={`absolute left-0 top-0 bottom-0 w-[2px] rounded-full transition-all duration-300 ${active === i ? 'bg-[#466cf3]' : 'bg-[#6c6f7635]'}`} />
                     <p className={`text-sm font-medium transition-colors duration-300 ${active === i ? 'text-[#181818]' : 'text-[#6b7280]'}`}>
                       {f.title}
                     </p>
@@ -60,19 +60,20 @@ export default function ToolsSection() {
           </div>
 
           {/* Right — scrollable items */}
-          <div className="border-x border-[#6c6f761f] divide-y divide-[#6c6f761f] -mx-4 sm:-mx-6 lg:mx-0 lg:-my-28 lg:py-28">
+          <div className="relative border-x border-[#6c6f7635] divide-y divide-[#6c6f7635] -mx-4 sm:-mx-6 lg:mx-0 lg:-my-28 lg:py-28 bg-white">
+            <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
             {TOOLS.map((f, i) => (
               <div
                 key={f.title}
                 ref={(el) => (itemRefs.current[i] = el)}
-                className="flex flex-col gap-3 py-6 px-4 sm:px-6 bg-white"
+                className="relative flex flex-col gap-3 py-6 px-4 sm:px-6"
               >
                 <div>
                   <h3 className="text-sm font-semibold text-[#181818] mb-1">{f.title}</h3>
                   <p className={`text-xs ${sectionSubtext}`}>{f.description}</p>
                 </div>
-                <div className="relative border border-[#6c6f761f] overflow-hidden bg-[#fafafa] min-h-[180px] sm:min-h-[220px] lg:min-h-[280px]">
-                  <div className="absolute top-4 left-4 w-[130%] rounded-xl border border-[#6c6f761f] overflow-hidden shadow-sm">
+                <div className="relative border border-[#6c6f7635] overflow-hidden bg-[#fafafa] min-h-[180px] sm:min-h-[220px] lg:min-h-[280px]">
+                  <div className="absolute top-4 left-4 w-[130%] rounded-xl border border-[#6c6f7635] overflow-hidden shadow-sm">
                     <img src={f.image} alt={f.title} className="w-full h-auto block" />
                   </div>
                   <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#fafafa] to-transparent pointer-events-none" />

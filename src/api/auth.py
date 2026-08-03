@@ -1,4 +1,5 @@
 """Authentication endpoints"""
+import os
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from src.storage.database import db
 from src.storage.models import User, UserToken, Organization, UserRole, Settings, PasswordResetToken
@@ -15,8 +16,8 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Token lifetime: 7 days of inactivity
-TOKEN_LIFETIME = timedelta(days=7)
+# Token lifetime (configurable)
+TOKEN_LIFETIME = timedelta(days=int(os.getenv("TOKEN_LIFETIME_DAYS", 7)))
 
 # Password hashing context: bcrypt is the default, sha256 kept only for legacy verification
 # Existing accounts will be transparently migrated to bcrypt on next successful login.
@@ -141,7 +142,7 @@ def check_trial_active(current_user: dict = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="Organization not found")
 
         now = datetime.utcnow()
-        if org.plan_type == 'trial' and org.trial_end_date and now > org.trial_end_date:
+        if org.is_trial_active and org.trial_end_date and now > org.trial_end_date:
             raise HTTPException(
                 status_code=403,
                 detail="Votre période d'essai est terminée. Veuillez mettre à niveau votre compte pour continuer."
@@ -165,10 +166,10 @@ def register(request: Request, body: RegisterRequest):
         if session.query(User).filter(User.email == body.email).first():
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
         trial_start = datetime.utcnow()
-        trial_end = trial_start + timedelta(days=7)
+        trial_end = trial_start + timedelta(days=int(os.getenv("TRIAL_PERIOD_DAYS", 7)))
         org = Organization(
             name=body.name,
-            plan_type='trial',
+            plan_type='starter',
             trial_start_date=trial_start,
             trial_end_date=trial_end,
             is_trial_active=True
@@ -211,6 +212,9 @@ def register(request: Request, body: RegisterRequest):
                 "profile_photo": None
             }
         }
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -241,6 +245,21 @@ def login(request: Request, body: LoginRequest):
 
         token_value = _create_user_token(session, user.id)
         session.commit()
+
+        # Log audit trail
+        from src.api.audit import log_action
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            user.organization_id,
+            user.id,
+            "login",
+            "user",
+            user.id,
+            {"username": user.username},
+            ip_address
+        )
+
         return {
             "token": token_value,
             "user": {
@@ -253,6 +272,9 @@ def login(request: Request, body: LoginRequest):
                 "profile_photo": user.profile_photo
             }
         }
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -319,110 +341,55 @@ def export_user_data(request: Request, current_user: dict = Depends(get_current_
 
 @router.delete("/delete-account")
 def delete_own_account(current_user: dict = Depends(get_current_user)):
-    """Delete the authenticated user's own account"""
+    """Delete the authenticated user's own account and all associated data (RGPD Art. 17)."""
+    from src.storage.models import (
+        Invoice, BankTransaction, ReconciliationMatch,
+        ClientFile, DossierPermission, AuditLog, PasswordResetToken, ProcessedFileHash
+    )
     session = db.get_session()
     try:
         user = session.query(User).filter(User.id == current_user["id"]).first()
         if not user:
             raise HTTPException(status_code=404, detail="Compte introuvable")
-        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
-        session.delete(user)
-        session.commit()
-        return {"message": "Compte supprimé"}
-    finally:
-        session.close()
 
+        org_id = user.organization_id
 
-@router.post("/forgot-password")
-@limiter.limit("5/hour")
-def forgot_password(request: Request, body: ForgotPasswordRequest):
-    """Generate password reset token and send email.
+        # Check if user is the last admin — if so, delete entire org data
+        admin_count = session.query(User).filter(
+            User.organization_id == org_id,
+            User.role == UserRole.ADMIN
+        ).count()
 
-    Rate-limited to 5/hour per IP to prevent email-bombing and enumeration.
-    """
-    session = db.get_session()
-    try:
-        user = session.query(User).filter(User.email == body.email).first()
-        if not user:
-            # Don't reveal if email exists - return success anyway
-            return {"message": "Si l'email existe, un lien de réinitialisation a été envoyé"}
-        
-        # Delete any existing reset tokens for this user
-        session.query(PasswordResetToken).filter(PasswordResetToken.user_id == user.id).delete()
-        
-        # Generate new token (expires in 1 hour)
-        token = secrets.token_hex(32)
-        expires_at = datetime.utcnow() + timedelta(hours=1)
-        reset_token = PasswordResetToken(token=token, user_id=user.id, expires_at=expires_at)
-        session.add(reset_token)
-        session.commit()
-        
-        # Send email with reset link
-        try:
-            smtp_client = SMTPClient()
-            smtp_client.send_password_reset(user.email, token)
-        except Exception as e:
-            logger.error(f"Failed to send password reset email: {e}")
-        
-        return {"message": "Si l'email existe, un lien de réinitialisation a été envoyé"}
-    finally:
-        session.close()
-
-
-@router.post("/reset-password")
-@limiter.limit("10/hour")
-def reset_password(request: Request, body: ResetPasswordRequest):
-    """Reset password using valid token (rate-limited to prevent token brute-force)."""
-    session = db.get_session()
-    try:
-        reset_token = session.query(PasswordResetToken).filter(
-            PasswordResetToken.token == body.token,
-            PasswordResetToken.expires_at > datetime.utcnow()
-        ).first()
-
-        if not reset_token:
-            raise HTTPException(status_code=400, detail="Token invalide ou expiré")
-
-        user = session.query(User).filter(User.id == reset_token.user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-
-        # Update password
-        user.password_hash = _hash_password(body.new_password)
-
-        # Delete the used token
-        session.delete(reset_token)
-
-        # Delete all user tokens to force re-login
-        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
+        if admin_count <= 1 and user.role == UserRole.ADMIN:
+            # Last admin: purge all org data
+            session.query(ReconciliationMatch).filter(ReconciliationMatch.organization_id == org_id).delete()
+            session.query(ProcessedFileHash).filter(ProcessedFileHash.organization_id == org_id).delete()
+            session.query(Invoice).filter(Invoice.organization_id == org_id).delete()
+            session.query(BankTransaction).filter(BankTransaction.organization_id == org_id).delete()
+            session.query(ClientFile).filter(ClientFile.organization_id == org_id).delete()
+            session.query(AuditLog).filter(AuditLog.organization_id == org_id).delete()
+            session.query(Settings).filter(Settings.organization_id == org_id).delete()
+            # Delete all org users' tokens and permissions
+            org_users = session.query(User).filter(User.organization_id == org_id).all()
+            for u in org_users:
+                session.query(UserToken).filter(UserToken.user_id == u.id).delete()
+                session.query(DossierPermission).filter(DossierPermission.user_id == u.id).delete()
+                session.query(PasswordResetToken).filter(PasswordResetToken.user_id == u.id).delete()
+            session.query(User).filter(User.organization_id == org_id).delete()
+            session.query(Organization).filter(Organization.id == org_id).delete()
+        else:
+            # Not last admin: only delete this user's data
+            session.query(UserToken).filter(UserToken.user_id == user.id).delete()
+            session.query(DossierPermission).filter(DossierPermission.user_id == user.id).delete()
+            session.query(PasswordResetToken).filter(PasswordResetToken.user_id == user.id).delete()
+            session.query(AuditLog).filter(AuditLog.user_id == user.id).delete()
+            session.delete(user)
 
         session.commit()
-        return {"message": "Mot de passe réinitialisé avec succès"}
-    finally:
-        session.close()
-
-
-@router.post("/change-password")
-def change_password(request: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
-    """Change password (requires current password verification)"""
-    session = db.get_session()
-    try:
-        user = session.query(User).filter(User.id == current_user["id"]).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-
-        # Verify current password using constant-time comparison
-        if not _verify_password(request.current_password, user.password_hash):
-            raise HTTPException(status_code=400, detail="Mot de passe actuel incorrect")
-
-        # Update password
-        user.password_hash = _hash_password(request.new_password)
-
-        # Delete all user tokens to force re-login
-        session.query(UserToken).filter(UserToken.user_id == user.id).delete()
-
-        session.commit()
-        return {"message": "Mot de passe changé avec succès"}
+        return {"message": "Compte et données supprimés"}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -446,6 +413,9 @@ def change_username(request: ChangeUsernameRequest, current_user: dict = Depends
         session.query(UserToken).filter(UserToken.user_id == user.id).delete()
         session.commit()
         return {"message": "Nom d'utilisateur changé avec succès. Veuillez vous reconnecter."}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -467,5 +437,8 @@ def change_email(request: ChangeEmailRequest, current_user: dict = Depends(get_c
         user.email = request.new_email
         session.commit()
         return {"message": "Email changé avec succès"}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()

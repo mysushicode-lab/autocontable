@@ -20,11 +20,24 @@ def _build_engine(db_url: str):
         sqlite_dir = os.path.dirname(sqlite_path)
         if sqlite_dir:
             os.makedirs(sqlite_dir, exist_ok=True)
-    return create_engine(
-        db_url,
-        echo=False,
-        connect_args={"check_same_thread": False} if "sqlite" in db_url else {}
-    )
+
+    # Configure engine based on database type
+    if "sqlite" in db_url:
+        return create_engine(
+            db_url,
+            echo=False,
+            connect_args={"check_same_thread": False}
+        )
+    elif "postgresql" in db_url:
+        return create_engine(
+            db_url,
+            echo=False,
+            pool_size=10,
+            max_overflow=20,
+            pool_pre_ping=True
+        )
+    else:
+        return create_engine(db_url, echo=False)
 
 # Create engine
 engine = _build_engine(DATABASE_URL)
@@ -75,13 +88,25 @@ def run_migrations():
     from sqlalchemy import text
     session = db.get_session()
     try:
-        # Check if file_hash column exists
-        result = session.execute(text("PRAGMA table_info(bank_transactions)"))
-        columns = [row[1] for row in result.fetchall()]
-        if 'file_hash' not in columns:
-            session.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
-            session.commit()
-            print("Added file_hash column to bank_transactions table")
+        # SQLite-specific migrations
+        if 'sqlite' in str(db.engine.url):
+            # Check if file_hash column exists
+            result = session.execute(text("PRAGMA table_info(bank_transactions)"))
+            columns = [row[1] for row in result.fetchall()]
+            if 'file_hash' not in columns:
+                session.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
+                session.commit()
+                print("Added file_hash column to bank_transactions table")
+        else:
+            # PostgreSQL: check columns via information_schema
+            result = session.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'bank_transactions' AND column_name = 'file_hash'
+            """))
+            if not result.fetchone():
+                session.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
+                session.commit()
+                print("Added file_hash column to bank_transactions table")
     except Exception as e:
         session.rollback()
         print(f"Error adding file_hash column: {e}")

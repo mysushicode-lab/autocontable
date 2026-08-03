@@ -206,8 +206,8 @@ const Dashboard = () => {
                 <div className="text-right">
                   <p className="font-medium text-gray-900">{formatCurrency(invoice.amount)}</p>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
-                    {invoice.vehicle && (
-                      <span>{invoice.vehicle}</span>
+                    {invoice.reference_number && (
+                      <span>{invoice.reference_number}</span>
                     )}
                     <span>{invoice.date}</span>
                   </div>

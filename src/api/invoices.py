@@ -1,5 +1,5 @@
 """Invoice endpoints"""
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import or_
 from typing import Optional
@@ -17,13 +17,14 @@ from src.api.utils import save_uploaded_file, create_or_update_invoice, get_mont
 from src.api.schemas import UpdateInvoiceRequest
 from src.api.auth import get_current_user, check_trial_active
 from src.reconciliation import run_auto_reconciliation
+from src.api.audit import log_action
+from src.api.webhooks import fire_webhook
 
 router = APIRouter()
 
-UPLOAD_ROOT = os.path.join("data", "uploads")
-INVOICE_UPLOAD_DIR = os.path.join(UPLOAD_ROOT, "invoices")
-# Both upload paths that the app writes invoice files to (uploads/ for manual, invoices/ for email)
-_SAFE_DATA_ROOT = os.path.realpath("data")
+from src.utils.paths import INVOICE_UPLOAD_DIR, DATA_DIR
+
+_SAFE_DATA_ROOT = os.path.realpath(DATA_DIR)
 
 
 def _resolve_invoice_file_path(raw_path: str) -> str:
@@ -50,6 +51,7 @@ async def upload_invoice(
     file: UploadFile = File(...),
     client_file_id: Optional[int] = None,
     current_user: dict = Depends(check_trial_active),
+    request: Request = None,
 ):
     """Import a supplier invoice manually, optionally tied to a dossier client."""
     allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
@@ -111,6 +113,29 @@ async def upload_invoice(
         
         # Re-fetch the invoice from the database to get the latest status after reconciliation
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id).first()
+
+        # Log audit trail
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            org_id,
+            current_user["id"],
+            "create",
+            "invoice",
+            invoice.id,
+            {"invoice_number": invoice.invoice_number, "amount": invoice.amount, "filename": file.filename},
+            ip_address
+        )
+
+        # Fire webhook
+        fire_webhook(org_id, "invoice.created", {
+            "invoice_id": invoice.id,
+            "invoice_number": invoice.invoice_number,
+            "amount": invoice.amount,
+            "supplier": invoice.supplier.name if invoice.supplier else None,
+            "client_file_id": invoice.client_file_id,
+        })
+
         return {
             "message": "Invoice imported successfully",
             "invoice": {
@@ -134,7 +159,7 @@ def list_invoices(
     status: Optional[str] = None,
     category: Optional[str] = None,
     search: Optional[str] = None,
-    vehicle_registration: Optional[str] = None,
+    reference_number: Optional[str] = None,
     supplier: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
@@ -156,8 +181,8 @@ def list_invoices(
         if category:
             query = query.filter(Invoice.category == category)
 
-        if vehicle_registration:
-            query = query.filter(Invoice.vehicle_registration == vehicle_registration.upper())
+        if reference_number:
+            query = query.filter(Invoice.reference_number == reference_number.upper())
 
         if supplier:
             from sqlalchemy.orm import joinedload
@@ -168,7 +193,7 @@ def list_invoices(
             query = query.filter(
                 or_(
                     Invoice.invoice_number.ilike(pattern),
-                    Invoice.vehicle_registration.ilike(pattern),
+                    Invoice.reference_number.ilike(pattern),
                     Invoice.work_order_reference.ilike(pattern),
                     Invoice.email_subject.ilike(pattern)
                 )
@@ -213,7 +238,7 @@ def list_invoices(
                     "status": inv.status.value if inv.status else None,
                     "purchase_order": inv.purchase_order,
                     "delivery_note": inv.delivery_note,
-                    "vehicle_registration": inv.vehicle_registration,
+                    "reference_number": inv.reference_number,
                     "work_order_reference": inv.work_order_reference,
                     "payment_method": inv.payment_method
                 }
@@ -227,13 +252,20 @@ def list_invoices(
 
 
 @router.delete("/{invoice_id}")
-def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_user)):
+def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_user), request: Request = None):
     """Delete an invoice and its file"""
     session = db.get_session()
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
+
+        # Store details before deletion
+        invoice_details = {
+            "invoice_number": invoice.invoice_number,
+            "amount": invoice.amount,
+            "supplier": invoice.supplier.name if invoice.supplier else None,
+        }
         # Delete the file if it exists and is within the safe data root
         if invoice.file_path:
             try:
@@ -255,6 +287,20 @@ def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_use
         ).delete()
         session.delete(invoice)
         session.commit()
+
+        # Log audit trail
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            current_user["organization_id"],
+            current_user["id"],
+            "delete",
+            "invoice",
+            invoice_id,
+            invoice_details,
+            ip_address
+        )
+
         return {"message": "Invoice deleted"}
     finally:
         session.close()
@@ -275,13 +321,20 @@ def clear_processed_hashes(current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/{invoice_id}")
-def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user: dict = Depends(get_current_user)):
+def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user: dict = Depends(get_current_user), req: Request = None):
     """Update invoice fields and propagate changes"""
     session = db.get_session()
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
+
+        # Store old values for audit
+        old_values = {
+            "invoice_number": invoice.invoice_number,
+            "amount": invoice.amount,
+            "supplier": invoice.supplier.name if invoice.supplier else None,
+        }
         if request.invoice_number is not None:
             invoice.invoice_number = request.invoice_number
         if request.amount is not None:
@@ -312,8 +365,8 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
                 invoice.due_date = None
         if request.category is not None:
             invoice.category = request.category
-        if request.vehicle_registration is not None:
-            invoice.vehicle_registration = request.vehicle_registration.upper() if request.vehicle_registration else None
+        if request.reference_number is not None:
+            invoice.reference_number = request.reference_number.upper() if request.reference_number else None
         if request.work_order_reference is not None:
             invoice.work_order_reference = request.work_order_reference
         if request.purchase_order is not None:
@@ -349,10 +402,28 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
                     session.add(new_supplier)
                     session.flush()
                     invoice.supplier_id = new_supplier.id
-        
+
         session.commit()
         session.refresh(invoice)
-        
+
+        # Log audit trail
+        ip_address = req.client.host if req else None
+        new_values = {
+            "invoice_number": invoice.invoice_number,
+            "amount": invoice.amount,
+            "supplier": invoice.supplier.name if invoice.supplier else None,
+        }
+        log_action(
+            session,
+            current_user["organization_id"],
+            current_user["id"],
+            "update",
+            "invoice",
+            invoice.id,
+            {"old_value": old_values, "new_value": new_values},
+            ip_address
+        )
+
         return {
             "message": "Invoice updated successfully",
             "invoice": {
@@ -394,7 +465,7 @@ def get_invoice(invoice_id: int, current_user: dict = Depends(get_current_user))
             "status": invoice.status.value if invoice.status else None,
             "purchase_order": invoice.purchase_order,
             "delivery_note": invoice.delivery_note,
-            "vehicle_registration": invoice.vehicle_registration,
+            "reference_number": invoice.reference_number,
             "work_order_reference": invoice.work_order_reference,
             "payment_method": invoice.payment_method,
             "file_path": invoice.file_path,
@@ -408,17 +479,31 @@ def get_invoice(invoice_id: int, current_user: dict = Depends(get_current_user))
 @router.get("/{invoice_id}/download")
 def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_user)):
     """Download invoice PDF file"""
+    from src.utils.encryption import get_decrypted_path
+    from fastapi.responses import Response
+    import tempfile
+
     session = db.get_session()
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
-        
+
         if not invoice.file_path:
             raise HTTPException(status_code=404, detail="PDF file not found")
 
         file_path = _resolve_invoice_file_path(invoice.file_path)
-        return FileResponse(file_path, media_type="application/pdf", filename=os.path.basename(file_path))
+        actual_path = get_decrypted_path(file_path)
+
+        # Create response
+        response = FileResponse(actual_path, media_type="application/pdf", filename=os.path.basename(invoice.file_path.replace('.enc', '')))
+
+        # Clean up temp file if decrypted
+        if actual_path != file_path:
+            import atexit
+            atexit.register(lambda: os.remove(actual_path) if os.path.exists(actual_path) else None)
+
+        return response
     finally:
         session.close()
 
@@ -426,6 +511,8 @@ def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_curre
 @router.get("/{invoice_id}/view")
 def view_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_user)):
     """View invoice PDF file in browser"""
+    from src.utils.encryption import get_decrypted_path
+
     session = db.get_session()
     try:
         invoice = session.query(Invoice).filter(
@@ -439,10 +526,19 @@ def view_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_u
             raise HTTPException(status_code=404, detail="PDF file not found")
 
         file_path = _resolve_invoice_file_path(invoice.file_path)
-        return FileResponse(
-            file_path,
+        actual_path = get_decrypted_path(file_path)
+
+        response = FileResponse(
+            actual_path,
             media_type="application/pdf",
-            headers={"Content-Disposition": f"inline; filename={os.path.basename(file_path)}"},
+            headers={"Content-Disposition": f"inline; filename={os.path.basename(invoice.file_path.replace('.enc', ''))}"},
         )
+
+        # Clean up temp file if decrypted
+        if actual_path != file_path:
+            import atexit
+            atexit.register(lambda: os.remove(actual_path) if os.path.exists(actual_path) else None)
+
+        return response
     finally:
         session.close()

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 from src.api.database import startup_event
 from src.api.rate_limit import limiter
 from src.api.auth import router as auth_router, get_current_user
+from src.api.password import router as password_router
 from src.api.invoices import router as invoices_router
 from src.api.transactions import router as transactions_router
 from src.api.reconciliation import router as reconciliation_router
@@ -31,6 +32,17 @@ from src.api.reports import router as reports_router
 from src.api.vehicles import router as vehicles_router
 from src.api.payments import router as stripe_router
 from src.api.client_files import router as client_files_router
+from src.api.audit import router as audit_router
+from src.api.notifications import router as notifications_router
+from src.api.integrations import router as integrations_router
+from src.api.client_portal import router as client_portal_router
+from src.api.upload_link import router as upload_link_router
+from src.api.analytics import router as analytics_router
+from src.api.permissions import router as permissions_router
+from src.api.pcg import router as pcg_router
+from src.api.webhooks import router as webhooks_router
+from src.api.billing import router as billing_router
+from src.api.whatsapp import router as whatsapp_router
 
 
 @asynccontextmanager
@@ -59,7 +71,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS - allow only the methods and headers actually used by the frontend
-_default_origins = "http://localhost:3000,http://127.0.0.1:3000,https://carrosserie-erik.fr"
+_default_origins = "http://localhost:3000,http://127.0.0.1:3000"
 allowed_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", _default_origins).split(",") if o.strip()]
 
 app.add_middleware(
@@ -72,7 +84,8 @@ app.add_middleware(
     max_age=600,
 )
 
-os.makedirs("data/uploads/profile_photos", exist_ok=True)
+from src.utils.paths import PROFILE_PHOTOS_DIR
+os.makedirs(PROFILE_PHOTOS_DIR, exist_ok=True)
 
 
 @app.get("/api/uploads/profile_photos/{filename}")
@@ -103,7 +116,7 @@ def serve_profile_photo(filename: str, current_user: dict = Depends(get_current_
     finally:
         session.close()
 
-    safe_root = os.path.realpath(os.path.join("data", "uploads", "profile_photos"))
+    safe_root = os.path.realpath(PROFILE_PHOTOS_DIR)
     file_path = os.path.realpath(os.path.join(safe_root, filename))
     if not (file_path == safe_root or file_path.startswith(safe_root + os.sep)):
         raise HTTPException(status_code=400, detail="Invalid filename")
@@ -156,17 +169,29 @@ def trigger_email_fetch(since_days: int = 30, current_user: dict = Depends(get_c
 
 # Register routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(password_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(invoices_router, prefix="/api/invoices", tags=["Invoices"])
 app.include_router(transactions_router, prefix="/api/transactions", tags=["Transactions"])
 app.include_router(reconciliation_router, prefix="/api/reconciliation", tags=["Reconciliation"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(settings_router, prefix="/api/settings", tags=["Settings"])
 app.include_router(reports_router, prefix="/api/reports", tags=["Reports"])
-app.include_router(vehicles_router, prefix="/api/vehicles", tags=["Vehicles"])
+app.include_router(vehicles_router, prefix="/api/references", tags=["References"])
 app.include_router(stripe_router, prefix="/api/stripe", tags=["Stripe"])
 app.include_router(client_files_router, prefix="/api/client-files", tags=["ClientFiles"])
+app.include_router(audit_router, prefix="/api/audit", tags=["Audit"])
+app.include_router(notifications_router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(integrations_router, prefix="/api/integrations", tags=["Integrations"])
+app.include_router(client_portal_router, prefix="/api/portal", tags=["Client Portal"])
+app.include_router(upload_link_router, prefix="/api/depot", tags=["Upload Link"])
+app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(permissions_router, prefix="/api/permissions", tags=["Permissions"])
+app.include_router(pcg_router, prefix="/api/pcg", tags=["PCG"])
+app.include_router(webhooks_router, prefix="/api/webhooks", tags=["Webhooks"])
+app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
+app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["WhatsApp"])
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))

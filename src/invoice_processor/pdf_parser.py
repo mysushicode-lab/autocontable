@@ -60,7 +60,7 @@ class PDFParser:
             'supplier_name': None,
             'purchase_order': None,
             'delivery_note': None,
-            'vehicle_registration': None,
+            'reference_number': None,
             'work_order_reference': None,
             'payment_method': None,
             'extraction_warnings': ['ai_extraction_required'],

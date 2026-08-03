@@ -1,5 +1,5 @@
 """Reconciliation endpoints"""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional
 from datetime import datetime
 
@@ -9,12 +9,15 @@ from src.reconciliation.reconciliation_engine import ReconciliationEngine
 from src.api.utils import serialize_match, get_month_date_range
 from src.api.schemas import ManualLinkPayload
 from src.api.auth import get_current_user, check_trial_active
+from src.api.audit import log_action
+from src.api.webhooks import fire_webhook
+from src.api.billing import require_feature
 
 router = APIRouter()
 
 
 @router.post("/run")
-def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, current_user: dict = Depends(check_trial_active)):
+def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, current_user: dict = Depends(require_feature("reconciliation"))):
     """Run reconciliation automatically on current invoices and transactions."""
     session = db.get_session()
     org_id = current_user["organization_id"]
@@ -44,7 +47,7 @@ def run_reconciliation(month: Optional[int] = None, year: Optional[int] = None, 
 
 
 @router.post("/{match_id}/reject")
-def reject_match(match_id: int, current_user: dict = Depends(get_current_user)):
+def reject_match(match_id: int, current_user: dict = Depends(get_current_user), request: Request = None):
     """Reject a proposed reconciliation match."""
     session = db.get_session()
     try:
@@ -60,13 +63,34 @@ def reject_match(match_id: int, current_user: dict = Depends(get_current_user)):
         match.invoice.status = InvoiceStatus.UNMATCHED
         session.commit()
         session.refresh(match)
+
+        # Log audit trail
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            current_user["organization_id"],
+            current_user["id"],
+            "reject",
+            "match",
+            match.id,
+            {"invoice_id": match.invoice_id, "transaction_id": match.transaction_id},
+            ip_address
+        )
+
+        # Fire webhook
+        fire_webhook(current_user["organization_id"], "match.rejected", {
+            "match_id": match.id,
+            "invoice_id": match.invoice_id,
+            "transaction_id": match.transaction_id,
+        })
+
         return {"message": "Match rejected", "match": serialize_match(match)}
     finally:
         session.close()
 
 
 @router.post("/manual-link")
-def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(get_current_user)):
+def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(get_current_user), request: Request = None):
     """Create a manual invoice to bank transaction link."""
     session = db.get_session()
     org_id = current_user["organization_id"]
@@ -93,6 +117,9 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
             ReconciliationMatch.transaction_id == transaction.id,
             ReconciliationMatch.organization_id == org_id
         ).first()
+
+        ip_address = request.client.host if request else None
+
         if existing_match:
             existing_match.status = "confirmed"
             existing_match.match_type = "manual"
@@ -101,6 +128,27 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
             invoice.status = InvoiceStatus.MATCHED
             session.commit()
             session.refresh(existing_match)
+
+            # Log audit trail
+            log_action(
+                session,
+                org_id,
+                current_user["id"],
+                "confirm",
+                "match",
+                existing_match.id,
+                {"invoice_id": invoice.id, "transaction_id": transaction.id, "type": "manual"},
+                ip_address
+            )
+
+            # Fire webhook
+            fire_webhook(org_id, "match.confirmed", {
+                "match_id": existing_match.id,
+                "invoice_id": invoice.id,
+                "transaction_id": transaction.id,
+                "match_type": "manual",
+            })
+
             return {"message": "Manual link updated", "match": serialize_match(existing_match)}
         else:
             manual_match = ReconciliationMatch(
@@ -117,6 +165,27 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
             invoice.status = InvoiceStatus.MATCHED
             session.commit()
             session.refresh(manual_match)
+
+            # Log audit trail
+            log_action(
+                session,
+                org_id,
+                current_user["id"],
+                "confirm",
+                "match",
+                manual_match.id,
+                {"invoice_id": invoice.id, "transaction_id": transaction.id, "type": "manual"},
+                ip_address
+            )
+
+            # Fire webhook
+            fire_webhook(org_id, "match.confirmed", {
+                "match_id": manual_match.id,
+                "invoice_id": invoice.id,
+                "transaction_id": transaction.id,
+                "match_type": "manual",
+            })
+
             return {"message": "Manual link created", "match": serialize_match(manual_match)}
     finally:
         session.close()
@@ -180,7 +249,7 @@ def get_reconciliation_details(
                             "supplier": match.invoice.supplier.name if match.invoice.supplier else None,
                             "amount": match.invoice.amount,
                             "date": match.invoice.date.isoformat() if match.invoice.date else None,
-                            "vehicle": match.invoice.vehicle_registration,
+                            "reference": match.invoice.reference_number,
                             "match_id": match.id,
                             "score": round((match.match_score or 0) * 100, 2),
                             "status": match.status,
@@ -200,7 +269,7 @@ def get_reconciliation_details(
                         "amount": invoice.amount,
                         "date": invoice.date.isoformat() if invoice.date else None
                     },
-                    "vehicle": invoice.vehicle_registration
+                    "reference": invoice.reference_number
                 }
                 for invoice in unmatched_invoices
             ],
@@ -215,6 +284,76 @@ def get_reconciliation_details(
                 for tx in bank_only_transactions
             ]
         }
+    finally:
+        session.close()
+
+
+@router.get("/pending")
+def get_pending_matches(current_user: dict = Depends(get_current_user)):
+    """Get all matches pending review for the organization."""
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        matches = session.query(ReconciliationMatch).filter(
+            ReconciliationMatch.organization_id == org_id,
+            ReconciliationMatch.status == 'pending_review'
+        ).all()
+        # Serialize with invoice and transaction details
+        result = []
+        for m in matches:
+            invoice = session.query(Invoice).get(m.invoice_id)
+            transaction = session.query(BankTransaction).get(m.transaction_id)
+            result.append({
+                "id": m.id,
+                "invoice_id": m.invoice_id,
+                "transaction_id": m.transaction_id,
+                "match_score": m.match_score,
+                "status": m.status,
+                "matched_at": m.matched_at.isoformat() if m.matched_at else None,
+                "invoice": {
+                    "invoice_number": invoice.invoice_number if invoice else None,
+                    "supplier": invoice.supplier.name if invoice and invoice.supplier else None,
+                    "amount": invoice.amount if invoice else None,
+                    "date": invoice.date.isoformat() if invoice and invoice.date else None,
+                },
+                "transaction": {
+                    "description": transaction.description if transaction else None,
+                    "amount": transaction.amount if transaction else None,
+                    "date": transaction.date.isoformat() if transaction and transaction.date else None,
+                }
+            })
+        return {"pending_matches": result, "count": len(result)}
+    finally:
+        session.close()
+
+
+@router.post("/batch-validate")
+def batch_validate_matches(payload: dict, current_user: dict = Depends(get_current_user)):
+    """Batch confirm or reject matches. payload: {"match_ids": [1,2,3], "action": "confirm"|"reject"}"""
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        match_ids = payload.get("match_ids", [])
+        action = payload.get("action", "confirm")
+        if action not in ("confirm", "reject"):
+            raise HTTPException(400, "action must be 'confirm' or 'reject'")
+
+        updated = 0
+        for mid in match_ids:
+            m = session.query(ReconciliationMatch).filter(
+                ReconciliationMatch.id == mid,
+                ReconciliationMatch.organization_id == org_id,
+                ReconciliationMatch.status == 'pending_review'
+            ).first()
+            if m:
+                m.status = 'confirmed' if action == 'confirm' else 'rejected'
+                if action == 'reject':
+                    invoice = session.query(Invoice).get(m.invoice_id)
+                    if invoice:
+                        invoice.status = InvoiceStatus.UNMATCHED
+                updated += 1
+        session.commit()
+        return {"updated": updated}
     finally:
         session.close()
 

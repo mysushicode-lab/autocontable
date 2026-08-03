@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Users, Zap, Target, Clock } from 'lucide-react';
 import { FEATURES, STATS } from './_data';
 import { sectionBadge, sectionHeading } from './_styles';
+import { NOISE_SVG } from './_constants';
 
 const STAT_ICONS   = { users: Users, zap: Zap, target: Target, clock: Clock };
 const STAT_ANIMATE = {
@@ -16,31 +17,23 @@ export default function FeaturesSection() {
 
   return (
     <section id="features" className="bg-[#f7f7f5] scroll-mt-20">
-      <style>{`
-        @keyframes progress-fill {
-          from { width: 0%; }
-          to   { width: 100%; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .progress-fill-bar { animation: none !important; width: 100% !important; }
-        }
-      `}</style>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 lg:pt-28">
         <div className="text-center mb-12">
-          <span className={sectionBadge}>Fonctionnalités</span>
-          <h2 className={sectionHeading}>Tout ce que vous faites encore à la main — automatisé</h2>
+          <span className={sectionBadge}>Le pipeline complet</span>
+          <h2 className={sectionHeading}>Autocontable : La comptabilité qui travaille pendant que vous travaillez</h2>
         </div>
       </div>
 
-      <div className="relative max-w-4xl mx-auto">
-        <div className="bg-white border border-[#6c6f761f] rounded-t-2xl" style={{overflow: 'clip'}}>
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="bg-white border border-[#6c6f7635] rounded-t-2xl" style={{overflow: 'clip'}}>
           <div className="grid lg:grid-cols-2">
             <div className="flex flex-col divide-y divide-[#6c6f760f] h-full">
               {FEATURES.map((f, i) => (
                 <button
                   key={f.title}
                   type="button"
+                  onMouseEnter={() => setActive(i)}
                   onClick={() => setActive(i)}
                   aria-pressed={active === i}
                   className={`relative flex-1 text-left px-6 py-6 flex flex-col justify-center transition-colors ${active === i ? 'bg-white' : 'bg-[#fafafa]'}`}
@@ -58,7 +51,8 @@ export default function FeaturesSection() {
             </div>
 
             <div className="relative border-l border-[#6c6f760f] overflow-hidden self-stretch min-h-[240px] sm:min-h-[360px] lg:min-h-[500px] bg-[#fafafa]">
-              <div className="absolute top-6 left-4 sm:top-10 sm:left-8 w-[180%] sm:w-[250%] rounded-xl border border-[#6c6f761f] overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.08] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
+              <div className="absolute top-6 left-4 sm:top-10 sm:left-8 w-[180%] sm:w-[250%] rounded-xl border border-[#6c6f7635] overflow-hidden">
                 <img
                   src={FEATURES[active].image}
                   alt={FEATURES[active].title}
@@ -68,7 +62,7 @@ export default function FeaturesSection() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#6c6f760f] border-t border-[#6c6f761f]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#6c6f760f] border-t border-[#6c6f7635]">
             {STATS.map((s) => {
               const StatIcon = STAT_ICONS[s.icon];
               return (

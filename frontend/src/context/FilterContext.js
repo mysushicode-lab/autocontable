@@ -13,7 +13,7 @@ export const FilterProvider = ({ children }) => {
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
-  const [vehicleFilter, setVehicleFilter] = useState('');
+  const [referenceFilter, setReferenceFilter] = useState('');
 
   const resetFilters = () => {
     setSearchTerm('');
@@ -26,7 +26,7 @@ export const FilterProvider = ({ children }) => {
     setAmountMin('');
     setAmountMax('');
     setSupplierFilter('');
-    setVehicleFilter('');
+    setReferenceFilter('');
   };
 
   const resetAdvancedFilters = () => {
@@ -35,11 +35,11 @@ export const FilterProvider = ({ children }) => {
     setAmountMin('');
     setAmountMax('');
     setSupplierFilter('');
-    setVehicleFilter('');
+    setReferenceFilter('');
   };
 
-  const hasActiveAdvancedFilters = 
-    dateFrom || dateTo || amountMin || amountMax || supplierFilter || vehicleFilter;
+  const hasActiveAdvancedFilters =
+    dateFrom || dateTo || amountMin || amountMax || supplierFilter || referenceFilter;
 
   return (
     <FilterContext.Provider
@@ -64,8 +64,8 @@ export const FilterProvider = ({ children }) => {
         setAmountMax,
         supplierFilter,
         setSupplierFilter,
-        vehicleFilter,
-        setVehicleFilter,
+        referenceFilter,
+        setReferenceFilter,
         resetFilters,
         resetAdvancedFilters,
         hasActiveAdvancedFilters,

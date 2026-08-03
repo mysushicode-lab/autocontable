@@ -4,8 +4,7 @@ import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
 import { useClientFile } from '../context/ClientFileContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { 
-  Link,
+import {
   RefreshCw,
   CheckCircle,
   Unlink,
@@ -24,6 +23,8 @@ import {
   updateTransaction,
   uploadInvoiceFile,
   viewInvoice,
+  fetchPendingMatches,
+  batchValidateMatches,
 } from '../api';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
 import { matchAmount } from '../utils/searchHelpers';
@@ -36,10 +37,15 @@ import MatchesTab from '../components/Reconciliation/MatchesTab';
 import UnmatchedInvoicesTab from '../components/Reconciliation/UnmatchedInvoicesTab';
 import TransactionsTab from '../components/Reconciliation/TransactionsTab';
 import BankOnlyTab from '../components/Reconciliation/BankOnlyTab';
+import PendingReviewTab from '../components/Reconciliation/PendingReviewTab';
 import StatCard from '../components/Reconciliation/StatCard';
 import LinkModal from '../components/Reconciliation/LinkModal';
+import { Link } from 'lucide-react';
+import { usePlanGate } from '../hooks/usePlanGate';
+import UpgradeOverlay from '../components/ui/UpgradeOverlay';
 
 const Reconciliation = () => {
+  const { canAccess, getRequiredPlan } = usePlanGate();
   const { selectedMonth, setSelectedMonth } = useFilters();
   const { activeClientFileId } = useClientFile();
   const [activeTab, setActiveTab] = useState('matches');
@@ -52,6 +58,7 @@ const Reconciliation = () => {
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTransactionForInvoice, setSelectedTransactionForInvoice] = useState(null); // Track which transaction we're creating invoices for
+  const [selectedPendingIds, setSelectedPendingIds] = useState(new Set());
   const [isImporting, setIsImporting] = useState(false);
   const [isRunningReconciliation, setIsRunningReconciliation] = useState(false);
   const periodButtonRef = useRef(null);
@@ -79,6 +86,7 @@ const Reconciliation = () => {
 
   const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
   const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
+  const { data: pendingData } = useQuery(['pending-matches'], fetchPendingMatches);
   
   // Auto-set month filter to most recent invoice date on initial load
   useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
@@ -92,6 +100,7 @@ const Reconciliation = () => {
     queryClient.invalidateQueries('dashboard-reconciliation-details');
     queryClient.invalidateQueries('dashboard-invoices');
     queryClient.invalidateQueries('dashboard-report');
+    queryClient.invalidateQueries('pending-matches');
   };
 
   const importMutation = useMutation(importBankStatementFile, {
@@ -166,12 +175,29 @@ const Reconciliation = () => {
     },
   });
 
+  const batchValidateMutation = useMutation(({ matchIds, action }) => batchValidateMatches(matchIds, action), {
+    onSuccess: (result, { action }) => {
+      refreshAll();
+      setSelectedPendingIds(new Set());
+      const count = result.updated;
+      if (action === 'confirm') {
+        addNotif(NOTIF_TYPES.SUCCESS, 'Correspondances validées', `${count} correspondance${count > 1 ? 's' : ''} validée${count > 1 ? 's' : ''}.`);
+      } else {
+        addNotif(NOTIF_TYPES.WARNING, 'Correspondances rejetées', `${count} correspondance${count > 1 ? 's' : ''} rejetée${count > 1 ? 's' : ''}.`);
+      }
+    },
+    onError: (error) => {
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur validation', error?.response?.data?.detail || 'Impossible de valider les correspondances.');
+    },
+  });
+
   const { data: transactionsData } = useQuery(['all-transactions', filters], () => fetchTransactions(filters));
   const allTransactions = transactionsData?.transactions || [];
 
   const matches = detailsData?.matches || [];
   const unmatchedInvoices = detailsData?.unmatched_invoices || [];
   const bankOnly = detailsData?.bank_only || [];
+  const pendingMatches = pendingData?.pending_matches || [];
   const stats = {
     totalMatched: statsData?.matched_invoices ?? matches.length,
     autoMatched: statsData?.autoMatched ?? 0,
@@ -328,7 +354,10 @@ const Reconciliation = () => {
   };
 
   return (
-    <div className={`space-y-6 ${isImporting || isRunningReconciliation ? 'blur-sm pointer-events-none' : ''}`}>
+    <div className={`relative space-y-6 ${isImporting || isRunningReconciliation ? 'blur-sm pointer-events-none' : ''}`}>
+      {!canAccess('reconciliation') && (
+        <UpgradeOverlay requiredPlan={getRequiredPlan('reconciliation')} featureName="Rapprochement bancaire" />
+      )}
       {/* Header */}
       <ReconciliationHeader
         globalPeriod={globalPeriod}
@@ -363,8 +392,18 @@ const Reconciliation = () => {
         unmatchedInvoices={unmatchedInvoices}
         bankOnly={bankOnly}
         allTransactions={allTransactions}
+        pendingMatches={pendingMatches}
       >
         {isLoading && <div className="text-sm text-gray-500 mb-4">Chargement du rapprochement...</div>}
+        {activeTab === 'pending' && (
+          <PendingReviewTab
+            pendingMatches={pendingMatches}
+            selectedPendingIds={selectedPendingIds}
+            setSelectedPendingIds={setSelectedPendingIds}
+            batchValidateMutation={batchValidateMutation}
+            viewInvoice={viewInvoice}
+          />
+        )}
         {activeTab === 'matches' && (
           <MatchesTab filteredMatches={filteredMatches} rejectMutation={rejectMutation} viewInvoice={viewInvoice} />
         )}

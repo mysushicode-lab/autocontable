@@ -2,12 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes progress-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-spin,
   .animate-bounce,
   .animate-pulse,
   .animate-ping {
     animation: none !important;
+  }
+  .progress-fill-bar {
+    animation: none !important;
+    width: 100% !important;
   }
   * {
     transition-duration: 0.01ms !important;

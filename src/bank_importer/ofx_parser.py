@@ -5,6 +5,7 @@ from typing import List, Dict
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+from src.utils.date_parser import parse_date
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
@@ -77,7 +78,7 @@ class OFXParser:
 
             result = []
             for tx in msg.parsed.transactions:
-                date = self._parse_date(tx.date)
+                date = parse_date(tx.date)
                 if date is not None and tx.amount is not None:
                     result.append({
                         'date': date,
@@ -89,13 +90,3 @@ class OFXParser:
 
         except Exception as e:
             raise Exception(f"AI extraction failed: {e}")
-    
-    def _parse_date(self, value: str) -> datetime:
-        if not value:
-            return None
-        for fmt in ('%d/%m/%Y', '%d/%m/%y', '%d-%m-%Y', '%Y-%m-%d'):
-            try:
-                return datetime.strptime(value.strip(), fmt)
-            except ValueError:
-                continue
-        return None

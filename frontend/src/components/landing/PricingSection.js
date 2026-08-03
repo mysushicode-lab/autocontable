@@ -1,27 +1,57 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { sectionBadge, sectionHeading } from '../../pages/landing/_styles';
 
-const STANDARD_FEATURES = [
-  'Lecture IA des factures (PDF, email, photo)',
-  'Rapprochement bancaire automatique',
-  'Portefeuille multi-dossiers clients',
-  'Exports Grand Livre, Balance, Journal PCG',
-  'Connexion bancaire DSP2 (+300 banques)',
+const PLANS = [
+  {
+    name: 'Starter',
+    monthlyPrice: '29 €',
+    annualPrice: '23 €',
+    tagline: '1 dossier client',
+    features: [
+      '1 dossier client inclus',
+      'Ingestion email illimitée',
+      'Réconciliation bancaire',
+      'Export CSV',
+    ],
+    ctaLabel: 'Démarrer l\'essai gratuit',
+    ctaTo: '/signup',
+  },
+  {
+    name: 'Pro',
+    monthlyPrice: '79 €',
+    annualPrice: '63 €',
+    tagline: '5 dossiers clients',
+    features: [
+      '5 dossiers clients inclus',
+      'Tout dans Starter',
+      'Intégration WhatsApp',
+      'Rapports avancés',
+      'Support prioritaire',
+    ],
+    ctaLabel: 'Démarrer l\'essai gratuit',
+    ctaTo: '/signup',
+    highlighted: true,
+  },
+  {
+    name: 'Cabinet',
+    monthlyPrice: '199 €',
+    annualPrice: '159 €',
+    tagline: 'Dossiers illimités',
+    features: [
+      'Dossiers clients illimités',
+      'Tout dans Pro',
+      'Permissions multi-utilisateurs',
+      'Audit trail complet',
+      'API dédiée',
+    ],
+    ctaLabel: 'Démarrer l\'essai gratuit',
+    ctaTo: '/signup',
+  },
 ];
 
-const PRO_FEATURES = [
-  'Lecture IA des factures (PDF, email, photo)',
-  'Rapprochement bancaire automatique',
-  'Portefeuille multi-dossiers clients',
-  'Exports Grand Livre, Balance, Journal PCG',
-  'Connexion bancaire DSP2 (+300 banques)',
-  'Scheduler automatique 24/7',
-  'Stockage illimité',
-  'Support prioritaire — réponse en 2h',
-];
-
-function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, highlighted }) {
+function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, highlighted, savings }) {
   return (
     <div className={`relative overflow-hidden rounded-2xl p-8 lg:p-10 flex flex-col gap-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ${
       highlighted
@@ -30,7 +60,7 @@ function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, 
     }`}>
       {highlighted && (
         <span className="absolute top-4 right-4 px-2.5 py-1 text-xs font-semibold text-[#181818] bg-white rounded-full">
-          Recommandé
+          Populaire
         </span>
       )}
 
@@ -46,6 +76,9 @@ function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, 
             <span className={`text-sm ${highlighted ? 'text-white/50' : 'text-[#6b7280]'}`}>{period}</span>
           )}
         </div>
+        {savings && (
+          <p className="mt-1.5 text-xs font-medium text-[#466cf3]">{savings}</p>
+        )}
         {tagline && (
           <p className={`mt-2 text-sm font-medium ${highlighted ? 'text-white/60' : 'text-[#6b7280]'}`}>
             {tagline}
@@ -64,7 +97,7 @@ function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, 
 
       <Link
         to={ctaTo}
-        className={`inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-80 ${
+        className={`inline-flex w-full items-center justify-center whitespace-nowrap rounded-full px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-80 ${
           highlighted
             ? 'bg-white text-[#181818]'
             : 'bg-[#181818] text-white'
@@ -77,43 +110,75 @@ function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, 
 }
 
 export default function PricingSection() {
+  const [annual, setAnnual] = useState(false);
+
   return (
     <section id="pricing" aria-label="Tarifs" className="bg-[#f7f7f5] scroll-mt-20">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
 
         <div className="text-center mb-12 lg:mb-16">
           <span className={sectionBadge}>Tarifs</span>
-          <h2 className={`${sectionHeading} mt-0`}>Commencez à récupérer du temps dès aujourd'hui</h2>
+          <h2 className={`${sectionHeading} mt-0`}>Tarification simple et transparente</h2>
           <p className="mt-3 text-sm text-[#6b7280]">
-            7 jours gratuits, sans carte bancaire. 40h récupérées par mois à 50 €/h — c'est 2 000 € dégagés. L'abonnement coûte 85,99 €.
+            Tarification simple. Sans engagement.
           </p>
+
+          <div className="mt-6 inline-flex items-center gap-3 bg-white rounded-full p-1 border border-[#6c6f761f]">
+            <button
+              type="button"
+              onClick={() => setAnnual(false)}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${!annual ? 'bg-[#181818] text-white' : 'text-[#6b7280] hover:text-[#181818]'}`}
+            >
+              Mensuel
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnnual(true)}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${annual ? 'bg-[#181818] text-white' : 'text-[#6b7280] hover:text-[#181818]'}`}
+            >
+              Annuel
+              <span className="ml-1.5 text-xs text-[#466cf3] font-semibold">-20%</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-          <PricingCard
-            name="Essai gratuit"
-            price="Gratuit"
-            period="/ 7 jours"
-            tagline="Sans carte bancaire · Accès complet"
-            features={STANDARD_FEATURES}
-            ctaLabel="Démarrer l'essai gratuit"
-            ctaTo="/signup"
-          />
-          <PricingCard
-            name="Plan Pro"
-            price="85,99 €"
-            period="/ mois"
-            tagline="Sans engagement · Annulation à tout moment"
-            features={PRO_FEATURES}
-            ctaLabel="Démarrer maintenant"
-            ctaTo="/signup?plan=pro"
-            highlighted
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-lg sm:max-w-none mx-auto">
+          {PLANS.map((plan) => {
+            const price = annual ? plan.annualPrice : plan.monthlyPrice;
+            const isNumeric = price !== 'Sur devis';
+            const savings = annual && isNumeric && plan.monthlyPrice !== '0 €'
+              ? `Économisez ${(parseInt(plan.monthlyPrice) - parseInt(plan.annualPrice)) * 12}€/an`
+              : null;
+            return (
+              <PricingCard
+                key={plan.name}
+                name={plan.name}
+                price={price}
+                period={isNumeric && price !== '0 €' ? '/ mois' : isNumeric ? '/ mois' : null}
+                tagline={plan.tagline}
+                features={plan.features}
+                ctaLabel={plan.ctaLabel}
+                ctaTo={plan.ctaTo}
+                highlighted={plan.highlighted}
+                savings={savings}
+              />
+            );
+          })}
         </div>
 
-        <p className="text-center mt-6 text-xs text-[#6b7280]">
-          Annulation à tout moment · Données hébergées en France · Conforme RGPD
-        </p>
+        <div className="flex flex-col items-center mt-6 gap-3">
+          <p className="text-xs text-[#6b7280]">
+            Sans engagement · Annulation à tout moment · Données hébergées en France · Conforme RGPD
+          </p>
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {[12, 25, 32, 45, 57].map((id) => (
+                <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-7 h-7 rounded-full border-2 border-[#f7f7f5] object-cover" />
+              ))}
+            </div>
+            <p className="text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>
+          </div>
+        </div>
       </div>
     </section>
   );

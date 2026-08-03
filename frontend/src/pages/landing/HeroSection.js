@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star } from 'lucide-react';
-import { TRUSTED_BY } from './_data';
 import { btnPrimary, btnGhost } from './_styles';
 
 export default function HeroSection() {
@@ -17,37 +16,35 @@ export default function HeroSection() {
                   <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <span className="text-xs text-[#6b7280]">4,9/5 · 500+ cabinets comptables</span>
+              <span className="text-xs text-[#6b7280]">4,9/5 · 200+ entreprises et cabinets comptables</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-[#181818] leading-[1.05] tracking-tight mb-4 lg:mb-6">
-              Vos factures saisies.<br />Vos relevés rapprochés.<br />Sans vous.
+              Vos factures arrivent automatiquement.<br />Votre comptabilité se fait seule.
             </h1>
             <p className="text-sm sm:text-base text-[#6b7280] mb-8 lg:mb-10 max-w-md">
-              L'IA saisit, rapproche, et exporte. Vous conseillez. Vous signez. Vous grandissez.
+              Autocontable centralise vos factures fournisseurs, les rapproche avec vos transactions bancaires et prépare tout pour votre comptable. Finie la saisie manuelle. Fini le stress de fin de mois.
             </p>
 
             {/* CTAs */}
             <div className="flex items-center gap-4 flex-wrap">
               <Link to="/signup" className={btnPrimary}>
-                Essayer gratuitement 7 jours
+                Essai gratuit 14 jours
               </Link>
               <a href="#features" className={btnGhost}>
-                Voir comment ça marche
+                Lire le guide réforme 2026
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
-            <p className="mt-3 text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>
-
-            {/* Trusted by */}
-            <div className="mt-10 lg:mt-32">
-              <p className="text-xs sm:text-sm text-[#6b7280] mb-3 lg:mb-4">Utilisé dans des cabinets partout en France</p>
-              <div className="flex flex-wrap items-center gap-4 lg:gap-8">
-                {TRUSTED_BY.map((name) => (
-                  <span key={name} className="text-xs sm:text-sm font-semibold text-[#6b7280]">{name}</span>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[12, 25, 32, 45, 57].map((id) => (
+                  <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-8 h-8 rounded-full border-2 border-white object-cover" />
                 ))}
               </div>
+              <p className="text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>
             </div>
+
           </div>
 
           <div className="relative min-h-[260px] sm:min-h-[360px] lg:min-h-[600px]">

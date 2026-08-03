@@ -1,42 +1,80 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=autocontable
+      - POSTGRES_USER=autocontable
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autocontable"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: .
     restart: unless-stopped
     environment:
-      - DATABASE_URL=sqlite:///data/accounting.db
+      - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD:-changeme}@postgres:5432/autocontable
       - PYTHONPATH=/app
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - app-data:/app/data
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   scheduler:
     build: .
     restart: unless-stopped
     command: python -m src.scheduler.main
     environment:
-      - DATABASE_URL=sqlite:///data/accounting.db
+      - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD:-changeme}@postgres:5432/autocontable
       - PYTHONPATH=/app
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - app-data:/app/data
     depends_on:
-      - backend
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=https://carrosserie-erik.fr/api
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     restart: unless-stopped
     ports:
       - "3001:80"
     depends_on:
       - backend
 
+  backup:
+    build: .
+    restart: unless-stopped
+    command: >
+      sh -c "while true; do
+        echo '[backup] Running daily backup...';
+        /app/scripts/backup.sh;
+        sleep 86400;
+      done"
+    environment:
+      - DATA_DIR=/app/data
+      - BACKUP_DIR=/app/backups
+      - RETENTION_DAYS=30
+    volumes:
+      - app-data:/app/data
+      - backup-data:/app/backups
+
 volumes:
   app-data:
+  backup-data:
+  postgres-data:

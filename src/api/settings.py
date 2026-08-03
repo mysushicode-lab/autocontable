@@ -94,6 +94,9 @@ def update_setting(key: str, update: SettingUpdate, current_user: dict = Depends
             setting.value = update.value
         session.commit()
         return {"message": "Setting updated", "key": key, "value": update.value}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 

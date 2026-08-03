@@ -5,47 +5,45 @@ export const NAV_LINKS = [
   { href: '#faq',           label: 'FAQ' },
 ];
 
-export const TRUSTED_BY = ['Comptalia', 'Fiducial', 'Cerfrance', 'Exco'];
-
 export const FEATURES = [
   {
-    title: 'Lecture de factures sans saisie',
-    description: "PDF, email, photo ou Factur-X — l'IA extrait fournisseur, montant, TVA et date en moins de 5 secondes. Même les scans flous passent.",
+    title: 'Fini les factures perdues dans vos emails',
+    description: "Chaque facture fournisseur est capturée automatiquement depuis votre boîte mail ou WhatsApp Business. L'IA extrait montant, TVA, référence — sans aucune saisie de votre part. Vous ne cherchez plus jamais un PDF.",
     image: '/facture-preview.png',
   },
   {
-    title: 'Un mois de rapprochement bancaire en 10 minutes',
-    description: "Importez votre relevé, l'IA fait les correspondances. Chaque écart est signalé. Ce qui prenait une journée ne demande plus qu'un clic de validation.",
+    title: 'Chaque paiement retrouve sa facture',
+    description: "Importez vos relevés bancaires (toutes banques françaises). Le rapprochement intelligent associe chaque ligne à la bonne facture. Les anomalies et impayés remontent immédiatement — plus de surprise en fin de mois.",
     image: '/rapprochement-preview.png',
   },
   {
-    title: 'Portefeuille clients en temps réel',
-    description: "Tous vos dossiers en un coup d'œil : à jour, en attente, pièces manquantes. Alertes automatiques avant les deadlines. Zéro surprise le jour J.",
+    title: 'Votre comptable reçoit un dossier propre',
+    description: "Export FEC, CSV ou Excel en un clic. Chaque écriture est tracée, catégorisée, rapprochée. Votre expert-comptable gagne du temps. Vous gagnez en sérénité.",
     image: '/portfolio-preview.png',
   },
 ];
 
 export const TOOLS = [
   {
-    title: 'Exports comptables prêts à l\'emploi',
-    description: 'Grand Livre, Balance, Journal des Achats avec numéros de compte PCG — générés en un clic, exportables en CSV, Excel ou ZIP. Vos dossiers sont prêts à être transmis directement.',
+    title: 'Collecte email automatique',
+    description: "Connectez votre boîte pro une seule fois. Autocontable détecte et télécharge chaque facture fournisseur en pièce jointe — sans intervention, sans oubli, sans retard.",
     image: '/export-contable.png',
   },
   {
-    title: 'Scheduler automatique 24/7',
-    description: 'Connectez votre boîte mail une fois. Le scheduler récupère, lit et classe chaque facture automatiquement — même la nuit, même le week-end. Zéro action manuelle.',
+    title: 'Réception WhatsApp',
+    description: "Vos clients vous envoient des factures par WhatsApp ? Autocontable les récupère, les traite et les classe automatiquement. Aucun scan manuel, aucune ressaisie.",
     image: '/scheduler-automatique.png',
   },
   {
-    title: 'Analytics & tableau de bord',
-    description: 'Suivez vos dossiers en temps réel : taux de rapprochement, factures en attente, fournisseurs récurrents. Tout ce qu\'il faut pour piloter votre cabinet sans chercher.',
+    title: 'Extraction IA haute précision',
+    description: "Numéro, date, montant TTC/HT, TVA, référence fournisseur — extraits en secondes avec 95%+ de fiabilité. Même sur les scans flous ou les factures manuscrites.",
     image: '/analytics.png',
   },
 ];
 
 export const STATS = [
-  { value: '40h',   label: 'Récupérées par cabinet / mois', icon: 'clock' },
-  { value: '+500',  label: 'Cabinets utilisateurs',          icon: 'users' },
-  { value: '98%',   label: "Précision de l'IA",              icon: 'target' },
-  { value: '10min', label: 'Pour rapprocher un dossier complet', icon: 'zap' },
+  { value: '15h+',     label: 'Économisées par mois', icon: 'clock' },
+  { value: '+200',     label: 'PME et cabinets équipés', icon: 'users' },
+  { value: '95%+',     label: 'De rapprochement correct', icon: 'target' },
+  { value: 'Sept. 2026', label: 'Conforme avant la deadline', icon: 'zap' },
 ];

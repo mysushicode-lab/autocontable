@@ -1,5 +1,8 @@
 version: '3.8'
 
+# Dev compose: SQLite by default for simplicity
+# To test with PostgreSQL, uncomment the postgres service and update DATABASE_URL in backend/scheduler
+
 services:
   backend:
     build: .

@@ -68,6 +68,9 @@ def create_user(request: CreateUserRequest, current_user: dict = Depends(require
         session.add(user)
         session.commit()
         return {"message": "User created", "id": user.id}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -82,14 +85,17 @@ def delete_user(user_id: int, current_user: dict = Depends(require_admin)):
             raise HTTPException(status_code=404, detail="User not found")
         if user.id == current_user["id"]:
             raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
-        
+
         # Delete associated user tokens first
         from src.storage.models import UserToken
         session.query(UserToken).filter(UserToken.user_id == user_id).delete()
-        
+
         session.delete(user)
         session.commit()
         return {"message": "User deleted"}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -123,6 +129,9 @@ def update_user(user_id: int, request: UpdateUserRequest, current_user: dict = D
                 "profile_photo": user.profile_photo
             }
         }
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -163,5 +172,53 @@ def upload_profile_photo(user_id: int, file: UploadFile = File(...), current_use
         session.commit()
 
         return {"message": "Profile photo updated", "photo_url": user.profile_photo}
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@router.get("/onboarding-status")
+def get_onboarding_status(current_user: dict = Depends(get_current_user)):
+    """Get onboarding completion status for the current user's organization."""
+    from src.storage.models import Settings
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        setting = session.query(Settings).filter(
+            Settings.organization_id == org_id,
+            Settings.key == "onboarding_completed"
+        ).first()
+        return {"completed": setting is not None and setting.value == "true"}
+    finally:
+        session.close()
+
+
+@router.post("/onboarding-complete")
+def mark_onboarding_complete(current_user: dict = Depends(get_current_user)):
+    """Mark onboarding as completed for the current user's organization."""
+    from src.storage.models import Settings
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        existing = session.query(Settings).filter(
+            Settings.organization_id == org_id,
+            Settings.key == "onboarding_completed"
+        ).first()
+        if existing:
+            existing.value = "true"
+        else:
+            session.add(Settings(
+                organization_id=org_id,
+                key="onboarding_completed",
+                value="true",
+                category="system"
+            ))
+        session.commit()
+        return {"success": True}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()

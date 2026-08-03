@@ -11,6 +11,73 @@ def startup_event():
 
     conn = db.engine.connect()
 
+    is_sqlite = 'sqlite' in str(db.engine.url)
+
+    # SQLite-specific migrations (PostgreSQL relies on Base.metadata.create_all)
+    if not is_sqlite:
+        conn.close()
+        # For PostgreSQL, create default org and admin user
+        session = db.get_session()
+        try:
+            # Create default organization for existing data
+            default_org = session.query(Organization).filter(Organization.id == 1).first()
+            if not default_org:
+                default_org = Organization(name="Organisation par défaut")
+                session.add(default_org)
+                session.flush()
+                default_org_id = default_org.id
+                session.commit()
+            else:
+                default_org_id = default_org.id
+
+            # Create default admin user if not exists
+            try:
+                default_admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+                default_admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+                default_admin_email = os.environ.get('ADMIN_EMAIL', '')
+                admin_exists = session.query(User).filter(User.username == default_admin_username).first()
+                if not admin_exists:
+                    # Import locally to avoid circular dependency
+                    from src.api.auth import _hash_password
+                    password_hash = _hash_password(default_admin_password)
+                    admin = User(
+                        username=default_admin_username,
+                        password_hash=password_hash,
+                        role=UserRole.ADMIN,
+                        name='Administrateur',
+                        email=default_admin_email or None,
+                        organization_id=default_org_id
+                    )
+                    session.add(admin)
+                    session.commit()
+            except Exception as e:
+                print(f"Warning: Could not check/create admin user: {e}")
+                session.rollback()
+
+            # Insert default settings if not already set
+            try:
+                default_settings = [
+                    ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
+                    ('imap_port', '993', 'email', 'Port IMAP'),
+                    ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
+                    ('scheduler_interval', '1', 'scheduler', 'Intervalle en minutes (1 = toutes les 1 minute)'),
+                    ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
+                    ('company_name', '', 'general', 'Nom de votre entreprise (ignoré comme fournisseur par l\'IA)'),
+                ]
+                for key, value, category, description in default_settings:
+                    exists = session.query(Settings).filter(
+                        Settings.key == key, Settings.organization_id == default_org_id
+                    ).first()
+                    if not exists:
+                        session.add(Settings(key=key, value=value, category=category, description=description, organization_id=default_org_id))
+                session.commit()
+            except Exception as e:
+                print(f"Warning: Could not insert default settings: {e}")
+                session.rollback()
+        finally:
+            session.close()
+        return
+
     # Recreate settings table without UNIQUE(key) constraint if needed
     try:
         idx_info = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='settings' AND sql LIKE '%UNIQUE%key%'")).fetchall()
@@ -74,7 +141,7 @@ def startup_event():
                 status VARCHAR(50),
                 purchase_order VARCHAR(100),
                 delivery_note VARCHAR(100),
-                vehicle_registration VARCHAR(20),
+                reference_number VARCHAR(50),
                 work_order_reference VARCHAR(100),
                 payment_method VARCHAR(50),
                 file_path VARCHAR(500),
@@ -87,7 +154,7 @@ def startup_event():
                 created_at DATETIME,
                 updated_at DATETIME
             )"""))
-            conn.execute(text("INSERT INTO invoices SELECT id,invoice_number,supplier_id,NULL,amount,amount_ht,amount_tax,date,due_date,category,status,purchase_order,delivery_note,vehicle_registration,work_order_reference,payment_method,file_path,email_subject,email_from,email_date,message_id,content_hash,extracted_data,created_at,updated_at FROM invoices_old"))
+            conn.execute(text("INSERT INTO invoices SELECT id,invoice_number,supplier_id,NULL,amount,amount_ht,amount_tax,date,due_date,category,status,purchase_order,delivery_note,reference_number,work_order_reference,payment_method,file_path,email_subject,email_from,email_date,message_id,content_hash,extracted_data,created_at,updated_at FROM invoices_old"))
             conn.execute(text("DROP TABLE invoices_old"))
             conn.commit()
     except Exception as e:
@@ -128,6 +195,23 @@ def startup_event():
     except Exception as e:
         print(f"file_hash column migration: {e}")
 
+    # Rename vehicle_registration to reference_number in invoices table
+    try:
+        result = conn.execute(text("PRAGMA table_info(invoices)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'vehicle_registration' in columns and 'reference_number' not in columns:
+            # SQLite doesn't support RENAME COLUMN directly in older versions, so we use ALTER TABLE
+            conn.execute(text("ALTER TABLE invoices RENAME COLUMN vehicle_registration TO reference_number"))
+            conn.commit()
+            print("Renamed vehicle_registration to reference_number in invoices table")
+        elif 'reference_number' not in columns:
+            # Add the column if it doesn't exist at all
+            conn.execute(text("ALTER TABLE invoices ADD COLUMN reference_number VARCHAR(50)"))
+            conn.commit()
+            print("Added reference_number column to invoices table")
+    except Exception as e:
+        print(f"reference_number column migration: {e}")
+
     # Add organization_id columns to remaining tables
     add_col_migrations = [
         "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
@@ -140,6 +224,13 @@ def startup_event():
             conn.commit()
         except Exception:
             pass
+
+    # Add client_file_id to users table (for client portal)
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN client_file_id INTEGER REFERENCES client_files(id)"))
+        conn.commit()
+    except Exception:
+        pass  # Column already exists
 
     # Recreate processed_file_hashes uniqueness as (organization_id, content_hash)
     # instead of the legacy GLOBAL unique on content_hash alone.
@@ -303,6 +394,46 @@ def startup_event():
             conn.commit()
         except Exception:
             pass  # column already exists
+
+    # Create audit_logs table if not exists
+    try:
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY,
+            organization_id INTEGER NOT NULL REFERENCES organizations(id),
+            user_id INTEGER REFERENCES users(id),
+            action VARCHAR(50) NOT NULL,
+            entity_type VARCHAR(50) NOT NULL,
+            entity_id INTEGER,
+            details TEXT,
+            ip_address VARCHAR(45),
+            created_at DATETIME
+        )"""))
+        conn.commit()
+    except Exception as e:
+        print(f"audit_logs table migration: {e}")
+
+    # Create dossier_permissions table if not exists
+    try:
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS dossier_permissions (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            client_file_id INTEGER NOT NULL REFERENCES client_files(id),
+            permission_level VARCHAR(20) DEFAULT 'read_write',
+            created_at DATETIME
+        )"""))
+        conn.commit()
+    except Exception as e:
+        print(f"dossier_permissions table migration: {e}")
+
+    # Create unique index on (user_id, client_file_id)
+    try:
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_user_dossier_perm "
+            "ON dossier_permissions(user_id, client_file_id)"
+        ))
+        conn.commit()
+    except Exception as e:
+        print(f"dossier_permissions unique index migration: {e}")
 
     conn.close()
 

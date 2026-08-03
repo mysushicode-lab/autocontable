@@ -50,8 +50,8 @@ const Invoices = () => {
     setAmountMax,
     supplierFilter,
     setSupplierFilter,
-    vehicleFilter,
-    setVehicleFilter,
+    referenceFilter,
+    setReferenceFilter,
     resetAdvancedFilters,
     hasActiveAdvancedFilters,
   } = useFilters();
@@ -88,9 +88,9 @@ const Invoices = () => {
     amount_min: amountMin ? parseFloat(amountMin) : undefined,
     amount_max: amountMax ? parseFloat(amountMax) : undefined,
     supplier: supplierFilter || undefined,
-    vehicle: vehicleFilter ? vehicleFilter.toUpperCase() : undefined,
+    reference_number: referenceFilter ? referenceFilter.toUpperCase() : undefined,
     client_file_id: activeClientFileId ?? undefined,
-  }), [searchTerm, statusFilter, categoryFilter, parsedMonth, dateFrom, dateTo, amountMin, amountMax, supplierFilter, vehicleFilter, activeClientFileId]);
+  }), [searchTerm, statusFilter, categoryFilter, parsedMonth, dateFrom, dateTo, amountMin, amountMax, supplierFilter, referenceFilter, activeClientFileId]);
 
   const { add: addNotif } = useNotifications();
   const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));
@@ -151,7 +151,7 @@ const Invoices = () => {
       date: invoice.date ? invoice.date.slice(0, 10) : '',
       due_date: invoice.due_date ? invoice.due_date.slice(0, 10) : '',
       category: invoice.category || '',
-      vehicle_registration: invoice.vehicle_registration || '',
+      reference_number: invoice.reference_number || '',
       work_order_reference: invoice.work_order_reference || '',
       purchase_order: invoice.purchase_order || '',
       payment_method: invoice.payment_method || '',
@@ -346,8 +346,8 @@ const Invoices = () => {
         setAmountMax={setAmountMax}
         supplierFilter={supplierFilter}
         setSupplierFilter={setSupplierFilter}
-        vehicleFilter={vehicleFilter}
-        setVehicleFilter={setVehicleFilter}
+        referenceFilter={referenceFilter}
+        setReferenceFilter={setReferenceFilter}
         hasActiveAdvancedFilters={hasActiveAdvancedFilters}
         resetAdvancedFilters={resetAdvancedFilters}
       />

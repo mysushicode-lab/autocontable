@@ -6,6 +6,7 @@ import base64
 from typing import List, Dict, Optional
 from datetime import datetime
 from dotenv import load_dotenv
+from src.utils.date_parser import parse_date
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
@@ -68,8 +69,9 @@ class BankPDFParser:
             # Convert PDF to images
             images = pdf2image.convert_from_path(file_path, dpi=200)
             
-            # Limit to first 10 pages to avoid timeout
-            images = images[:10]
+            # Limit pages to avoid timeout
+            _max_pages = int(os.getenv("MAX_PDF_PAGES_VISION", 10))
+            images = images[:_max_pages]
 
             # Prepare images for API
             image_content = []
@@ -118,10 +120,10 @@ class BankPDFParser:
 
             import json
             result = json.loads(response.choices[0].message.content)
-            
+
             transactions = []
             for tx in result.get('transactions', []):
-                date = self._parse_date(tx.get('date'))
+                date = parse_date(tx.get('date'))
                 if date is not None and tx.get('amount') is not None:
                     transactions.append({
                         'date': date,
@@ -129,7 +131,7 @@ class BankPDFParser:
                         'description': tx.get('description', ''),
                         'reference': tx.get('reference'),
                     })
-            
+
             return transactions if transactions else None
 
         except Exception as e:
@@ -196,7 +198,7 @@ class BankPDFParser:
 
             result = []
             for tx in msg.parsed.transactions:
-                date = self._parse_date(tx.date)
+                date = parse_date(tx.date)
                 if date is not None and tx.amount is not None:
                     result.append({
                         'date': date,
@@ -208,13 +210,3 @@ class BankPDFParser:
 
         except Exception as e:
             raise Exception(f"AI extraction failed: {e}")
-
-    def _parse_date(self, value: str) -> Optional[datetime]:
-        if not value:
-            return None
-        for fmt in ('%d/%m/%Y', '%d/%m/%y', '%d-%m-%Y', '%Y-%m-%d'):
-            try:
-                return datetime.strptime(value.strip(), fmt)
-            except ValueError:
-                continue
-        return None

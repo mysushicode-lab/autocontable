@@ -7,13 +7,22 @@ import os
 import re
 import base64
 import tempfile
+import logging
 from typing import Dict, List, Optional, Literal
 from datetime import datetime
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from src.utils.date_parser import parse_date
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+
+logger = logging.getLogger(__name__)
+
+# Fallback model configuration
+AI_PRIMARY_MODEL = os.getenv("AI_PRIMARY_MODEL", "gpt-4o-mini")
+AI_FALLBACK_MODEL = os.getenv("AI_FALLBACK_MODEL", "")  # e.g., "gpt-4o" or empty to disable
+AI_MAX_RETRIES = int(os.getenv("AI_MAX_RETRIES", "2"))
 
 _SYSTEM_PROMPT = """You are an expert accounting assistant specializing in French business invoices (factures).
 Your task: carefully read the document and extract every invoice field with maximum accuracy.
@@ -30,7 +39,7 @@ Field extraction rules:
 - due_date: Payment due date formatted as DD/MM/YYYY. Return null if not found.
 - supplier_name: The VENDOR/SELLER company name — the entity issuing this invoice (the one being PAID). It is ALWAYS found at the very TOP of the document in the letterhead/header block, associated with their SIRET/SIREN/TVA number and address. NEVER pick the company in the "Facturer à", "Client", "Adresse de livraison" or recipient address block — that is the BUYER, not the supplier. IGNORE: accounting software names (Sage, Ciel, EBP, QuickBooks, Pennylane, etc.). Return null if not found.
 - supplier_email: Professional email of the vendor/seller, found in their header block only. IGNORE: emails in client/buyer address blocks. IGNORE: free email services (Gmail, Yahoo, Outlook, Hotmail). Return null if not found.
-- vehicle_registration: License plate or vehicle reference number if present on the invoice. Return null if not found.
+- reference_number: Any reference number present on the invoice: license plate, project number, internal reference, order number, dossier number. Return null if not found.
 - purchase_order: Bon de commande / PO number. Return null if not found.
 - delivery_note: Bon de livraison / BL number. Return null if not found.
 - work_order_reference: Internal reference / dossier / numéro de dossier / order reference. Return null if not found.
@@ -60,7 +69,7 @@ class _InvoiceFields(BaseModel):
     due_date: Optional[str] = None
     supplier_name: Optional[str] = None
     supplier_email: Optional[str] = None
-    vehicle_registration: Optional[str] = None
+    reference_number: Optional[str] = None
     purchase_order: Optional[str] = None
     delivery_note: Optional[str] = None
     work_order_reference: Optional[str] = None
@@ -92,7 +101,7 @@ class AIInvoiceExtractor:
 
     def __init__(self):
         self.api_key = os.getenv('OPENAI_API_KEY')
-        self.model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+        self.model = AI_PRIMARY_MODEL
         self.enabled = bool(self.api_key)
         self._client = None
 
@@ -121,11 +130,12 @@ class AIInvoiceExtractor:
             extra = f"\nCRITICAL: The buyer's company (YOUR client) is '{own_company_name}'. NEVER extract this name as supplier_name — it is the buyer, not the vendor."
         return _SYSTEM_PROMPT + extra + _EXTRACTION_RULES
 
-    def _call_structured(self, messages: list) -> Dict:
+    def _call_structured(self, messages: list, model: str = None) -> Dict:
         """Call OpenAI with Structured Outputs — returns guaranteed valid dict"""
         client = self._get_client()
+        model_to_use = model or self.model
         completion = client.beta.chat.completions.parse(
-            model=self.model,
+            model=model_to_use,
             messages=messages,
             response_format=_InvoiceExtraction,
             temperature=0,
@@ -142,16 +152,46 @@ class AIInvoiceExtractor:
         raw = result.model_dump()
         return self._post_process(raw)
 
+    def _call_with_retry(self, messages: list) -> Dict:
+        """Call OpenAI with retry logic and fallback model support."""
+        # Try primary model with retries
+        for attempt in range(AI_MAX_RETRIES):
+            try:
+                result = self._call_structured(messages, model=AI_PRIMARY_MODEL)
+                if result and result.get('document_type') != 'error':
+                    return result
+                logger.warning(f"AI extraction attempt {attempt + 1} returned error result ({AI_PRIMARY_MODEL})")
+            except Exception as e:
+                logger.warning(f"AI extraction attempt {attempt + 1} failed ({AI_PRIMARY_MODEL}): {e}")
+                if attempt < AI_MAX_RETRIES - 1:
+                    import time
+                    time.sleep(2 ** attempt)  # Exponential backoff
+
+        # Try fallback model if configured
+        if AI_FALLBACK_MODEL:
+            try:
+                logger.info(f"Trying fallback model: {AI_FALLBACK_MODEL}")
+                result = self._call_structured(messages, model=AI_FALLBACK_MODEL)
+                if result and result.get('document_type') != 'error':
+                    return result
+                logger.error(f"Fallback model returned error result ({AI_FALLBACK_MODEL})")
+            except Exception as e:
+                logger.error(f"Fallback model failed ({AI_FALLBACK_MODEL}): {e}")
+
+        # All attempts failed
+        return {'is_invoice': None, 'document_type': 'error', 'confidence': 'low',
+                'reason': 'All AI extraction attempts failed', 'fields': {}}
+
     def _post_process(self, raw: Dict) -> Dict:
         """Validate and normalize AI output (dates, plate, supplier fallback, avoir negation)"""
         fields = raw.get('fields') or {}
         print(f"[AI DEBUG] Raw fields from Vision: {fields}")
 
-        fields['date'] = self._parse_date(fields.get('date'))
-        fields['due_date'] = self._parse_date(fields.get('due_date'))
+        fields['date'] = parse_date(fields.get('date'))
+        fields['due_date'] = parse_date(fields.get('due_date'))
 
-        if fields.get('vehicle_registration'):
-            fields['vehicle_registration'] = self._validate_plate(fields['vehicle_registration'])
+        if fields.get('reference_number'):
+            fields['reference_number'] = self._normalize_reference(fields['reference_number'])
 
         supplier_name = fields.get('supplier_name')
         supplier_email = fields.get('supplier_email')
@@ -186,8 +226,9 @@ class AIInvoiceExtractor:
             img = Image.open(image_path)
             if img.mode not in ('RGB', 'L'):
                 img = img.convert('RGB')
-            if max(img.size) > 2048:
-                img.thumbnail((2048, 2048), Image.LANCZOS)
+            _max_img = int(os.getenv("AI_MAX_IMAGE_SIZE", 2048))
+            if max(img.size) > _max_img:
+                img.thumbnail((_max_img, _max_img), Image.LANCZOS)
 
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
                 img.save(tmp.name, 'PNG')
@@ -199,7 +240,7 @@ class AIInvoiceExtractor:
                 os.unlink(tmp_path)
 
             context = self._build_context(filename, email_from, email_subject, email_body)
-            return self._call_structured([
+            return self._call_with_retry([
                 {'role': 'system', 'content': self._build_system_prompt(own_company_name)},
                 {'role': 'user', 'content': [
                     {'type': 'text', 'text': context},
@@ -223,9 +264,10 @@ class AIInvoiceExtractor:
                     'reason': 'AI not enabled', 'fields': {}}
         try:
             from pdf2image import convert_from_path
-            poppler_path = r"C:\poppler\poppler-26.02.0\Library\bin"
-            images = convert_from_path(pdf_path, first_page=1, last_page=3, dpi=250,
-                                       poppler_path=poppler_path if os.path.exists(poppler_path) else None)
+            poppler_path = os.getenv("POPPLER_PATH", "")
+            _max_pages = int(os.getenv("AI_MAX_PDF_PAGES", 3))
+            images = convert_from_path(pdf_path, first_page=1, last_page=_max_pages, dpi=250,
+                                       poppler_path=poppler_path if poppler_path and os.path.exists(poppler_path) else None)
             if not images:
                 return {'is_invoice': None, 'document_type': 'error', 'confidence': 'low',
                         'reason': 'Could not convert PDF to image', 'fields': {}}
@@ -249,7 +291,7 @@ class AIInvoiceExtractor:
                     os.unlink(p)
 
             context = self._build_context(filename, email_from, email_subject, email_body)
-            return self._call_structured([
+            return self._call_with_retry([
                 {'role': 'system', 'content': self._build_system_prompt(own_company_name)},
                 {'role': 'user', 'content': [{'type': 'text', 'text': context}] + image_contents}
             ])
@@ -270,7 +312,7 @@ class AIInvoiceExtractor:
         try:
             context = self._build_context(filename, email_from, email_subject, email_body)
             user_content = f"{context}\n\nDocument text:\n{text[:5000]}"
-            return self._call_structured([
+            return self._call_with_retry([
                 {'role': 'system', 'content': self._build_system_prompt(own_company_name)},
                 {'role': 'user', 'content': user_content}
             ])
@@ -278,27 +320,25 @@ class AIInvoiceExtractor:
             return {'is_invoice': None, 'document_type': 'error', 'confidence': 'low',
                     'reason': f'AI error: {str(e)}', 'fields': {}}
 
-    def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
-        if not date_str:
+    def _normalize_reference(self, ref: str) -> Optional[str]:
+        """Normalize reference number - uppercase, strip spaces, validate French plates if pattern matches"""
+        if not ref:
             return None
-        for fmt in ('%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y'):
-            try:
-                return datetime.strptime(date_str.strip(), fmt)
-            except ValueError:
-                continue
-        return None
+        # Basic normalization: uppercase and strip spaces
+        normalized = ref.upper().strip()
 
-    def _validate_plate(self, plate: str) -> Optional[str]:
-        """Validate and normalize French SIV license plate (XX-000-XX)"""
-        if not plate:
-            return None
-        cleaned = re.sub(r'[^A-Z0-9]', '', plate.upper())
-        if len(cleaned) != 7:
-            return None
-        valid = (
-            cleaned[0].isalpha() and cleaned[1].isalpha() and
-            cleaned[2].isdigit() and cleaned[3].isdigit() and cleaned[4].isdigit() and
-            cleaned[5].isalpha() and cleaned[6].isalpha() and
-            'O' not in cleaned and 'I' not in cleaned
-        )
-        return (cleaned[:2] + '-' + cleaned[2:5] + '-' + cleaned[5:]) if valid else None
+        # If it looks like a French license plate (XX-NNN-XX or similar), validate it
+        cleaned = re.sub(r'[^A-Z0-9]', '', normalized)
+        if len(cleaned) == 7:
+            # Check if it matches French SIV plate pattern
+            valid_plate = (
+                cleaned[0].isalpha() and cleaned[1].isalpha() and
+                cleaned[2].isdigit() and cleaned[3].isdigit() and cleaned[4].isdigit() and
+                cleaned[5].isalpha() and cleaned[6].isalpha() and
+                'O' not in cleaned and 'I' not in cleaned
+            )
+            if valid_plate:
+                return cleaned[:2] + '-' + cleaned[2:5] + '-' + cleaned[5:]
+
+        # Otherwise, just return the normalized reference
+        return normalized

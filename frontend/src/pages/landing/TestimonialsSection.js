@@ -1,24 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { sectionBadge, sectionHeading } from './_styles';
+import { NOISE_SVG } from './_constants';
 
 const TESTIMONIALS = [
   {
-    quote: "On a réduit le temps de clôture mensuelle de 3 jours à une demi-journée. Les collaborateurs font enfin du vrai travail d'expert-comptable, pas de la ressaisie.",
-    name: "Laurent Morel",
-    role: "Expert-comptable, Cabinet Morel & Fils",
-    avatar: "https://i.pravatar.cc/80?img=11",
+    quote: "Avant Autocontable, je passais mes week-ends à saisir des factures. Maintenant, tout se fait automatiquement. Mon comptable me remercie.",
+    name: "Marc D.",
+    role: "Gérant, PME BTP",
+    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&h=600&fit=crop&crop=face",
+    color: '#10b981',
   },
   {
-    quote: "Le rapprochement d'un dossier complet prenait une journée entière. Maintenant tout un mois tient en 10 minutes. J'ai du mal à croire que c'était aussi long avant.",
-    name: "Thomas Legrand",
-    role: "DAF, Groupe Legrand Industries",
-    avatar: "https://i.pravatar.cc/80?img=33",
+    quote: "J'ai gagné 20 heures par mois. Je peux enfin me concentrer sur mes clients.",
+    name: "Sophie L.",
+    role: "Gérante, Boutique en ligne",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=600&fit=crop&crop=face",
+    color: '#f59e0b',
   },
   {
-    quote: "J'avais peur que ce soit compliqué à mettre en place. On était opérationnels en moins d'une heure. Le support répond en moins de 2h.",
-    name: "Claire Dubois",
-    role: "Responsable comptable, SCI Dubois",
-    avatar: "https://i.pravatar.cc/80?img=47",
+    quote: "Pour notre cabinet, Autocontable a changé la donne. Nous gérons 50 dossiers clients sans effort.",
+    name: "Pierre M.",
+    role: "Expert-Comptable",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&h=600&fit=crop&crop=face",
+    color: '#466cf3',
   },
 ];
 
@@ -82,28 +85,32 @@ export default function TestimonialsSection() {
             Témoignages
           </span>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-            Ce que disent ceux qui ont arrêté la saisie manuelle
+            Ce que disent les cabinets qui ont branché Autocontable
           </h2>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-0">
           {TESTIMONIALS.map((t) => (
-            <blockquote key={t.name} className="bg-white/5 border border-white/10 p-6 flex flex-col gap-6 shadow-[0_1px_3px_rgba(255,255,255,0.04)]">
-              <p className="text-sm text-white/80 leading-relaxed">"{t.quote}"</p>
-              <div className="flex items-center gap-3 mt-auto">
-                <img src={t.avatar} alt={t.name} className="w-9 h-9 rounded-full shrink-0 object-cover" />
-                <cite className="not-italic">
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/50">{t.role}</p>
-                </cite>
+            <div key={t.name} className="relative overflow-hidden min-h-[400px] sm:min-h-[480px]" style={{ backgroundColor: t.color }}>
+              <img src={t.avatar} alt={t.name} className="absolute inset-0 w-full h-full object-cover object-top mix-blend-luminosity opacity-70" />
+              <div className="absolute inset-0 opacity-[0.35] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 40%, ${t.color} 75%)` }} />
+              <div className="absolute top-5 right-5 text-right">
+                <p className="text-sm font-semibold text-white">{t.name}</p>
+                <p className="text-xs text-white/70">{t.role}</p>
               </div>
-            </blockquote>
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <p className="text-base sm:text-lg font-medium text-white leading-snug">
+                  "{t.quote}"
+                </p>
+              </div>
+            </div>
           ))}
         </div>
 
-        <div className="mt-20 border-t border-white/10 pt-16 grid grid-cols-2 lg:grid-cols-4 gap-10 text-center">
-          {STATS.map((s) => (
-            <div key={s.label} className="flex flex-col items-center gap-2">
+        <div className="mt-0 grid grid-cols-2 lg:grid-cols-4 border border-white/10 border-t-0">
+          {STATS.map((s, i) => (
+            <div key={s.label} className={`flex flex-col items-center gap-2 py-8 px-4 text-center ${i > 0 ? 'border-l border-white/10' : ''}`}>
               <p className="text-2xl sm:text-3xl font-semibold text-white tracking-tight tabular-nums">
                 <Counter end={s.end} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} />
               </p>

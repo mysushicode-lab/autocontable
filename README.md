@@ -13,6 +13,7 @@ Système automatisé de traitement des factures fournisseurs et rapprochement ba
 
 ### Gestion des Factures
 - **Récupération Email** : Télécharge automatiquement les factures PDF des fournisseurs
+- **WhatsApp Business** : Vos clients PME envoient leurs factures par WhatsApp (photos/PDF) — traitement automatique
 - **Extraction Intelligente** : Numéro de facture, date, montant, TVA, N° commande, BL
 - **Données Carrosserie** : Immatriculation véhicule, N° dossier/OT, mode de paiement
 
@@ -49,6 +50,27 @@ src/
 ├── api/                 # REST API endpoints
 └── scheduler/           # Automated periodic tasks
 ```
+
+## Database Support
+
+Autocontable supports both **SQLite** (default, for development) and **PostgreSQL** (recommended for production with concurrent users).
+
+### SQLite (Default)
+- No setup required
+- Single file database at `data/accounting.db`
+- Perfect for development and single-user deployments
+
+### PostgreSQL (Production)
+- Better performance with multiple concurrent users
+- Connection pooling and optimized queries
+- Easy migration from SQLite
+
+To use PostgreSQL, set the `DATABASE_URL` environment variable:
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+```
+
+See `scripts/README.md` for migration instructions from SQLite to PostgreSQL.
 
 ## Setup
 
@@ -87,12 +109,12 @@ uvicorn src.api.main:app --reload
 
 ### Traitement Automatique des Factures
 ```python
-from src.email_ingestion import EmailClient
+from src.email_ingestion import IMAPClient
 from src.invoice_processor import InvoiceProcessor
 
 # Récupère les factures des fournisseurs auto
-email = EmailClient()
-emails = email.fetch_invoices()  # Cherche : facture, BL, commande, avoir
+email = IMAPClient(server='imap.gmail.com', port=993, email='user@example.com', password='pass', folder='INBOX')
+emails = email.fetch_emails(search_subject='facture', mark_as_read=True)  # Cherche : facture, BL, commande, avoir
 
 # Extrait les données (y compris immatriculation, N° OT)
 processor = InvoiceProcessor()
@@ -140,9 +162,40 @@ exporter.export_invoices_to_csv('export_mars_2024.csv', month=3, year=2024)
 
 Edit `config/.env`:
 - Email credentials (IMAP/Gmail)
+- WhatsApp Business API (optional - see below)
 - Database path
 - OCR settings
 - Bank statement format preferences
+
+### WhatsApp Business Setup (Optional)
+
+To enable WhatsApp invoice ingestion:
+
+1. Create a WhatsApp Business account via Meta for Developers
+2. Get your credentials from the Meta Business Suite:
+   - Phone Number ID
+   - Access Token
+   - Verify Token (choose your own secret)
+
+3. Add to `.env`:
+```bash
+WHATSAPP_VERIFY_TOKEN=your-verify-token
+WHATSAPP_API_TOKEN=your-meta-api-token
+WHATSAPP_PHONE_NUMBER_ID=your-phone-number-id
+```
+
+4. Configure webhook in Meta dashboard:
+   - Webhook URL: `https://your-domain.com/api/whatsapp/webhook`
+   - Verify token: same as `WHATSAPP_VERIFY_TOKEN`
+   - Subscribe to: `messages`
+
+5. Map client phone numbers to dossiers via Settings UI or API:
+```bash
+POST /api/whatsapp/mappings
+{"phone": "33612345678", "client_file_id": 42}
+```
+
+Clients send invoices → WhatsApp webhook → automatic processing → appears in their dossier.
 
 ## License
 

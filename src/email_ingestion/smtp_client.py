@@ -45,7 +45,7 @@ class SMTPClient:
     
     def send_password_reset(self, to_email: str, reset_token: str, base_url: str = None) -> bool:
         """Send password reset email"""
-        base_url = base_url or os.getenv('FRONTEND_URL', 'https://carrosserie-erik.fr')
+        base_url = base_url or os.getenv('FRONTEND_URL', 'http://localhost:3000')
         reset_link = f"{base_url}/reset-password?token={reset_token}"
         
         subject = "Réinitialisation de votre mot de passe - autofactmatch"

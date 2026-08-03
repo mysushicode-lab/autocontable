@@ -15,7 +15,11 @@ const Login = () => {
   const loginMutation = useMutation(
     ({ username, password }) => login(username, password),
     {
-      onSuccess: () => navigate('/dashboard'),
+      onSuccess: (data) => {
+        // Redirect based on user role
+        const redirectPath = data.user.role === 'client' ? '/portal' : '/dashboard';
+        navigate(redirectPath);
+      },
       onError: (err) => setError(err?.response?.data?.detail || 'Identifiants invalides'),
     }
   );

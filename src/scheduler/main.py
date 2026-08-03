@@ -14,13 +14,14 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
 
-from src.email_ingestion import EmailClient
-from src.storage.models import Settings, Organization
+from src.email_ingestion import IMAPClient
+from src.storage.models import Settings, Organization, ClientFile
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
 from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash, BankTransaction
 from src.reconciliation import run_auto_reconciliation
+import calendar
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
@@ -144,7 +145,7 @@ class InvoiceScheduler:
             category=invoice_data.get('category'),
             purchase_order=invoice_data.get('purchase_order'),
             delivery_note=invoice_data.get('delivery_note'),
-            vehicle_registration=invoice_data.get('vehicle_registration'),
+            reference_number=invoice_data.get('reference_number'),
             work_order_reference=invoice_data.get('work_order_reference'),
             payment_method=invoice_data.get('payment_method'),
             organization_id=organization_id,
@@ -175,8 +176,13 @@ class InvoiceScheduler:
         email_client = None
         processed_count = 0
         try:
-            email_client = EmailClient(**imap_settings)
-            emails = email_client.fetch_invoices(mark_as_read=True, since_date=since_date)
+            email_client = IMAPClient(**imap_settings)
+            emails = email_client.fetch_emails(
+                folder=imap_settings.get('folder', 'INBOX'),
+                search_subject='facture',
+                since_date=since_date,
+                mark_as_read=True
+            )
             logger.info(f"Org {organization_id}: found {len(emails)} invoice emails")
 
             invoice_processor = InvoiceProcessor()
@@ -185,7 +191,8 @@ class InvoiceScheduler:
 
             for mail in emails:
                 message_id = mail.get('message_id', '')
-                attachments = email_client.download_attachments(mail, 'data/invoices')
+                from src.utils.paths import INVOICES_DIR
+                attachments = email_client.download_attachments(mail, INVOICES_DIR)
                 for idx, attachment_path in enumerate(attachments):
                     attachment = mail['attachments'][idx] if idx < len(mail['attachments']) else {}
                     content_hash = attachment.get('content_hash', '')
@@ -251,6 +258,64 @@ class InvoiceScheduler:
         return processed_count
 
     # ------------------------------------------------------------------
+    # Auto-push accounting entries (scheduled)
+    # ------------------------------------------------------------------
+    def auto_push_entries(self):
+        """Auto-push accounting entries to configured integrations at end of month."""
+        from src.integrations import get_integration
+        from src.api.integrations import _get_integration_config, _build_entries
+
+        session = db.get_session()
+        try:
+            now = datetime.utcnow()
+            # Only run on the last 2 days of the month or first day of next month
+            last_day = calendar.monthrange(now.year, now.month)[1]
+            if now.day < last_day - 1 and now.day != 1:
+                return
+
+            # Determine which month to push (previous month if we're on day 1)
+            if now.day <= 2:
+                if now.month == 1:
+                    push_year, push_month = now.year - 1, 12
+                else:
+                    push_year, push_month = now.year, now.month - 1
+            else:
+                push_year, push_month = now.year, now.month
+
+            # Iterate all orgs
+            orgs = session.query(Organization).all()
+            for org in orgs:
+                # Find all client files with integrations configured
+                client_files = session.query(ClientFile).filter(
+                    ClientFile.organization_id == org.id,
+                    ClientFile.is_active == True
+                ).all()
+
+                for cf in client_files:
+                    config = _get_integration_config(session, org.id, cf.id)
+                    if not config or not config.get("integration_name"):
+                        continue
+
+                    # Check if auto_push is enabled for this dossier
+                    auto_push_enabled = config.get("auto_push", False)
+                    if not auto_push_enabled:
+                        continue
+
+                    integration = get_integration(config["integration_name"], config)
+                    if not integration:
+                        continue
+
+                    # Build and push entries
+                    entries = _build_entries(session, org.id, cf.id, push_year, push_month)
+                    if entries:
+                        result = integration.push_entries(entries)
+                        logger.info(f"[auto-push] {cf.name} ({config['integration_name']}): {result.entries_pushed} entries, success={result.success}")
+        except Exception as e:
+            logger.error(f"[auto-push] Error: {e}")
+        finally:
+            session.close()
+
+    # ------------------------------------------------------------------
     # Tick: iterate over every configured org
     # ------------------------------------------------------------------
     def tick(self):
@@ -306,6 +371,18 @@ class InvoiceScheduler:
             replace_existing=True,
             max_instances=1,
             misfire_grace_time=300,
+        )
+
+        # Auto-push job (check twice a day)
+        logger.info("Scheduling auto-push job (12h interval)")
+        self.scheduler.add_job(
+            self.auto_push_entries,
+            trigger=IntervalTrigger(hours=12),
+            id='auto_push_entries',
+            name='Auto-push accounting entries',
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=3600,
         )
 
         try:

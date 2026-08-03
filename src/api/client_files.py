@@ -8,6 +8,8 @@ from datetime import datetime
 from src.storage.database import db
 from src.storage.models import ClientFile, Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus, ProcessedFileHash
 from src.api.auth import get_current_user
+from src.utils.siret import validate_siret
+from src.api.webhooks import fire_webhook
 
 _SAFE_DATA_ROOT = os.path.realpath(os.path.join(os.getcwd(), "data"))
 
@@ -48,13 +50,26 @@ def _serialize(cf: ClientFile) -> dict:
 @router.get("")
 def list_client_files(current_user: dict = Depends(get_current_user)):
     """List all dossiers clients for the cabinet."""
+    from src.api.permissions import get_accessible_dossier_ids
+
     session = db.get_session()
     org_id = current_user["organization_id"]
+    role = current_user.get("role", "accountant")
     try:
-        files = session.query(ClientFile).filter(
-            ClientFile.organization_id == org_id
-        ).order_by(ClientFile.name).all()
+        if role == "admin":
+            files = session.query(ClientFile).filter(
+                ClientFile.organization_id == org_id
+            ).order_by(ClientFile.name).all()
+        else:
+            accessible_ids = get_accessible_dossier_ids(session, current_user["id"], org_id, role)
+            files = session.query(ClientFile).filter(
+                ClientFile.organization_id == org_id,
+                ClientFile.id.in_(accessible_ids)
+            ).order_by(ClientFile.name).all()
         return {"client_files": [_serialize(cf) for cf in files]}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -62,9 +77,29 @@ def list_client_files(current_user: dict = Depends(get_current_user)):
 @router.post("/")
 def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(get_current_user)):
     """Create a new dossier client."""
+    if payload.siret:
+        siret_check = validate_siret(payload.siret)
+        if not siret_check["valid"]:
+            raise HTTPException(status_code=400, detail=siret_check["error"])
+
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
+        # Lock the org row to serialize concurrent dossier creations (PostgreSQL)
+        from src.api.billing import get_org_plan
+        from src.storage.models import Organization
+        session.query(Organization).filter(Organization.id == org_id).with_for_update().first()
+
+        plan = get_org_plan(session, org_id)
+        current_count = session.query(ClientFile).filter(
+            ClientFile.organization_id == org_id,
+            ClientFile.is_active == True
+        ).count()
+        if current_count >= plan["max_dossiers"]:
+            raise HTTPException(
+                403,
+                f"Limite de {plan['max_dossiers']} dossiers atteinte pour le plan {plan['label']}. Passez au plan supérieur."
+            )
         cf = ClientFile(
             organization_id=org_id,
             name=payload.name,
@@ -78,7 +113,18 @@ def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(g
         session.add(cf)
         session.commit()
         session.refresh(cf)
+
+        # Fire webhook
+        fire_webhook(org_id, "dossier.created", {
+            "client_file_id": cf.id,
+            "name": cf.name,
+            "siret": cf.siret,
+        })
+
         return {"message": "Dossier créé", "client_file": _serialize(cf)}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -86,13 +132,24 @@ def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(g
 @router.get("/summary")
 def list_client_files_summary(current_user: dict = Depends(get_current_user)):
     """Portfolio view: each dossier with invoice counts, total, reconciliation state."""
+    from src.api.permissions import get_accessible_dossier_ids
+
     session = db.get_session()
     org_id = current_user["organization_id"]
+    role = current_user.get("role", "accountant")
     try:
-        files = session.query(ClientFile).filter(
-            ClientFile.organization_id == org_id,
-            ClientFile.is_active == True,
-        ).order_by(ClientFile.name).all()
+        if role == "admin":
+            files = session.query(ClientFile).filter(
+                ClientFile.organization_id == org_id,
+                ClientFile.is_active == True,
+            ).order_by(ClientFile.name).all()
+        else:
+            accessible_ids = get_accessible_dossier_ids(session, current_user["id"], org_id, role)
+            files = session.query(ClientFile).filter(
+                ClientFile.organization_id == org_id,
+                ClientFile.is_active == True,
+                ClientFile.id.in_(accessible_ids)
+            ).order_by(ClientFile.name).all()
 
         result = []
         for cf in files:
@@ -125,6 +182,9 @@ def list_client_files_summary(current_user: dict = Depends(get_current_user)):
             })
 
         return {"client_files": result}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
@@ -141,12 +201,20 @@ def get_client_file(file_id: int, current_user: dict = Depends(get_current_user)
         if not cf:
             raise HTTPException(status_code=404, detail="Dossier introuvable")
         return _serialize(cf)
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
 
 
 @router.put("/{file_id}")
 def update_client_file(file_id: int, payload: ClientFileUpdate, current_user: dict = Depends(get_current_user)):
+    if payload.siret:
+        siret_check = validate_siret(payload.siret)
+        if not siret_check["valid"]:
+            raise HTTPException(status_code=400, detail=siret_check["error"])
+
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
@@ -162,8 +230,18 @@ def update_client_file(file_id: int, payload: ClientFileUpdate, current_user: di
         session.commit()
         session.refresh(cf)
         return {"message": "Dossier mis à jour", "client_file": _serialize(cf)}
+    except Exception:
+        session.rollback()
+        raise
     finally:
         session.close()
+
+
+@router.get("/validate-siret/{siret}")
+def check_siret(siret: str, current_user: dict = Depends(get_current_user)):
+    """Validate a SIRET number."""
+    result = validate_siret(siret)
+    return result
 
 
 @router.delete("/{file_id}")

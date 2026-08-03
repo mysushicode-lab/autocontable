@@ -1,19 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save } from 'lucide-react';
-
-const PREDEFINED_CATEGORIES = [
-  'Achats de marchandises',
-  'Fournitures et consommables',
-  'Sous-traitance',
-  'Équipement et outillage',
-  'Énergie et locaux',
-  'Assurances et frais',
-  'Déplacements et transports',
-  'Informatique et communication',
-  'Services et prestations',
-  'Formation et divers',
-];
+import { PREDEFINED_CATEGORIES } from '../constants/categories';
 
 const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSave, isLoading }) => {
   if (!editingInvoice) return null;
@@ -68,8 +56,8 @@ const InvoiceEditModal = ({ editingInvoice, editForm, setEditForm, onClose, onSa
             <input type="date" className="w-full px-3 py-2 border rounded-md text-sm" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">Référence véhicule / immatriculation</label>
-            <input className="w-full px-3 py-2 border rounded-md text-sm uppercase" value={editForm.vehicle_registration} onChange={e => setEditForm(f => ({ ...f, vehicle_registration: e.target.value }))} />
+            <label className="text-xs font-medium text-gray-600">Référence (immatriculation, n° dossier, etc.)</label>
+            <input className="w-full px-3 py-2 border rounded-md text-sm uppercase" value={editForm.reference_number} onChange={e => setEditForm(f => ({ ...f, reference_number: e.target.value }))} />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">N° Dossier / Référence interne</label>

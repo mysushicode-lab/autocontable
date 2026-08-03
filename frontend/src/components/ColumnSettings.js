@@ -10,7 +10,7 @@ const DEFAULT_COLUMNS = {
   amount_tax: true,
   amount: true,
   date: true,
-  vehicle: true,
+  reference: true,
   status: true,
   actions: true
 };
@@ -23,7 +23,7 @@ const COLUMN_LABELS = {
   amount_tax: 'TVA',
   amount: 'Montant TTC',
   date: 'Date',
-  vehicle: 'Référence/Dossier',
+  reference: 'Référence/Dossier',
   status: 'Statut',
   actions: 'Actions'
 };

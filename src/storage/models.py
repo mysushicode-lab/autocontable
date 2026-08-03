@@ -40,6 +40,7 @@ class InvoiceStatus(enum.Enum):
 class UserRole(enum.Enum):
     ADMIN = "admin"
     ACCOUNTANT = "accountant"
+    CLIENT = "client"
 
 
 class Organization(Base):
@@ -47,7 +48,7 @@ class Organization(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
-    plan_type = Column(String(50), default='trial')  # 'trial', 'free', 'paid'
+    plan_type = Column(String(50), default='starter')  # 'starter', 'pro', 'cabinet', 'reseau'
     trial_start_date = Column(DateTime, nullable=True)
     trial_end_date = Column(DateTime, nullable=True)
     is_trial_active = Column(Boolean, default=True)
@@ -92,6 +93,7 @@ class User(Base):
     email = Column(String(100), nullable=True, unique=True, index=True)
     profile_photo = Column(String(255), nullable=True)
     organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     organization = relationship("Organization", back_populates="users")
@@ -129,7 +131,7 @@ class Invoice(Base):
 
     purchase_order = Column(String(100), nullable=True)
     delivery_note = Column(String(100), nullable=True)
-    vehicle_registration = Column(String(20), nullable=True)
+    reference_number = Column(String(50), nullable=True)
     work_order_reference = Column(String(100), nullable=True)
     payment_method = Column(String(50), nullable=True)
     
@@ -218,6 +220,35 @@ class ReconciliationMatch(Base):
     notes = Column(Text, nullable=True)
     matched_at = Column(DateTime, default=datetime.utcnow)
     matched_by = Column(String(100), nullable=True)
-    
+
     invoice = relationship("Invoice", back_populates="matches")
     transaction = relationship("BankTransaction", back_populates="matches")
+
+
+class DossierPermission(Base):
+    """Links users to specific dossiers they can access."""
+    __tablename__ = 'dossier_permissions'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=False)
+    permission_level = Column(String(20), default='read_write')  # 'read_only', 'read_write', 'admin'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'client_file_id', name='uq_user_dossier_perm'),
+    )
+
+
+class AuditLog(Base):
+    __tablename__ = 'audit_logs'
+
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    action = Column(String(50), nullable=False)
+    entity_type = Column(String(50), nullable=False)
+    entity_id = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

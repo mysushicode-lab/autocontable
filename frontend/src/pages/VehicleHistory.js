@@ -15,7 +15,7 @@ import { formatCurrency, formatDate, formatDateShort } from '../utils/formatHelp
 import { downloadAuthenticatedFile } from '../utils/downloadHelpers';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { fetchVehicleHistory } from '../api';
+import { fetchReferenceHistory } from '../api';
 
 const handleDownloadInvoice = (invoiceId) =>
   downloadAuthenticatedFile(`/api/invoices/${invoiceId}/download`, `facture_${invoiceId}.pdf`)
@@ -28,8 +28,8 @@ const ReferenceHistory = () => {
   const navigate = useNavigate();
 
   const { data: result, isFetching, isError } = useQuery(
-    ['vehicle-history', activeRef],
-    () => fetchVehicleHistory(activeRef),
+    ['reference-history', activeRef],
+    () => fetchReferenceHistory(activeRef),
     { enabled: !!activeRef }
   );
 

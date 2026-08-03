@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   Briefcase, Plus, CheckCircle, AlertTriangle, AlertCircle,
-  Pencil, Trash2, ChevronRight, Search, X, Building2
+  Pencil, Trash2, ChevronRight, Search, X, Building2, Check
 } from 'lucide-react';
 import {
   fetchClientFilesSummary, createClientFile, updateClientFile, deleteClientFile
@@ -13,6 +13,8 @@ import { useClientFile } from '../context/ClientFileContext';
 import HelpTooltip from '../components/ui/HelpTooltip';
 import { formatCurrency } from '../utils/formatHelpers';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { validateSiret } from '../utils/siretValidation';
+import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 
 const STATUS_CONFIG = {
   ok:      { label: 'À jour',          color: 'text-green-600',  bg: 'bg-green-50',  dot: 'bg-green-500',  Icon: CheckCircle },
@@ -27,11 +29,13 @@ const Portfolio = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectClientFile } = useClientFile();
+  const { add: addNotification } = useNotifications();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingFile, setEditingFile] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [archiveConfirm, setArchiveConfirm] = useState(null);
+  const [siretValidation, setSiretValidation] = useState({ valid: false, error: null });
 
   const STATUS_ORDER = { alert: 0, warning: 1, empty: 2, ok: 3 };
   const { data, isLoading } = useQuery('client-files-summary', fetchClientFilesSummary, {
@@ -51,7 +55,14 @@ const Portfolio = () => {
     .sort((a, b) => (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4));
 
   const createMutation = useMutation(createClientFile, {
-    onSuccess: () => { queryClient.invalidateQueries('client-files-summary'); setShowForm(false); setForm(EMPTY_FORM); }
+    onSuccess: () => { queryClient.invalidateQueries('client-files-summary'); setShowForm(false); setForm(EMPTY_FORM); },
+    onError: (err) => {
+      if (err.response?.status === 403) {
+        addNotification(NOTIF_TYPES.WARNING, 'Limite atteinte', err.response?.data?.detail || 'Passez au plan supérieur pour ajouter plus de dossiers.');
+      } else {
+        addNotification(NOTIF_TYPES.ERROR, 'Erreur', 'Impossible de créer le dossier.');
+      }
+    }
   });
   const updateMutation = useMutation(({ id, data }) => updateClientFile(id, data), {
     onSuccess: () => { queryClient.invalidateQueries('client-files-summary'); setEditingFile(null); setForm(EMPTY_FORM); }
@@ -69,6 +80,11 @@ const Portfolio = () => {
     e.stopPropagation();
     setEditingFile(file);
     setForm({ name: file.name, siret: file.siret || '', activity: file.activity || '', contact_email: file.contact_email || '', notes: file.notes || '' });
+    if (file.siret) {
+      setSiretValidation(validateSiret(file.siret));
+    } else {
+      setSiretValidation({ valid: false, error: null });
+    }
   };
 
   const handleSubmit = (e) => {
@@ -100,7 +116,7 @@ const Portfolio = () => {
         </div>
         {data?.client_files?.length > 0 && (
           <button
-            onClick={() => { setShowForm(true); setEditingFile(null); setForm(EMPTY_FORM); }}
+            onClick={() => { setShowForm(true); setEditingFile(null); setForm(EMPTY_FORM); setSiretValidation({ valid: false, error: null }); }}
             className="flex items-center gap-2 px-2 py-2 sm:px-4 bg-gray-900 text-white rounded-md hover:bg-gray-800 text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
@@ -129,7 +145,7 @@ const Portfolio = () => {
           <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 mb-4">Aucun dossier client. Créez votre premier dossier.</p>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => { setShowForm(true); setSiretValidation({ valid: false, error: null }); }}
             className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800"
           >
             Créer un dossier
@@ -233,7 +249,7 @@ const Portfolio = () => {
                 {editingFile ? 'Modifier le dossier' : 'Nouveau dossier client'}
               </h2>
               <button
-                onClick={() => { setShowForm(false); setEditingFile(null); setForm(EMPTY_FORM); }}
+                onClick={() => { setShowForm(false); setEditingFile(null); setForm(EMPTY_FORM); setSiretValidation({ valid: false, error: null }); }}
                 className="p-1 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-5 h-5" />
@@ -253,13 +269,28 @@ const Portfolio = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-700">SIRET</label>
-                  <input
-                    className="w-full mt-1 px-3 py-2 border rounded-md text-sm"
-                    placeholder="12345678901234"
-                    maxLength={14}
-                    value={form.siret}
-                    onChange={e => setForm(f => ({ ...f, siret: e.target.value }))}
-                  />
+                  <div className="relative">
+                    <input
+                      className={`w-full mt-1 px-3 py-2 border rounded-md text-sm pr-8 ${
+                        form.siret && siretValidation.error ? 'border-red-300' :
+                        form.siret && siretValidation.valid ? 'border-green-300' : ''
+                      }`}
+                      placeholder="12345678901234"
+                      maxLength={17}
+                      value={form.siret}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setForm(f => ({ ...f, siret: value }));
+                        setSiretValidation(validateSiret(value));
+                      }}
+                    />
+                    {form.siret && siretValidation.valid && (
+                      <Check className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+                  {form.siret && siretValidation.error && (
+                    <p className="text-[10px] text-red-500 mt-0.5">{siretValidation.error}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-700">Activité</label>
@@ -294,7 +325,7 @@ const Portfolio = () => {
               <div className="flex gap-3 justify-end pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setEditingFile(null); setForm(EMPTY_FORM); }}
+                  onClick={() => { setShowForm(false); setEditingFile(null); setForm(EMPTY_FORM); setSiretValidation({ valid: false, error: null }); }}
                   className="px-4 py-2 border rounded-md text-sm hover:bg-gray-50"
                 >
                   Annuler

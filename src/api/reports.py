@@ -1,12 +1,17 @@
 """Reporting endpoints"""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from typing import Optional
+import os
+import glob
+from datetime import datetime
 
 from src.storage.database import db
 from src.reporting.report_generator import ReportGenerator
 from src.reporting.exporter import Exporter
 from src.api.auth import get_current_user
+from src.api.audit import log_action
+from src.utils.paths import EXPORTS_DIR
 
 router = APIRouter()
 
@@ -40,22 +45,37 @@ def get_trends_report(months: int = 12, current_user: dict = Depends(get_current
 def export_invoices_csv(
     month: Optional[int] = None,
     year: Optional[int] = None,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    request: Request = None
 ):
     """Export invoices to CSV"""
     import os
     from fastapi.responses import FileResponse
     from datetime import datetime
-    
+
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
         exporter = Exporter(session, org_id=org_id)
-        os.makedirs("data/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         filename = f"invoices_{year or datetime.now().year}_{month or datetime.now().month}.csv"
         # Scope output path by organization to avoid collisions between tenants
-        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
+        output_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{filename}")
         exporter.export_invoices_to_csv(output_path, month, year)
+
+        # Log audit trail
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            org_id,
+            current_user["id"],
+            "export",
+            "invoice",
+            None,
+            {"format": "csv", "year": year, "month": month},
+            ip_address
+        )
+
         return FileResponse(output_path, filename=filename)
     finally:
         session.close()
@@ -77,9 +97,9 @@ def export_transactions_csv(
     try:
         org_id = current_user["organization_id"]
         exporter = Exporter(session, org_id=org_id)
-        os.makedirs("data/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         filename = f"transactions_{year or datetime.now().year}_{month or datetime.now().month}.csv"
-        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
+        output_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{filename}")
         exporter.export_transactions_to_csv(output_path, month, year)
         return FileResponse(output_path, filename=filename)
     finally:
@@ -87,7 +107,7 @@ def export_transactions_csv(
 
 
 @router.get("/export/dossier")
-def export_dossier_zip(year: int, month: int, current_user: dict = Depends(get_current_user)):
+def export_dossier_zip(year: int, month: int, current_user: dict = Depends(get_current_user), request: Request = None):
     """Export full accounting dossier as ZIP: Excel report + all invoice PDFs for the period"""
     import os, zipfile, re, calendar as cal
     from fastapi.responses import FileResponse
@@ -106,13 +126,13 @@ def export_dossier_zip(year: int, month: int, current_user: dict = Depends(get_c
             Invoice.date <= last_day,
         ).all()
 
-        os.makedirs("data/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         zip_filename = f"dossier_comptable_{year}_{month:02d}.zip"
-        zip_path = os.path.join("data/exports", f"org_{org_id}_{zip_filename}")
+        zip_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{zip_filename}")
 
         exporter = Exporter(session, org_id=org_id)
         excel_filename = f"rapport_{year}_{month:02d}.xlsx"
-        excel_path = os.path.join("data/exports", f"org_{org_id}_{excel_filename}")
+        excel_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{excel_filename}")
         exporter.export_monthly_report_to_excel(excel_path, year, month)
 
         def safe_name(s: str) -> str:
@@ -137,6 +157,19 @@ def export_dossier_zip(year: int, month: int, current_user: dict = Depends(get_c
                     arcname = f"factures/{date_str}_{supplier_str}_{inv_num}{ext}"
                     zf.write(file_path, arcname)
 
+        # Log audit trail
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            org_id,
+            current_user["id"],
+            "export",
+            "invoice",
+            None,
+            {"format": "zip", "year": year, "month": month, "count": len(invoices)},
+            ip_address
+        )
+
         return FileResponse(zip_path, media_type="application/zip", filename=zip_filename)
     finally:
         session.close()
@@ -152,9 +185,9 @@ def export_monthly_report_excel(year: int, month: int, current_user: dict = Depe
     try:
         org_id = current_user["organization_id"]
         exporter = Exporter(session, org_id=org_id)
-        os.makedirs("data/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         filename = f"monthly_report_{year}_{month:02d}.xlsx"
-        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
+        output_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{filename}")
         exporter.export_monthly_report_to_excel(output_path, year, month)
         return FileResponse(output_path, filename=filename)
     finally:
@@ -171,9 +204,9 @@ def export_grand_livre_excel(year: int, month: int, current_user: dict = Depends
     try:
         org_id = current_user["organization_id"]
         exporter = Exporter(session, org_id=org_id)
-        os.makedirs("data/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         filename = f"grand_livre_{year}_{month:02d}.xlsx"
-        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
+        output_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{filename}")
         exporter.export_grand_livre_to_excel(output_path, year, month)
         return FileResponse(output_path, filename=filename)
     finally:
@@ -185,15 +218,85 @@ def export_balance_excel(year: int, month: int, current_user: dict = Depends(get
     """Export Balance to Excel"""
     import os
     from fastapi.responses import FileResponse
-    
+
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
         exporter = Exporter(session, org_id=org_id)
-        os.makedirs("data/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         filename = f"balance_{year}_{month:02d}.xlsx"
-        output_path = os.path.join("data/exports", f"org_{org_id}_{filename}")
+        output_path = os.path.join(EXPORTS_DIR, f"org_{org_id}_{filename}")
         exporter.export_balance_to_excel(output_path, year, month)
         return FileResponse(output_path, filename=filename)
     finally:
         session.close()
+
+
+@router.get("/export/fec")
+def export_fec(year: int, month: int, current_user: dict = Depends(get_current_user), request: Request = None):
+    """Export FEC (Fichier des Écritures Comptables) for DGFiP"""
+    import os
+    from fastapi.responses import FileResponse
+    from src.storage.models import ClientFile
+
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        exporter = Exporter(session, org_id=org_id)
+
+        # Try to get SIREN from active client file
+        siren = None
+        client_file = session.query(ClientFile).filter(
+            ClientFile.organization_id == org_id,
+            ClientFile.is_active == True
+        ).first()
+
+        if client_file and client_file.siret:
+            # SIREN is the first 9 digits of SIRET
+            siren = client_file.siret[:9] if len(client_file.siret) >= 9 else None
+
+        # Generate FEC file
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
+        file_path = exporter.export_fec(year, month, siren)
+
+        # Extract filename from path for response
+        filename = os.path.basename(file_path)
+
+        # Log audit trail
+        ip_address = request.client.host if request else None
+        log_action(
+            session,
+            org_id,
+            current_user["id"],
+            "export",
+            "fec",
+            None,
+            {"format": "fec", "year": year, "month": month, "siren": siren or "000000000"},
+            ip_address
+        )
+
+        return FileResponse(file_path, media_type="text/plain; charset=utf-8", filename=filename)
+    finally:
+        session.close()
+
+
+@router.get("/backup-status")
+def get_backup_status(current_user: dict = Depends(get_current_user)):
+    """Get backup status (most recent backup info)."""
+    backup_dir = os.getenv('BACKUP_DIR', '/app/backups')
+    if not os.path.isdir(backup_dir):
+        return {"has_backups": False, "message": "No backup directory found"}
+
+    backups = sorted(glob.glob(os.path.join(backup_dir, "autocontable_backup_*.tar.gz")), reverse=True)
+    if not backups:
+        return {"has_backups": False, "message": "No backups found"}
+
+    latest = backups[0]
+    stat = os.stat(latest)
+    return {
+        "has_backups": True,
+        "latest_backup": os.path.basename(latest),
+        "latest_date": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        "size_mb": round(stat.st_size / (1024 * 1024), 2),
+        "total_backups": len(backups),
+    }

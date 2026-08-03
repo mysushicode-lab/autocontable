@@ -17,16 +17,16 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 # Exact-match tolerance (≤ 1 cent counts as "exact")
 MATCHING_AMOUNT_TOLERANCE = float(os.getenv('MATCHING_AMOUNT_TOLERANCE', 0.01))
 # Close-match tolerance for AI eligibility (≤ 5 %)
-MATCHING_AMOUNT_CLOSE_PCT = 0.05
+MATCHING_AMOUNT_CLOSE_PCT = float(os.getenv('MATCHING_AMOUNT_CLOSE_PCT', 0.05))
 # Date window used for rule-based "near" signal (7 calendar days)
-DATE_NEAR_DAYS = 7
+DATE_NEAR_DAYS = int(os.getenv('MATCHING_DATE_NEAR_DAYS', 7))
 # Date window used for AI eligibility (90 calendar days)
 MATCHING_DATE_WINDOW_DAYS = int(os.getenv('MATCHING_DATE_WINDOW_DAYS', 90))
 # Pre-filter: outer limits before any scoring (wide net)
-PRE_FILTER_DATE_DAYS = 60       # payment within 60 days of invoice
-PRE_FILTER_AMOUNT_PCT = 0.20    # absolute-value difference ≤ 20 %
+PRE_FILTER_DATE_DAYS = int(os.getenv('MATCHING_PRE_FILTER_DATE_DAYS', 60))
+PRE_FILTER_AMOUNT_PCT = float(os.getenv('MATCHING_PRE_FILTER_AMOUNT_PCT', 0.20))
 # Safety cap: never call AI more than this many times per reconciliation run
-MAX_AI_CALLS_PER_RUN = 25
+MAX_AI_CALLS_PER_RUN = int(os.getenv('MAX_AI_CALLS_PER_RUN', 25))
 
 
 class ReconciliationEngine:
@@ -84,7 +84,7 @@ class ReconciliationEngine:
                 transaction_id=transaction.id,
                 match_score=score,
                 match_type='automatic',
-                status='confirmed',
+                status='confirmed' if score >= 0.95 else 'pending_review',
                 organization_id=organization_id,
             )
             self.session.add(match)
@@ -238,7 +238,7 @@ class ReconciliationEngine:
             )
 
             response = openai.chat.completions.create(
-                model="gpt-4o-mini",
+                model=os.getenv("AI_PRIMARY_MODEL", "gpt-4o-mini"),
                 messages=[
                     {"role": "system", "content": "Expert en rapprochement bancaire. JSON uniquement."},
                     {"role": "user", "content": prompt},

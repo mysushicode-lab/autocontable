@@ -10,6 +10,7 @@ import {
   BarChart3,
   Archive,
   Download,
+  FileCheck,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { fetchMonthlyReport, fetchTrends, fetchInvoices, getExportUrl } from '../api';
@@ -216,6 +217,12 @@ const Reports = () => {
     downloadAuthenticatedFile(
       getExportUrl('/api/reports/export/monthly-report', { year, month }),
       `monthly_report_${year}_${month}.xlsx`
+    ).catch(console.error);
+
+  const handleFecExport = () =>
+    downloadAuthenticatedFile(
+      getExportUrl('/api/reports/export/fec', { year, month }),
+      `FEC_${year}_${String(month).padStart(2, '0')}.txt`
     ).catch(console.error);
 
   // Use real 12-month trends data instead of single month
@@ -425,7 +432,7 @@ const Reports = () => {
       </div>
 
       {/* Documents comptables */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DocumentCard
           title="Grand Livre"
           description="Toutes les écritures comptables"
@@ -443,6 +450,12 @@ const Reports = () => {
           description="Détail des factures fournisseurs"
           icon={TrendingUp}
           onExport={exportJournalAchats}
+        />
+        <DocumentCard
+          title="Export FEC (DGFiP)"
+          description="Fichier des Écritures Comptables"
+          icon={FileCheck}
+          onExport={handleFecExport}
         />
       </div>
     </div>
