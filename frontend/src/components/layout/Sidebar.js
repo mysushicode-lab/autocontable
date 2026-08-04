@@ -1,10 +1,13 @@
+'use client';
+
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   FolderKanban, Gauge, Receipt, GitMerge, BookMarked, TrendingUp,
   SlidersHorizontal, Shield, LogOut, ArrowUp, BarChart3, Plug,
 } from 'lucide-react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { fetchPendingMatches, fetchBillingUsage } from '../../api';
 import { formatDateMedium } from '../../utils/formatHelpers';
@@ -23,8 +26,8 @@ const NAV_ITEMS = [
 ];
 
 const NavItem = ({ path, icon: Icon, label, open, badge }) => {
-  const location = useLocation();
-  const active = location.pathname === path || location.pathname.startsWith(path + '/');
+  const pathname = usePathname();
+  const active = pathname === path || pathname.startsWith(path + '/');
 
   return (
     <Link
@@ -50,7 +53,7 @@ const NavItem = ({ path, icon: Icon, label, open, badge }) => {
 };
 
 const SidebarNav = ({ open, planStatus }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { logout, user } = useAuth();
   const { data: pendingData } = useQuery(['pending-matches'], fetchPendingMatches, {
     refetchInterval: 30000,
@@ -95,7 +98,7 @@ const SidebarNav = ({ open, planStatus }) => {
         {isAdmin && <NavItem path="/audit" icon={Shield} label="Journal d'audit" open={open} />}
         <NavItem path="/settings" icon={SlidersHorizontal} label="Paramètres" open={open} />
         <button
-          onClick={() => { logout(); navigate('/login'); }}
+          onClick={() => { logout(); router.push('/login'); }}
           title={!open ? 'Déconnexion' : undefined}
           className={`w-full flex items-center rounded-md text-[13px] text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors ${open ? 'gap-2.5 px-2.5 py-1.5' : 'justify-center p-1.5'}`}
         >
@@ -148,7 +151,7 @@ const SidebarNav = ({ open, planStatus }) => {
             </>
           )}
           <button
-            onClick={() => navigate('/settings?tab=plan')}
+            onClick={() => router.push('/settings?tab=plan')}
             className="w-full py-1.5 text-[12px] font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 rounded-md"
             style={{ background: 'linear-gradient(white, white) padding-box, linear-gradient(to right, #fb923c, #f472b6, #a855f7) border-box', border: '1px solid transparent' }}
           >

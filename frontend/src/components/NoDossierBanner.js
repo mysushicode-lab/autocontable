@@ -1,9 +1,11 @@
+'use client';
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { FolderOpen } from 'lucide-react';
 
 const NoDossierBanner = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   return (
     <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
       <div className="flex items-center gap-3 flex-1">

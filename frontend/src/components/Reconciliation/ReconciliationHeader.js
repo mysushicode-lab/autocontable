@@ -1,7 +1,9 @@
+'use client';
+
 import React from 'react';
 import { CreditCard, Play } from 'lucide-react';
-import { useQuery } from 'react-query';
-import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { Briefcase } from 'lucide-react';
 import DropdownButton from '../DropdownButton';
 import { fetchClientFilesSummary } from '../../api';
@@ -21,7 +23,7 @@ const ReconciliationHeader = ({
   runMutation,
   isRunningReconciliation
 }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { data: clientFilesData } = useQuery('client-files-summary', fetchClientFilesSummary);
   const hasDossier = (clientFilesData?.client_files?.length ?? 1) > 0;
 
@@ -84,7 +86,7 @@ const ReconciliationHeader = ({
             </div>
           </div>
           <button
-            onClick={() => navigate('/portfolio')}
+            onClick={() => router.push('/portfolio')}
             className="flex-shrink-0 px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700"
           >
             Créer un dossier →

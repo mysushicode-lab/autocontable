@@ -1,7 +1,7 @@
 {
-  "name": "carrosserie-compta",
+  "name": "autocontable",
   "version": "1.0.0",
-  "description": "Système de gestion comptable pour carrosserie automobile - Backend Python + Frontend React (Hetzner Cloud)",
+  "description": "Système de gestion comptable pour cabinets - Backend Python + Frontend React (Hetzner Cloud)",
   "scripts": {
     "preinstall": "cd frontend && npm install",
     "install:all": "npm install && cd frontend && npm install",
@@ -22,8 +22,8 @@
     "python": ">=3.9"
   },
   "keywords": [
-    "carrosserie",
     "comptabilite",
+    "cabinets",
     "factures",
     "automatisation",
     "python",

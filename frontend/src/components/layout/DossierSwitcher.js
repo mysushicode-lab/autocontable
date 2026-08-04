@@ -1,7 +1,9 @@
+'use client';
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { FolderOpen, ChevronRight } from 'lucide-react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useClientFile } from '../../context/ClientFileContext';
 import { fetchClientFilesSummary } from '../../api';
 
@@ -14,7 +16,7 @@ const statusDot = (status) => {
 
 const DossierSwitcher = ({ open }) => {
   const { activeClientFile, selectClientFile, clearClientFile } = useClientFile();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { data: dossiersData } = useQuery('client-files-summary', fetchClientFilesSummary);
   const [expanded, setExpanded] = useState(false);
 
@@ -24,7 +26,7 @@ const DossierSwitcher = ({ open }) => {
   return (
     <div>
       <button
-        onClick={() => open ? setExpanded(v => !v) : navigate('/portfolio')}
+        onClick={() => open ? setExpanded(v => !v) : router.push('/portfolio')}
         title={!open ? displayName : undefined}
         className={`w-full flex items-center gap-2 rounded-md transition-colors hover:bg-gray-50 ${
           open ? 'px-2 py-1.5' : 'justify-center p-1.5'
@@ -46,7 +48,7 @@ const DossierSwitcher = ({ open }) => {
           <div className="relative">
             {!activeClientFile && <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-full" />}
             <button
-              onClick={() => { clearClientFile(); setExpanded(false); navigate('/portfolio'); }}
+              onClick={() => { clearClientFile(); setExpanded(false); router.push('/portfolio'); }}
               className={`w-full flex items-center px-2 py-1.5 rounded-md text-left text-[13px] transition-colors ${
                 !activeClientFile ? 'text-gray-800 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
               }`}
@@ -77,7 +79,7 @@ const DossierSwitcher = ({ open }) => {
           })}
 
           <button
-            onClick={() => { setExpanded(false); navigate('/portfolio'); }}
+            onClick={() => { setExpanded(false); router.push('/portfolio'); }}
             className="w-full text-left text-[11px] text-gray-400 hover:text-gray-600 transition-colors px-2 py-1"
           >
             Gérer les dossiers →

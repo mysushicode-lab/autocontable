@@ -1,0 +1,26 @@
+kind,slug_key,slug_key_label,keyword
+industry,cabinet-comptable,Cabinet Comptable,logiciel comptable cabinet
+industry,expert-comptable,Expert-Comptable,automatisation expert comptable
+industry,pme,PME,gestion factures PME
+industry,artisan,Artisan,comptabilité artisan
+industry,ecommerce,E-commerce,facturation ecommerce
+industry,immobilier,Immobilier,comptabilité immobilier
+industry,restaurant,Restaurant,gestion factures restaurant
+industry,btp,BTP,facturation BTP
+industry,startup,Startup,comptabilité startup
+industry,association,Association,comptabilité association
+use-case,rapprochement-bancaire,Rapprochement Bancaire,rapprochement bancaire automatique
+use-case,extraction-factures,Extraction de Factures,extraction factures IA
+use-case,export-fec,Export FEC,export FEC normé
+use-case,classification-factures,Classification de Factures,classification automatique factures
+use-case,audit-comptable,Audit Comptable,audit trail comptable
+use-case,gestion-fournisseurs,Gestion Fournisseurs,suivi factures fournisseurs
+use-case,conformite-2026,Conformité Réforme 2026,réforme facturation 2026
+use-case,ingestion-email,Ingestion Email,récupération factures email
+comparison,pennylane,Pennylane,autocontable vs pennylane
+comparison,dext,Dext,autocontable vs dext
+comparison,tiime,Tiime,autocontable vs tiime
+comparison,inqom,Inqom,autocontable vs inqom
+comparison,receiptbank,Receipt Bank,autocontable vs receipt bank
+comparison,yooz,Yooz,autocontable vs yooz
+comparison,conciliator,Conciliator,autocontable vs conciliator

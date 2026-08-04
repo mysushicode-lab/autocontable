@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Webhook, Send } from 'lucide-react';
 import { fetchWebhookConfig, updateWebhookConfig, testWebhook } from '../../api';
 

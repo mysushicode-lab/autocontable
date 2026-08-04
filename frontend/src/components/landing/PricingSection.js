@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Check } from 'lucide-react';
-import { sectionBadge, sectionHeading } from '../../pages/landing/_styles';
+import { sectionBadge, sectionHeading } from '../../views/landing/_styles';
 
 const PLANS = [
   {
@@ -113,7 +113,7 @@ function PricingCard({ name, price, period, tagline, features, ctaLabel, ctaTo, 
       </ul>
 
       <Link
-        to={ctaTo}
+        href={ctaTo}
         className={`inline-flex w-full items-center justify-center whitespace-nowrap rounded-full px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-80 ${
           highlighted
             ? 'bg-white text-[#181818]'
@@ -187,10 +187,10 @@ export default function PricingSection() {
           <p className="text-xs text-[#6b7280]">
             Sans engagement · Annulation à tout moment · Données hébergées en France · Conforme RGPD
           </p>
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+            <div className="flex -space-x-2 shrink-0">
               {[12, 25, 32, 45, 57].map((id) => (
-                <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-7 h-7 rounded-full border-2 border-[#f7f7f5] object-cover" />
+                <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-[#f7f7f5] object-cover" />
               ))}
             </div>
             <p className="text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>

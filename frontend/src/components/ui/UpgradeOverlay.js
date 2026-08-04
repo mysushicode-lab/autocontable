@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Lock, ArrowUpRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 const PLAN_LABELS = {
   pro: 'Pro',
@@ -9,7 +11,7 @@ const PLAN_LABELS = {
 };
 
 const UpgradeOverlay = ({ requiredPlan = 'pro', featureName = 'cette fonctionnalité' }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
@@ -24,7 +26,7 @@ const UpgradeOverlay = ({ requiredPlan = 'pro', featureName = 'cette fonctionnal
           {featureName} est disponible à partir du plan {PLAN_LABELS[requiredPlan]}.
         </p>
         <button
-          onClick={() => navigate('/settings?tab=billing')}
+          onClick={() => router.push('/settings?tab=billing')}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white text-xs font-medium rounded-md hover:bg-gray-800 transition-colors"
         >
           Passer au plan supérieur

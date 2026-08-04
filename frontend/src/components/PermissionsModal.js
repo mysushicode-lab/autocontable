@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, UserPlus, Trash2 } from 'lucide-react';
 import { fetchDossierPermissions, grantPermission, revokePermission, fetchUsers } from '../api';
 

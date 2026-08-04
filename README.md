@@ -1,30 +1,28 @@
-# Système de Gestion Comptable pour Carrosserie Automobile
+# Autocontable – Gestion Comptable pour Cabinets
 
-Système automatisé de traitement des factures fournisseurs et rapprochement bancaire, spécialement conçu pour les carrosseries automobiles. Centralise les factures, simplifie la comptabilité et élimine les tâches chronophages.
+Système automatisé de traitement des factures fournisseurs et rapprochement bancaire pour cabinets comptables. Centralise, classe et rapproche les factures de vos clients. Élimine la saisie manuelle et prépare des dossiers audités en 48h.
 
-## Objectifs pour Carrosserie
+## Objectifs
 
-- **Centraliser** toutes les factures fournisseurs (pièces, peinture, sous-traitance)
-- **Matcher** automatiquement les factures avec les dépenses bancaires
-- **Tracer** les commandes par véhicule (immatriculation, N° dossier)
-- **Simplifier** la gestion comptable quotidienne
+- **Centraliser** les factures de tous vos clients
+- **Automatiser** l'extraction (montant, TVA, date, fournisseur)
+- **Matcher** automatiquement les factures avec les relevés bancaires
+- **Exporter** des dossiers audités (FEC, Excel, prêts pour l'audit)
 
 ## Fonctionnalités Clés
 
 ### Gestion des Factures
 - **Récupération Email** : Télécharge automatiquement les factures PDF des fournisseurs
-- **WhatsApp Business** : Vos clients PME envoient leurs factures par WhatsApp (photos/PDF) — traitement automatique
-- **Extraction Intelligente** : Numéro de facture, date, montant, TVA, N° commande, BL
-- **Données Carrosserie** : Immatriculation véhicule, N° dossier/OT, mode de paiement
+- **WhatsApp Business** : Vos clients envoient leurs factures par WhatsApp (photos/PDF) — traitement automatique
+- **Extraction Intelligente** : Numéro de facture, date, montant, TVA, N° commande, BL, fournisseur
 
-### Classification Auto (Spécifique Carrosserie)
-- **Pièces détachées** : Carrosserie, mécanique, électricité
-- **Peinture & Vernis** : Axalta, Cromax, Glasurit, Sikkens, etc.
-- **Fournitures Atelier** : Consommables, abrasifs, protection
-- **Sous-traitance** : Dépannage, expertise, contrôle technique
-- **Équipement** : Outillage, machines, pont élévateur
-- **Énergie & Locaux** : Électricité, loyer, charges
-- **Assurances & Frais** : RC Pro, décennale, comptable
+### Classification Auto (Adaptation par Secteur)
+- **Frais généraux** : Loyer, électricité, téléphone, internet
+- **Fournitures** : Consommables, fournitures bureau
+- **Sous-traitance** : Services externes, expertise
+- **Équipement** : Outillage, matériel informatique
+- **Assurances & Frais** : RC Pro, assurances, comptable
+- Et plus (15+ catégories adaptables)
 
 ### Rapprochement Bancaire
 - **Import Relevés** : CSV, OFX (toutes banques)
@@ -33,8 +31,8 @@ Système automatisé de traitement des factures fournisseurs et rapprochement ba
 
 ### Reporting & Export
 - **Tableau de Bord Mensuel** : Totaux par catégorie, par fournisseur
-- **Export Comptable** : CSV, Excel pour votre expert-comptable
-- **Suivi Immatriculations** : Historique des réparations par véhicule
+- **Export Comptable** : CSV, Excel, FEC pour transmission audit
+- **Audit Trail** : Traçabilité complète de chaque opération
 
 ## Architecture
 
@@ -105,49 +103,48 @@ python -m src.scheduler.main
 uvicorn src.api.main:app --reload
 ```
 
-## Usage Carrosserie
+## Usage – Cabinet Comptable
 
-### Traitement Automatique des Factures
+### Traitement Automatique des Factures Clients
 ```python
 from src.email_ingestion import IMAPClient
 from src.invoice_processor import InvoiceProcessor
 
-# Récupère les factures des fournisseurs auto
+# Récupère les factures de tous vos clients
 email = IMAPClient(server='imap.gmail.com', port=993, email='user@example.com', password='pass', folder='INBOX')
-emails = email.fetch_emails(search_subject='facture', mark_as_read=True)  # Cherche : facture, BL, commande, avoir
+emails = email.fetch_emails(search_subject='facture', mark_as_read=True)
 
-# Extrait les données (y compris immatriculation, N° OT)
+# Extrait automatiquement : numéro, date, montant, TVA, fournisseur
 processor = InvoiceProcessor()
 for email_data in emails:
     invoice_data = processor.process_invoice(email_data)
-    # Données extraites : montant, TVA, N° commande, immatriculation, etc.
+    # Données extraites : montant HT/TTC, TVA, date, fournisseur, etc.
 ```
 
-### Rapprochement Bancaire
+### Rapprochement Bancaire Clients
 ```python
 from src.bank_importer import BankImporter
 from src.reconciliation import ReconciliationEngine
 
-# Importe le relevé bancaire
-csv_file = 'releve_bancaire_03-2024.csv'
+# Importe les relevés bancaires de vos clients
 bank = BankImporter()
-transactions = bank.import_csv(csv_file)
+transactions = bank.import_csv('releve_client_mars_2024.csv')
 
 # Rapproche automatique
 engine = ReconciliationEngine()
 matches = engine.reconcile(invoices, transactions)
-# Détecte : factures payées, impayées, paiements sans facture
+# Détecte : factures payées, impayées, anomalies
 ```
 
-### Export pour Expert-Comptable
+### Export Dossier Client Complet
 ```python
 from src.reporting.exporter import Exporter
 
 exporter = Exporter(session)
 
-# Export mensuel avec toutes les données
-exporter.export_invoices_to_csv('export_mars_2024.csv', month=3, year=2024)
-# Colonnes : Facture, Date, Fournisseur, Montant, TVA, Immatriculation, N° OT, etc.
+# Export audit-ready : FEC, grand livre, journal
+exporter.export_invoices_to_csv('dossier_client_mars_2024.csv', month=3, year=2024)
+# Prêt pour transmission audit/expert
 ```
 
 ## API Endpoints

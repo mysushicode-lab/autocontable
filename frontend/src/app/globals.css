@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-bounce,
+  .animate-pulse,
+  .animate-ping {
+    animation: none !important;
+  }
+  .progress-fill-bar {
+    animation: none !important;
+    width: 100% !important;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -2,7 +2,7 @@
 # Script d'installation initiale sur Hetzner Cloud
 # À exécuter une seule fois sur le serveur frais
 
-echo "🚀 Installation Carrosserie Pro sur Hetzner"
+echo "🚀 Installation Autocontable sur Hetzner"
 
 # 1. Mise à jour système
 echo "⬆️  Mise à jour système..."
@@ -34,7 +34,7 @@ ufw --force enable
 
 # 4. Création dossier application
 echo "📁 Création structure..."
-APP_DIR="/opt/carrosserie-app"
+APP_DIR="/opt/autocontable"
 mkdir -p $APP_DIR
 cd $APP_DIR
 mkdir -p data

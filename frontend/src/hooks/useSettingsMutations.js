@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from 'react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateSetting, createUser, deleteUser, updateUser as apiUpdateUser, uploadProfilePhoto, deleteAccount, changePassword, changeUsername, changeEmail } from '../api';
 import { useAuth } from '../context/AuthContext';
 

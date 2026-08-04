@@ -1,11 +1,13 @@
+'use client';
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { MessageSquare, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAuthImage } from '../../hooks/useAuthImage';
 
 const UserMenu = ({ profileMenuRef, profileMenuOpen, setProfileMenuOpen }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { logout, user } = useAuth();
   const profilePhotoSrc = useAuthImage(user?.profile_photo ? `${user.profile_photo}` : null);
 
@@ -30,7 +32,7 @@ const UserMenu = ({ profileMenuRef, profileMenuOpen, setProfileMenuOpen }) => {
           </div>
           <div className="p-1">
             <button
-              onClick={() => { navigate('/settings'); setProfileMenuOpen(false); }}
+              onClick={() => { router.push('/settings'); setProfileMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Paramètres
@@ -48,7 +50,7 @@ const UserMenu = ({ profileMenuRef, profileMenuOpen, setProfileMenuOpen }) => {
             </a>
             <div className="border-t border-gray-100 mt-1 pt-1">
               <button
-                onClick={() => { logout(); navigate('/login'); setProfileMenuOpen(false); }}
+                onClick={() => { logout(); router.push('/login'); setProfileMenuOpen(false); }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
               >
                 Déconnexion

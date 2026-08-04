@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { Bell, Zap, Menu, ChevronRight, X, Clock, Gift, BookOpen, HelpCircle } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,10 +26,10 @@ const PAGE_NAMES = {
 };
 
 const Layout = ({ children }) => {
-  const location = useLocation();
+  const pathname = usePathname();
   const { notifications, unreadCount, markRead, markAllRead, remove, clearAll } = useNotifications();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,7 +47,7 @@ const Layout = ({ children }) => {
       .catch(() => {});
   }, []);
 
-  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+  useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -56,7 +59,7 @@ const Layout = ({ children }) => {
   }, []);
 
   const currentPageName = Object.entries(PAGE_NAMES).find(
-    ([path]) => location.pathname === path || location.pathname.startsWith(path + '/')
+    ([path]) => pathname === path || pathname.startsWith(path + '/')
   )?.[1] || '';
 
   return (
@@ -69,7 +72,7 @@ const Layout = ({ children }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <Link to="/dashboard">
+        <Link href="/dashboard">
           <img src="/automatchfact.png" alt="Autocontable" className="h-5 w-auto" />
         </Link>
 
@@ -169,7 +172,7 @@ const Layout = ({ children }) => {
             <p className="text-xs text-gray-400 mb-6">Pour continuer, veuillez passer à un plan payant.</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setShowUpgradePopup(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Fermer</button>
-              <button onClick={() => navigate('/settings')} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">Voir les plans</button>
+              <button onClick={() => router.push('/settings')} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">Voir les plans</button>
             </div>
           </div>
         </div>

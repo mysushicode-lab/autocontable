@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { Check, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { fetchPlanStatus, createStripeCheckoutSession, verifyStripeSession } from '../../api';
 
@@ -19,7 +21,7 @@ const PRO_FEATURES = [
 ];
 
 export const SettingsPlan = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [planStatus, setPlanStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
@@ -77,7 +79,7 @@ export const SettingsPlan = () => {
             <h2 className="text-sm font-semibold text-gray-900 mb-1">Félicitations !</h2>
             <p className="text-xs text-gray-500">Votre abonnement au Plan Pro a été activé avec succès.</p>
           </div>
-          <button onClick={() => navigate('/')}
+          <button onClick={() => router.push('/')}
             className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-500 transition-colors">
             Aller au Dashboard
           </button>

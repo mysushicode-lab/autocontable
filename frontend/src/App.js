@@ -11,7 +11,6 @@ import Dashboard from './pages/Dashboard';
 import Invoices from './pages/Invoices';
 import Reconciliation from './pages/Reconciliation';
 import Reports from './pages/Reports';
-import VehicleHistory from './pages/VehicleHistory';
 import Settings from './pages/Settings';
 import Portfolio from './pages/Portfolio';
 import Login from './pages/Login';
@@ -88,7 +87,6 @@ function App() {
                   <Route path="/integrations" element={<Integrations />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/reference/:registration?" element={<VehicleHistory />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/audit" element={<AuditLog />} />
                 </Routes>
