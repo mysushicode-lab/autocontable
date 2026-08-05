@@ -51,6 +51,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      shm_size: "1g"
       args:
         - NEXT_PUBLIC_API_URL=/api
         - NEXT_PUBLIC_SITE_URL=https://factpilot.fr
@@ -69,6 +70,12 @@ services:
       - "traefik.http.routers.factpilot-frontend.entrypoints=websecure"
       - "traefik.http.routers.factpilot-frontend.tls.certResolver=letsencrypt"
       - "traefik.http.services.factpilot-frontend.loadbalancer.server.port=3000"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
     depends_on:
       - backend
 
