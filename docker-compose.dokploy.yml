@@ -17,33 +17,15 @@ services:
   backend:
     build: .
     restart: always
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD}@postgres:5432/autocontable
       - PYTHONPATH=/app
       - FRONTEND_URL=https://factpilot.fr
       - CORS_ORIGINS=https://factpilot.fr
-      - SESSION_SECRET=${SESSION_SECRET}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT:-465}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
-      - SMTP_FROM=${SMTP_FROM}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=https://factpilot.fr/api/auth/google/callback
-      - LINKEDIN_CLIENT_ID=${LINKEDIN_CLIENT_ID}
-      - LINKEDIN_CLIENT_SECRET=${LINKEDIN_CLIENT_SECRET}
       - LINKEDIN_REDIRECT_URI=https://factpilot.fr/api/auth/linkedin/callback
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - STRIPE_PRICE_PRO=${STRIPE_PRICE_PRO}
-      - STRIPE_PRICE_CABINET=${STRIPE_PRICE_CABINET}
-      - STRIPE_PRICE_RESEAU=${STRIPE_PRICE_RESEAU}
     volumes:
       - app-data:/app/data
     depends_on:
@@ -54,16 +36,11 @@ services:
     build: .
     restart: always
     command: python -m src.scheduler.main
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD}@postgres:5432/autocontable
       - PYTHONPATH=/app
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT:-465}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
-      - SMTP_FROM=${SMTP_FROM}
     volumes:
       - app-data:/app/data
     depends_on:
@@ -81,8 +58,17 @@ services:
     environment:
       - BACKEND_URL=http://backend:8000
       - NODE_ENV=production
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
+    networks:
+      - dokploy-network
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.factpilot-frontend.rule=Host(`factpilot.fr`)"
+      - "traefik.http.routers.factpilot-frontend.entrypoints=websecure"
+      - "traefik.http.routers.factpilot-frontend.tls.certResolver=letsencrypt"
+      - "traefik.http.services.factpilot-frontend.loadbalancer.server.port=3000"
     depends_on:
       - backend
 
@@ -92,7 +78,6 @@ services:
     command: >
       sh -c "while true; do
         echo '[backup] Running daily backup...';
-        /app/scripts/backup.sh;
         sleep 86400;
       done"
     environment:
@@ -106,3 +91,7 @@ volumes:
   app-data:
   backup-data:
   postgres-data:
+
+networks:
+  dokploy-network:
+    external: true
