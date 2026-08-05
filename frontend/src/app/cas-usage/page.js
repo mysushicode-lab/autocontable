@@ -3,8 +3,8 @@ import { getPseoPagesByKind } from '@/lib/pseo/pseo-config';
 import { buildBreadcrumbJsonLd } from '@/lib/pseo/pseo-jsonld';
 
 export const metadata = {
-  title: 'Cas d\'usage — Autocontable',
-  description: 'Rapprochement bancaire, extraction de factures, export FEC, conformité 2026 : découvrez tous les cas d\'usage d\'Autocontable.',
+  title: 'Cas d\'usage — FactPilot',
+  description: 'Rapprochement bancaire, extraction de factures, export FEC, conformité 2026 : découvrez tous les cas d\'usage d\'FactPilot.',
   alternates: { canonical: '/cas-usage' },
 };
 
@@ -26,7 +26,7 @@ export default function UseCaseHubPage() {
           Cas d'usage
         </h1>
         <p className="text-base text-[#6b7280] mb-12">
-          Autocontable automatise les tâches les plus chronophages de votre cabinet.
+          FactPilot automatise les tâches les plus chronophages de votre cabinet.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           {pages.map((p) => (

@@ -8,23 +8,21 @@ import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
 
 const ResetPassword = () => {
   const router = useRouter();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
 
-  const mutation = useMutation(
-    () => resetPassword(token, password),
-    {
-      onSuccess: () => {
-        router.push('/login');
-      },
-      onError: (err) => {
-        setError(err?.response?.data?.detail || 'Token invalide ou expiré');
-      },
-    }
-  );
+  const mutation = useMutation({
+    mutationFn: () => resetPassword(token, password),
+    onSuccess: () => {
+      router.push('/login');
+    },
+    onError: (err) => {
+      setError(err?.response?.data?.detail || 'Token invalide ou expiré');
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();

@@ -22,25 +22,21 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
   const assignedUserIds = new Set(permissions.map((p) => p.user_id));
   const availableUsers = allUsers.filter((u) => !assignedUserIds.has(u.id) && u.role !== 'admin');
 
-  const grantMutation = useMutation(
-    () => grantPermission(parseInt(selectedUserId), clientFileId, permissionLevel),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['dossier-permissions', clientFileId]);
-        setSelectedUserId('');
-        setPermissionLevel('read_write');
-      },
-    }
-  );
+  const grantMutation = useMutation({
+    mutationFn: () => grantPermission(parseInt(selectedUserId), clientFileId, permissionLevel),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['dossier-permissions', clientFileId]);
+      setSelectedUserId('');
+      setPermissionLevel('read_write');
+    },
+  });
 
-  const revokeMutation = useMutation(
-    (userId) => revokePermission(userId, clientFileId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['dossier-permissions', clientFileId]);
-      },
-    }
-  );
+  const revokeMutation = useMutation({
+    mutationFn: (userId) => revokePermission(userId, clientFileId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['dossier-permissions', clientFileId]);
+    },
+  });
 
   const handleGrant = (e) => {
     e.preventDefault();

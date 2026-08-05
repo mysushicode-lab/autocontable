@@ -4,6 +4,7 @@ FastAPI REST API for invoice processing system
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 import os
 import logging
 import threading
+import secrets
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -23,13 +25,13 @@ from src.api.database import startup_event
 from src.api.rate_limit import limiter
 from src.api.auth import router as auth_router, get_current_user
 from src.api.password import router as password_router
+from src.api.oauth import router as oauth_router
 from src.api.invoices import router as invoices_router
 from src.api.transactions import router as transactions_router
 from src.api.reconciliation import router as reconciliation_router
 from src.api.users import router as users_router
 from src.api.settings import router as settings_router
 from src.api.reports import router as reports_router
-from src.api.vehicles import router as vehicles_router
 from src.api.payments import router as stripe_router
 from src.api.client_files import router as client_files_router
 from src.api.audit import router as audit_router
@@ -64,6 +66,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Invoice Processing API", version="1.0.0", lifespan=lifespan)
+
+# Session middleware (required for OAuth state management)
+SESSION_SECRET = os.getenv("SESSION_SECRET", secrets.token_hex(32))
+_is_production = os.getenv("FRONTEND_URL", "").startswith("https")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    session_cookie="oauth_session",
+    max_age=1800,
+    same_site="lax",
+    https_only=_is_production,
+)
 
 # Rate limiting (slowapi)
 app.state.limiter = limiter
@@ -170,13 +184,13 @@ def trigger_email_fetch(since_days: int = 30, current_user: dict = Depends(get_c
 # Register routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(password_router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(oauth_router, prefix="/api", tags=["OAuth"])
 app.include_router(invoices_router, prefix="/api/invoices", tags=["Invoices"])
 app.include_router(transactions_router, prefix="/api/transactions", tags=["Transactions"])
 app.include_router(reconciliation_router, prefix="/api/reconciliation", tags=["Reconciliation"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 app.include_router(settings_router, prefix="/api/settings", tags=["Settings"])
 app.include_router(reports_router, prefix="/api/reports", tags=["Reports"])
-app.include_router(vehicles_router, prefix="/api/references", tags=["References"])
 app.include_router(stripe_router, prefix="/api/stripe", tags=["Stripe"])
 app.include_router(client_files_router, prefix="/api/client-files", tags=["ClientFiles"])
 app.include_router(audit_router, prefix="/api/audit", tags=["Audit"])

@@ -105,7 +105,8 @@ const Reconciliation = () => {
     queryClient.invalidateQueries('pending-matches');
   };
 
-  const importMutation = useMutation(importBankStatementFile, {
+  const importMutation = useMutation({
+    mutationFn: importBankStatementFile,
     onMutate: () => {
       setIsImporting(true);
     },
@@ -122,7 +123,8 @@ const Reconciliation = () => {
     },
   });
 
-  const runMutation = useMutation(() => runAutomaticReconciliation(filters), {
+  const runMutation = useMutation({
+    mutationFn: () => runAutomaticReconciliation(filters),
     onMutate: () => {
       setIsRunningReconciliation(true);
     },
@@ -143,11 +145,13 @@ const Reconciliation = () => {
     },
   });
 
-  const rejectMutation = useMutation(rejectReconciliationMatch, {
+  const rejectMutation = useMutation({
+    mutationFn: rejectReconciliationMatch,
     onSuccess: () => { refreshAll(); addNotif(NOTIF_TYPES.WARNING, 'Correspondance rejetée', 'Le rapprochement a été rejeté.'); },
   });
 
-  const manualLinkMutation = useMutation(createManualReconciliationLink, {
+  const manualLinkMutation = useMutation({
+    mutationFn: createManualReconciliationLink,
     onSuccess: () => {
       refreshAll();
       addNotif(NOTIF_TYPES.SUCCESS, 'Lien manuel créé', 'La facture a été liée manuellement à l\'opération bancaire.');
@@ -157,7 +161,8 @@ const Reconciliation = () => {
     },
   });
 
-  const deleteTransactionMutation = useMutation(deleteTransaction, {
+  const deleteTransactionMutation = useMutation({
+    mutationFn: deleteTransaction,
     onSuccess: () => {
       refreshAll();
       addNotif(NOTIF_TYPES.SUCCESS, 'Transaction supprimée', 'La transaction a été supprimée avec succès.');
@@ -167,7 +172,8 @@ const Reconciliation = () => {
     },
   });
 
-  const updateTransactionMutation = useMutation(updateTransaction, {
+  const updateTransactionMutation = useMutation({
+    mutationFn: updateTransaction,
     onSuccess: () => {
       refreshAll();
       addNotif(NOTIF_TYPES.SUCCESS, 'Transaction modifiée', 'Le montant a été mis à jour.');
@@ -177,7 +183,8 @@ const Reconciliation = () => {
     },
   });
 
-  const batchValidateMutation = useMutation(({ matchIds, action }) => batchValidateMatches(matchIds, action), {
+  const batchValidateMutation = useMutation({
+    mutationFn: ({ matchIds, action }) => batchValidateMatches(matchIds, action),
     onSuccess: (result, { action }) => {
       refreshAll();
       setSelectedPendingIds(new Set());

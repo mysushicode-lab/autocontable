@@ -25,29 +25,25 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
     }
   );
 
-  const updateMutation = useMutation(
-    () => updateDossierPcg(clientFileId, {
+  const updateMutation = useMutation({
+    mutationFn: () => updateDossierPcg(clientFileId, {
       comptes,
       default: defaultCompte,
       tva: tvaCompte,
       fournisseur: fournisseurCompte,
     }),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['dossier-pcg', clientFileId]);
-        onClose();
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries(['dossier-pcg', clientFileId]);
+      onClose();
+    },
+  });
 
-  const resetMutation = useMutation(
-    () => resetDossierPcg(clientFileId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['dossier-pcg', clientFileId]);
-      },
-    }
-  );
+  const resetMutation = useMutation({
+    mutationFn: () => resetDossierPcg(clientFileId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['dossier-pcg', clientFileId]);
+    },
+  });
 
   const handleUpdateCompte = (category, field, value) => {
     const current = comptes[category] || ['', ''];

@@ -19,10 +19,12 @@ services:
   backend:
     build: .
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
+      # Override .env with Docker-specific values
       - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD:-changeme}@postgres:5432/autocontable
       - PYTHONPATH=/app
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - app-data:/app/data
     ports:
@@ -35,10 +37,12 @@ services:
     build: .
     restart: unless-stopped
     command: python -m src.scheduler.main
+    env_file:
+      - .env
     environment:
+      # Override .env with Docker-specific values
       - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD:-changeme}@postgres:5432/autocontable
       - PYTHONPATH=/app
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - app-data:/app/data
     depends_on:
@@ -50,9 +54,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-        - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://autocontable.fr}
+        # Build-time: baked into client JS bundle (visible in browser)
+        - NEXT_PUBLIC_API_URL=/api
+        - NEXT_PUBLIC_SITE_URL=http://localhost:3001
     restart: unless-stopped
+    environment:
+      # Runtime: server-side only (used by next.config.js rewrites)
+      - BACKEND_URL=http://backend:8000
     ports:
       - "3001:3000"
     depends_on:

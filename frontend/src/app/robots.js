@@ -25,6 +25,6 @@ export default function robots() {
         ],
       },
     ],
-    sitemap: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://autocontable.fr'}/sitemap.xml`,
+    sitemap: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://factpilot.fr'}/sitemap.xml`,
   };
 }

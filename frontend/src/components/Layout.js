@@ -73,7 +73,7 @@ const Layout = ({ children }) => {
         </button>
 
         <Link href="/dashboard">
-          <img src="/automatchfact.png" alt="Autocontable" className="h-5 w-auto" />
+          <img src="/automatchfact.png" alt="FactPilot" className="h-5 w-auto" />
         </Link>
 
         {currentPageName && (

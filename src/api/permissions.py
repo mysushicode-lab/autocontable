@@ -159,6 +159,14 @@ def revoke_permission(payload: dict, current_user: dict = Depends(require_featur
         user_id = payload.get("user_id")
         cfid = payload.get("client_file_id")
 
+        from src.storage.models import ClientFile
+        dossier = session.query(ClientFile).filter(
+            ClientFile.id == cfid,
+            ClientFile.organization_id == org_id
+        ).first()
+        if not dossier:
+            raise HTTPException(404, "Dossier introuvable dans votre organisation")
+
         perm = session.query(DossierPermission).filter(
             DossierPermission.user_id == user_id,
             DossierPermission.client_file_id == cfid

@@ -13,7 +13,7 @@ export default function PseoPageLayout({ page }) {
 
         <div className="prose prose-gray max-w-none mb-16">
           <h2 className="text-2xl font-medium text-[#181818]">
-            Pourquoi choisir Autocontable ?
+            Pourquoi choisir FactPilot ?
           </h2>
           <ul className="space-y-3 mt-4">
             <li className="flex items-start gap-3">

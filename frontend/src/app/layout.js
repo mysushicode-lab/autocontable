@@ -1,12 +1,12 @@
 import './globals.css';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://autocontable.fr';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://factpilot.fr';
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    template: '%s | Autocontable',
-    default: 'Autocontable — Gestion comptable automatisée pour cabinets',
+    template: '%s | FactPilot',
+    default: 'FactPilot — Gestion comptable automatisée pour cabinets',
   },
   description:
     'Automatisez la gestion de vos factures fournisseurs et le rapprochement bancaire. Extraction IA, classification, export FEC. Conforme réforme 2026.',
@@ -22,23 +22,23 @@ export const metadata = {
     'logiciel comptable PME',
     'audit trail',
   ],
-  authors: [{ name: 'Autocontable' }],
-  creator: 'Autocontable',
-  publisher: 'Autocontable',
+  authors: [{ name: 'FactPilot' }],
+  creator: 'FactPilot',
+  publisher: 'FactPilot',
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
-    siteName: 'Autocontable',
-    title: 'Autocontable — Gestion comptable automatisée pour cabinets',
+    siteName: 'FactPilot',
+    title: 'FactPilot — Gestion comptable automatisée pour cabinets',
     description:
       'Automatisez la gestion de vos factures fournisseurs et le rapprochement bancaire. Extraction IA, classification, export FEC.',
     url: '/',
-    images: [{ url: '/assets/og-image.png', width: 1200, height: 630, alt: 'Autocontable' }],
+    images: [{ url: '/assets/og-image.png', width: 1200, height: 630, alt: 'FactPilot' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Autocontable — Gestion comptable automatisée',
+    title: 'FactPilot — Gestion comptable automatisée',
     description:
       'Extraction IA, rapprochement bancaire, export FEC. Conforme réforme 2026.',
     images: ['/assets/og-image.png'],
@@ -77,7 +77,7 @@ export const viewport = {
 const ORG_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Autocontable',
+  name: 'FactPilot',
   url: SITE_URL,
   logo: `${SITE_URL}/assets/og-image.png`,
   description:
@@ -92,7 +92,7 @@ const ORG_JSONLD = {
 const SOFTWARE_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'Autocontable',
+  name: 'FactPilot',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   description:

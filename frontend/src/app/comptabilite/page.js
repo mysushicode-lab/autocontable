@@ -4,7 +4,7 @@ import { buildBreadcrumbJsonLd } from '@/lib/pseo/pseo-jsonld';
 
 export const metadata = {
   title: 'Comptabilité automatisée par secteur',
-  description: 'Découvrez comment Autocontable automatise la comptabilité pour chaque secteur : cabinet, PME, artisan, BTP, e-commerce et plus.',
+  description: 'Découvrez comment FactPilot automatise la comptabilité pour chaque secteur : cabinet, PME, artisan, BTP, e-commerce et plus.',
   alternates: { canonical: '/comptabilite' },
 };
 
@@ -26,7 +26,7 @@ export default function IndustryHubPage() {
           Comptabilité automatisée par secteur
         </h1>
         <p className="text-base text-[#6b7280] mb-12">
-          Autocontable s'adapte à votre secteur d'activité.
+          FactPilot s'adapte à votre secteur d'activité.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           {pages.map((p) => (

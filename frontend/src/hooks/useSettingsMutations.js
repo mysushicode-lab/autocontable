@@ -6,61 +6,57 @@ export const useSettingsMutations = () => {
   const queryClient = useQueryClient();
   const { user, updateUserPhoto } = useAuth();
 
-  const updateMutation = useMutation(
-    ({ key, value }) => updateSetting(key, value),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('settings');
-      },
-    }
-  );
+  const updateMutation = useMutation({
+    mutationFn: ({ key, value }) => updateSetting(key, value),
+    onSuccess: () => {
+      queryClient.invalidateQueries('settings');
+    },
+  });
 
-  const photoMutation = useMutation(
-    ({ userId, file }) => uploadProfilePhoto(userId, file),
-    {
-      onSuccess: (data) => {
-        updateUserPhoto(data.photo_url);
-      },
-    }
-  );
+  const photoMutation = useMutation({
+    mutationFn: ({ userId, file }) => uploadProfilePhoto(userId, file),
+    onSuccess: (data) => {
+      updateUserPhoto(data.photo_url);
+    },
+  });
 
-  const changePasswordMutation = useMutation(
-    ({ current, new: newPass }) => changePassword(current, newPass)
-  );
+  const changePasswordMutation = useMutation({
+    mutationFn: ({ current, new: newPass }) => changePassword(current, newPass)
+  });
 
-  const changeUsernameMutation = useMutation(
-    (newUsername) => changeUsername(newUsername)
-  );
+  const changeUsernameMutation = useMutation({
+    mutationFn: (newUsername) => changeUsername(newUsername)
+  });
 
-  const changeEmailMutation = useMutation(
-    (newEmail) => changeEmail(newEmail)
-  );
+  const changeEmailMutation = useMutation({
+    mutationFn: (newEmail) => changeEmail(newEmail)
+  });
 
-  const createUserMutation = useMutation(createUser, {
+  const createUserMutation = useMutation({
+    mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries('users');
     },
   });
 
-  const deleteUserMutation = useMutation(deleteUser, {
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries('users');
     },
   });
 
-  const updateUserMutation = useMutation(
-    ({ userId, data }) => apiUpdateUser(userId, data),
-    {
-      onSuccess: (data, variables) => {
-        queryClient.invalidateQueries('users');
-        if (variables.userId === user?.id && data.user) {
-          const updatedUser = { ...user, ...data.user };
-          localStorage.setItem('auth_user', JSON.stringify(updatedUser));
-          window.location.reload();
-        }
-      },
-    }
-  );
+  const updateUserMutation = useMutation({
+    mutationFn: ({ userId, data }) => apiUpdateUser(userId, data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries('users');
+      if (variables.userId === user?.id && data.user) {
+        const updatedUser = { ...user, ...data.user };
+        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+        window.location.reload();
+      }
+    },
+  });
 
   return {
     updateMutation,

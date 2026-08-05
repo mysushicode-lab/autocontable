@@ -103,7 +103,8 @@ const Invoices = () => {
   // Auto-set month filter to most recent invoice date on initial load
   useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
 
-  const deleteMutation = useMutation((id) => deleteInvoice(id), {
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteInvoice(id),
     onSuccess: () => {
       queryClient.invalidateQueries('invoices');
       queryClient.invalidateQueries('dashboard-invoices');
@@ -116,7 +117,8 @@ const Invoices = () => {
     },
   });
 
-  const updateMutation = useMutation(({ id, data }) => updateInvoice(id, data), {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => updateInvoice(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries('invoices');
       queryClient.invalidateQueries('dashboard-invoices');
@@ -172,7 +174,8 @@ const Invoices = () => {
     updateMutation.mutate({ id: editingInvoice.id, data: dataToSend });
   };
 
-  const uploadMutation = useMutation(({ file, clientFileId }) => uploadInvoiceFile(file, clientFileId), {
+  const uploadMutation = useMutation({
+    mutationFn: ({ file, clientFileId }) => uploadInvoiceFile(file, clientFileId),
     onMutate: () => {
       setIsImporting(true);
     },

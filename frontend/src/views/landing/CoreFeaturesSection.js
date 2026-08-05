@@ -76,7 +76,7 @@ export default function CoreFeaturesSection() {
           <span className={sectionBadge}>Fonctionnalités détaillées</span>
           <h2 className={sectionHeading}>Conçu pour les cabinets comptables. Pas de comptabilité générique.</h2>
           <p className={`mt-3 max-w-md mx-auto ${sectionSubtext}`}>
-            Autocontable automatise tout le cycle de vie des factures avec des fonctionnalités adaptées à l'activité de vos clients.
+            FactPilot automatise tout le cycle de vie des factures avec des fonctionnalités adaptées à l'activité de vos clients.
           </p>
         </div>
 

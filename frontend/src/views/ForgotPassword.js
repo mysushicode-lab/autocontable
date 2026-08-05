@@ -13,18 +13,16 @@ const ForgotPassword = () => {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
-  const mutation = useMutation(
-    () => forgotPassword(email),
-    {
-      onSuccess: (data) => {
-        setSent(true);
-        setError('');
-      },
-      onError: (err) => {
-        setError(err?.response?.data?.detail || 'Erreur lors de la demande');
-      },
-    }
-  );
+  const mutation = useMutation({
+    mutationFn: () => forgotPassword(email),
+    onSuccess: (data) => {
+      setSent(true);
+      setError('');
+    },
+    onError: (err) => {
+      setError(err?.response?.data?.detail || 'Erreur lors de la demande');
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();

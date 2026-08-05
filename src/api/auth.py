@@ -2,9 +2,9 @@
 import os
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from src.storage.database import db
-from src.storage.models import User, UserToken, Organization, UserRole, Settings, PasswordResetToken
-from src.api.schemas import RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest, ChangeUsernameRequest, ChangeEmailRequest
-from src.email_ingestion import SMTPClient
+from src.storage.models import User, UserToken, Organization, UserRole, PasswordResetToken
+from src.api.schemas import RegisterRequest, LoginRequest, ChangeUsernameRequest, ChangeEmailRequest
+from src.utils.defaults import create_default_settings
 from src.api.rate_limit import limiter
 from passlib.context import CryptContext
 import hashlib
@@ -128,6 +128,7 @@ def get_current_user(authorization: str = Header(None)) -> dict:
             "organization_id": user.organization_id,
             "email": user.email,
             "profile_photo": user.profile_photo,
+            "client_file_id": user.client_file_id,
         }
     finally:
         session.close()
@@ -150,6 +151,12 @@ def check_trial_active(current_user: dict = Depends(get_current_user)):
         return current_user
     finally:
         session.close()
+
+
+@router.get("/me")
+def get_me(current_user: dict = Depends(get_current_user)):
+    """Return the authenticated user's profile."""
+    return current_user
 
 
 @router.post("/register")
@@ -188,16 +195,7 @@ def register(request: Request, body: RegisterRequest):
         session.add(user)
         session.flush()
         user_id = user.id
-        default_settings = [
-            ('imap_server', 'imap.gmail.com', 'email', 'Serveur IMAP'),
-            ('imap_port', '993', 'email', 'Port IMAP'),
-            ('email_folder', 'INBOX', 'email', 'Dossier IMAP'),
-            ('scheduler_interval', '1', 'scheduler', 'Intervalle en minutes'),
-            ('auto_reconciliation', 'true', 'scheduler', 'Rapprochement automatique'),
-            ('company_name', body.name, 'general', 'Nom de votre entreprise'),
-        ]
-        for key, value, category, description in default_settings:
-            session.add(Settings(key=key, value=value, category=category, description=description, organization_id=org_id))
+        create_default_settings(session, org_id, company_name=body.name)
         token_value = _create_user_token(session, user_id)
         session.commit()
         return {
@@ -290,9 +288,9 @@ def export_user_data(request: Request, current_user: dict = Depends(get_current_
         if not user:
             raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
-        from src.storage.models import Invoice, Transaction, Settings as SettingsModel
+        from src.storage.models import Invoice, BankTransaction, Settings as SettingsModel
         invoices = session.query(Invoice).filter(Invoice.organization_id == user.organization_id).all()
-        transactions = session.query(Transaction).filter(Transaction.organization_id == user.organization_id).all()
+        transactions = session.query(BankTransaction).filter(BankTransaction.organization_id == user.organization_id).all()
         settings = session.query(SettingsModel).filter(SettingsModel.organization_id == user.organization_id).all()
 
         payload = {
@@ -308,9 +306,9 @@ def export_user_data(request: Request, current_user: dict = Depends(get_current_
             "invoices": [
                 {
                     "id": inv.id,
-                    "supplier": inv.supplier_name,
+                    "invoice_number": inv.invoice_number,
                     "amount": inv.amount,
-                    "date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+                    "date": inv.date.isoformat() if inv.date else None,
                     "status": inv.status.value if inv.status else None,
                 }
                 for inv in invoices
@@ -320,7 +318,7 @@ def export_user_data(request: Request, current_user: dict = Depends(get_current_
                     "id": tr.id,
                     "description": tr.description,
                     "amount": tr.amount,
-                    "date": tr.transaction_date.isoformat() if tr.transaction_date else None,
+                    "date": tr.date.isoformat() if tr.date else None,
                 }
                 for tr in transactions
             ],
@@ -362,10 +360,12 @@ def delete_own_account(current_user: dict = Depends(get_current_user)):
 
         if admin_count <= 1 and user.role == UserRole.ADMIN:
             # Last admin: purge all org data
+            from src.storage.models import Supplier
             session.query(ReconciliationMatch).filter(ReconciliationMatch.organization_id == org_id).delete()
             session.query(ProcessedFileHash).filter(ProcessedFileHash.organization_id == org_id).delete()
             session.query(Invoice).filter(Invoice.organization_id == org_id).delete()
             session.query(BankTransaction).filter(BankTransaction.organization_id == org_id).delete()
+            session.query(Supplier).filter(Supplier.organization_id == org_id).delete()
             session.query(ClientFile).filter(ClientFile.organization_id == org_id).delete()
             session.query(AuditLog).filter(AuditLog.organization_id == org_id).delete()
             session.query(Settings).filter(Settings.organization_id == org_id).delete()

@@ -3,8 +3,8 @@ import { getPseoPagesByKind } from '@/lib/pseo/pseo-config';
 import { buildBreadcrumbJsonLd } from '@/lib/pseo/pseo-jsonld';
 
 export const metadata = {
-  title: 'Comparaisons — Autocontable vs concurrents',
-  description: 'Comparez Autocontable avec Pennylane, Dext, Tiime, Inqom, Yooz et d\'autres solutions comptables.',
+  title: 'Comparaisons — FactPilot vs concurrents',
+  description: 'Comparez FactPilot avec Pennylane, Dext, Tiime, Inqom, Yooz et d\'autres solutions comptables.',
   alternates: { canonical: '/compare' },
 };
 
@@ -23,10 +23,10 @@ export default function CompareHubPage() {
       />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 lg:py-24">
         <h1 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight mb-4">
-          Autocontable vs concurrents
+          FactPilot vs concurrents
         </h1>
         <p className="text-base text-[#6b7280] mb-12">
-          Découvrez pourquoi les cabinets comptables choisissent Autocontable.
+          Découvrez pourquoi les cabinets comptables choisissent FactPilot.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           {pages.map((p) => (

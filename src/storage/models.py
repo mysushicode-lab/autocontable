@@ -92,7 +92,7 @@ class User(Base):
     name = Column(String(100), nullable=True)
     email = Column(String(100), nullable=True, unique=True, index=True)
     profile_photo = Column(String(255), nullable=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -108,7 +108,7 @@ class Settings(Base):
     value = Column(Text, nullable=True)
     category = Column(String(50), nullable=False, default='general')
     description = Column(Text, nullable=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
@@ -118,7 +118,7 @@ class Invoice(Base):
     id = Column(Integer, primary_key=True)
     invoice_number = Column(String(100), nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     amount = Column(Float, nullable=False)
     amount_ht = Column(Float, nullable=True)
     amount_tax = Column(Float, nullable=True)
@@ -155,7 +155,7 @@ class Supplier(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
     normalized_name = Column(String(200), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     email = Column(String(200), nullable=True)
     email_domain = Column(String(100), nullable=True)
     category = Column(String(100), nullable=True)
@@ -177,7 +177,7 @@ class ProcessedFileHash(Base):
 
     id = Column(Integer, primary_key=True)
     content_hash = Column(String(32), nullable=False, index=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     filename = Column(String(500), nullable=True)
     processed_at = Column(DateTime, default=datetime.utcnow)
 
@@ -191,7 +191,7 @@ class BankTransaction(Base):
 
     id = Column(Integer, primary_key=True)
     transaction_id = Column(String(100), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     date = Column(DateTime, nullable=False)
     amount = Column(Float, nullable=False)
@@ -212,7 +212,7 @@ class ReconciliationMatch(Base):
     id = Column(Integer, primary_key=True)
     invoice_id = Column(Integer, ForeignKey('invoices.id'), nullable=False)
     transaction_id = Column(Integer, ForeignKey('bank_transactions.id'), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
     client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     match_score = Column(Float, nullable=True)
     match_type = Column(String(50), default='automatic')

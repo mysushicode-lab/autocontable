@@ -25,7 +25,7 @@ export const SettingsPrivacy = ({ deleteAccount, logout, isAdmin }) => {
         return;
       }
       const blob = await res.blob();
-      downloadBlob(blob, `autocontable-export-${new Date().toISOString().split('T')[0]}.json`);
+      downloadBlob(blob, `factpilot-export-${new Date().toISOString().split('T')[0]}.json`);
       setExportDone(true);
     } catch {
       setExportError('Erreur réseau. Veuillez réessayer.');
@@ -48,7 +48,7 @@ export const SettingsPrivacy = ({ deleteAccount, logout, isAdmin }) => {
       <div className="bg-white rounded-md p-6 border border-gray-200">
         <h2 className="text-sm font-semibold text-gray-900 mb-1">Exporter vos données</h2>
         <p className="text-xs text-gray-500 mb-6">
-          Téléchargez une copie de toutes les données qu'Autocontable détient sur vous — profil, factures, transactions et paramètres — sous forme de fichier JSON.
+          Téléchargez une copie de toutes les données que FactPilot détient sur vous — profil, factures, transactions et paramètres — sous forme de fichier JSON.
           Conformément à votre droit à la portabilité des données (RGPD Article 20).
         </p>
 
@@ -73,8 +73,8 @@ export const SettingsPrivacy = ({ deleteAccount, logout, isAdmin }) => {
         <h2 className="text-sm font-semibold text-gray-900 mb-1">Mentions légales</h2>
         <p className="text-xs text-gray-500 mb-4">
           Pour toute demande relative à vos données personnelles, contactez-nous à{' '}
-          <a href="mailto:privacy@autocontable.fr" className="text-blue-500 hover:underline">
-            privacy@autocontable.fr
+          <a href="mailto:privacy@factpilot.fr" className="text-blue-500 hover:underline">
+            privacy@factpilot.fr
           </a>
         </p>
         <div className="flex gap-4">

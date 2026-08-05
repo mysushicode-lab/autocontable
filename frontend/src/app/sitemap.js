@@ -1,6 +1,6 @@
 import { getAllPseoPages } from '@/lib/pseo/pseo-config';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://autocontable.fr';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://factpilot.fr';
 
 export default function sitemap() {
   const staticRoutes = [

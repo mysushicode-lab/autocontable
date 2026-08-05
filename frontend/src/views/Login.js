@@ -15,17 +15,15 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const loginMutation = useMutation(
-    ({ username, password }) => login(username, password),
-    {
-      onSuccess: (data) => {
-        // Redirect based on user role
-        const redirectPath = data.user.role === 'client' ? '/portal' : '/dashboard';
-        router.push(redirectPath);
-      },
-      onError: (err) => setError(err?.response?.data?.detail || 'Identifiants invalides'),
-    }
-  );
+  const loginMutation = useMutation({
+    mutationFn: ({ username, password }) => login(username, password),
+    onSuccess: (data) => {
+      // Redirect based on user role
+      const redirectPath = data.user.role === 'client' ? '/portal' : '/dashboard';
+      router.push(redirectPath);
+    },
+    onError: (err) => setError(err?.response?.data?.detail || 'Identifiants invalides'),
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -40,7 +38,7 @@ const Login = () => {
             <div className="text-center mb-8">
               <img 
                 src="/automatchfact.png" 
-                alt="autofactmatch logo" 
+                alt="FactPilot logo" 
                 className="h-10 w-auto mx-auto"
               />
               <p className="text-gray-500 mt-1 text-sm">Gestion Comptable</p>

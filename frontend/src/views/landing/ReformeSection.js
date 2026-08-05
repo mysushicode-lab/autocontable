@@ -6,7 +6,7 @@ const STEPS = [
   {
     date: '1er sept. 2026',
     title: 'Réception Factur-X obligatoire',
-    desc: 'Toutes les entreprises, tous les secteurs. Vous devez lire Factur-X natif. Autocontable le fait en arrière-plan.',
+    desc: 'Toutes les entreprises, tous les secteurs. Vous devez lire Factur-X natif. FactPilot le fait en arrière-plan.',
     ready: true,
   },
   {
@@ -18,7 +18,7 @@ const STEPS = [
   {
     date: '1er sept. 2027',
     title: 'Émission obligatoire (PME+TPE)',
-    desc: 'PME, TPE, micro. Autocontable = migration transparente. Zéro manuel, zéro reprise. Vous êtes en règle.',
+    desc: 'PME, TPE, micro. FactPilot = migration transparente. Zéro manuel, zéro reprise. Vous êtes en règle.',
     ready: true,
   },
 ];
@@ -34,7 +34,7 @@ export default function ReformeSection() {
               FEC + Factur-X : l'horizon légal approche
             </h2>
             <p className={`${sectionSubtext} mt-4 max-w-2xl mx-auto`}>
-              Septembre 2026 = deadline. FEC normé obligatoire, Factur-X avant ETI, puis PME et TPE. Autocontable automatise 100% du flux. Vous arrivez à la date butoir sans crise.
+              Septembre 2026 = deadline. FEC normé obligatoire, Factur-X avant ETI, puis PME et TPE. FactPilot automatise 100% du flux. Vous arrivez à la date butoir sans crise.
             </p>
           </div>
 
@@ -51,7 +51,7 @@ export default function ReformeSection() {
                 {step.ready && (
                   <div className="mt-4 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#466cf3]" />
-                    <span className="text-xs text-[#466cf3] font-medium">Autocontable est prêt</span>
+                    <span className="text-xs text-[#466cf3] font-medium">FactPilot est prêt</span>
                   </div>
                 )}
               </div>

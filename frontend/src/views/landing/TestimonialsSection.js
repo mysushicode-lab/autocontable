@@ -3,7 +3,7 @@ import { NOISE_SVG } from './_constants';
 
 const TESTIMONIALS = [
   {
-    quote: "On traitait 80 dossiers clients. Chacun prenait 3-4 heures de retouche. Autocontable nous libère 120h par mois. Dossiers prêts instantanément, audités.",
+    quote: "On traitait 80 dossiers clients. Chacun prenait 3-4 heures de retouche. FactPilot nous libère 120h par mois. Dossiers prêts instantanément, audités.",
     name: "Pierre M.",
     role: "Cabinet comptable, 5 collaborateurs",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&h=600&fit=crop&crop=face",
@@ -85,7 +85,7 @@ export default function TestimonialsSection() {
             Témoignages
           </span>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-            Ce que disent les cabinets qui ont branché Autocontable
+            Ce que disent les cabinets qui ont branché FactPilot
           </h2>
         </div>
 

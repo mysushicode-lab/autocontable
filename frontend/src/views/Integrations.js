@@ -55,53 +55,47 @@ const Integrations = () => {
     }
   );
 
-  const configureMutation = useMutation(
-    ({ integrationName, config }) =>
+  const configureMutation = useMutation({
+    mutationFn: ({ integrationName, config }) =>
       configureIntegration(activeClientFileId, integrationName, config),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['integration-status', activeClientFileId]);
-        addNotification(NOTIF_TYPES.SUCCESS, 'Configuration sauvegardée', 'L\'intégration a été configurée avec succès.');
-        setShowConfigModal(false);
-      },
-      onError: (err) => {
-        addNotification(NOTIF_TYPES.ERROR, 'Erreur de configuration', err.message || 'Impossible de sauvegarder la configuration.');
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries(['integration-status', activeClientFileId]);
+      addNotification(NOTIF_TYPES.SUCCESS, 'Configuration sauvegardée', 'L\'intégration a été configurée avec succès.');
+      setShowConfigModal(false);
+    },
+    onError: (err) => {
+      addNotification(NOTIF_TYPES.ERROR, 'Erreur de configuration', err.message || 'Impossible de sauvegarder la configuration.');
+    },
+  });
 
-  const pushMutation = useMutation(
-    () => pushEntries(activeClientFileId, pushYear, pushMonth),
-    {
-      onSuccess: (data) => {
-        addNotification(
-          NOTIF_TYPES.SUCCESS,
-          'Écritures poussées',
-          `${data.entries_count || 0} écritures ont été envoyées avec succès.`
-        );
-        queryClient.invalidateQueries(['integration-status', activeClientFileId]);
-      },
-      onError: (err) => {
-        addNotification(NOTIF_TYPES.ERROR, 'Erreur de push', err.message || 'Impossible d\'envoyer les écritures.');
-      },
-    }
-  );
+  const pushMutation = useMutation({
+    mutationFn: () => pushEntries(activeClientFileId, pushYear, pushMonth),
+    onSuccess: (data) => {
+      addNotification(
+        NOTIF_TYPES.SUCCESS,
+        'Écritures poussées',
+        `${data.entries_count || 0} écritures ont été envoyées avec succès.`
+      );
+      queryClient.invalidateQueries(['integration-status', activeClientFileId]);
+    },
+    onError: (err) => {
+      addNotification(NOTIF_TYPES.ERROR, 'Erreur de push', err.message || 'Impossible d\'envoyer les écritures.');
+    },
+  });
 
-  const testMutation = useMutation(
-    () => testIntegration(activeClientFileId),
-    {
-      onSuccess: (data) => {
-        if (data.success) {
-          addNotification(NOTIF_TYPES.SUCCESS, 'Connexion réussie', data.message || 'La connexion fonctionne.');
-        } else {
-          addNotification(NOTIF_TYPES.WARNING, 'Test échoué', data.message || 'La connexion a échoué.');
-        }
-      },
-      onError: (err) => {
-        addNotification(NOTIF_TYPES.ERROR, 'Erreur de test', err.message || 'Impossible de tester la connexion.');
-      },
-    }
-  );
+  const testMutation = useMutation({
+    mutationFn: () => testIntegration(activeClientFileId),
+    onSuccess: (data) => {
+      if (data.success) {
+        addNotification(NOTIF_TYPES.SUCCESS, 'Connexion réussie', data.message || 'La connexion fonctionne.');
+      } else {
+        addNotification(NOTIF_TYPES.WARNING, 'Test échoué', data.message || 'La connexion a échoué.');
+      }
+    },
+    onError: (err) => {
+      addNotification(NOTIF_TYPES.ERROR, 'Erreur de test', err.message || 'Impossible de tester la connexion.');
+    },
+  });
 
   const handleConfigureClick = (integration) => {
     setSelectedIntegration(integration);

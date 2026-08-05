@@ -10,7 +10,7 @@ import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const Signup = () => {
   const router = useRouter();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const intendedPlan = searchParams.get('plan');
   const { loginFromData } = useAuth();
   const [form, setForm] = useState({ username: '', password: '', confirm: '', name: '', email: '' });
@@ -20,40 +20,38 @@ const Signup = () => {
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
-  const mutation = useMutation(
-    () => register(form.username, form.password, form.name, form.email),
-    {
-      onSuccess: async (data) => {
-        loginFromData(data);
-        if (intendedPlan === 'pro') {
-          try {
-            const { url } = await createStripeCheckoutSession('pro');
-            if (url) {
-              window.location.href = url;
-              return;
-            }
-          } catch (err) {
-            console.error('Failed to create checkout session:', err);
+  const mutation = useMutation({
+    mutationFn: () => register(form.username, form.password, form.name, form.email),
+    onSuccess: async (data) => {
+      loginFromData(data);
+      if (intendedPlan === 'pro') {
+        try {
+          const { url } = await createStripeCheckoutSession('pro');
+          if (url) {
+            window.location.href = url;
+            return;
           }
+        } catch (err) {
+          console.error('Failed to create checkout session:', err);
         }
-        router.push('/dashboard');
-      },
-      onError: (err) => {
-        const detail = err?.response?.data?.detail;
-        let message;
-        if (typeof detail === 'string') {
-          message = detail;
-        } else if (Array.isArray(detail)) {
-          message = detail.map((d) => d.msg || JSON.stringify(d)).join(', ');
-        } else if (detail) {
-          message = JSON.stringify(detail);
-        } else {
-          message = "Erreur lors de l'inscription";
-        }
-        setError(message);
-      },
-    }
-  );
+      }
+      router.push('/dashboard');
+    },
+    onError: (err) => {
+      const detail = err?.response?.data?.detail;
+      let message;
+      if (typeof detail === 'string') {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail.map((d) => d.msg || JSON.stringify(d)).join(', ');
+      } else if (detail) {
+        message = JSON.stringify(detail);
+      } else {
+        message = "Erreur lors de l'inscription";
+      }
+      setError(message);
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -75,7 +73,7 @@ const Signup = () => {
             <div className="text-center mb-8">
               <img 
                 src="/automatchfact.png" 
-                alt="autofactmatch logo" 
+                alt="FactPilot logo" 
                 className="h-10 w-auto mx-auto"
               />
               <p className="text-gray-500 mt-1 text-sm">La comptabilité intelligente, sans effort.</p>

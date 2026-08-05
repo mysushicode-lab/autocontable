@@ -8,7 +8,7 @@ export const NAV_LINKS = [
 export const FEATURES = [
   {
     title: 'Les factures arrivent déjà classées',
-    description: "Vos clients envoient un PDF ou une photo. Autocontable extrait automatiquement : montant HT/TTC, TVA, date, fournisseur. Classification intelligente par secteur. Zéro saisie manuelle, zéro erreur.",
+    description: "Vos clients envoient un PDF ou une photo. FactPilot extrait automatiquement : montant HT/TTC, TVA, date, fournisseur. Classification intelligente par secteur. Zéro saisie manuelle, zéro erreur.",
     image: '/facture-preview.png',
   },
   {
@@ -26,12 +26,12 @@ export const FEATURES = [
 export const TOOLS = [
   {
     title: 'Ingestion email ou WhatsApp',
-    description: "Vos clients envoient des factures par email ou WhatsApp. Autocontable les récupère automatiquement, les traite et les ajoute au dossier. Zéro manipulation manuelle.",
+    description: "Vos clients envoient des factures par email ou WhatsApp. FactPilot les récupère automatiquement, les traite et les ajoute au dossier. Zéro manipulation manuelle.",
     image: '/export-contable.png',
   },
   {
     title: 'Extraction IA multiformat',
-    description: "PDF, photo, scan flou ou manuscrit — Autocontable extrait numéro, date, montant HT/TTC, TVA, fournisseur en 30 secondes. 95%+ de précision même sur documents dégradés.",
+    description: "PDF, photo, scan flou ou manuscrit — FactPilot extrait numéro, date, montant HT/TTC, TVA, fournisseur en 30 secondes. 95%+ de précision même sur documents dégradés.",
     image: '/scheduler-automatique.png',
   },
   {

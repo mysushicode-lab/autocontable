@@ -1,0 +1,35 @@
+# Production overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - /var/lib/postgresql/data:/var/lib/postgresql/data  # Host mount for backups
+    restart: always
+
+  backend:
+    environment:
+      - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD}@postgres:5432/autocontable
+      - FRONTEND_URL=https://factpilot.fr
+      - CORS_ORIGINS=https://factpilot.fr
+      - GOOGLE_REDIRECT_URI=https://factpilot.fr/api/auth/google/callback
+      - LINKEDIN_REDIRECT_URI=https://factpilot.fr/api/auth/linkedin/callback
+    restart: always
+
+  frontend:
+    build:
+      args:
+        - NEXT_PUBLIC_API_URL=/api
+        - NEXT_PUBLIC_SITE_URL=https://factpilot.fr
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - NODE_ENV=production
+    restart: always
+
+  scheduler:
+    restart: always
+
+  backup:
+    restart: always

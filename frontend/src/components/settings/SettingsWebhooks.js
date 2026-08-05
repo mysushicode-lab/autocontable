@@ -16,21 +16,20 @@ export const SettingsWebhooks = ({ setSaveStatus }) => {
     },
   });
 
-  const updateMutation = useMutation(
-    () => updateWebhookConfig(url, events),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('webhookConfig');
-        setSaveStatus({ type: 'success', message: 'Configuration webhook sauvegardée' });
-        setTimeout(() => setSaveStatus(null), 3000);
-      },
-      onError: (error) => {
-        setSaveStatus({ type: 'error', message: error.response?.data?.detail || 'Erreur lors de la sauvegarde' });
-      },
-    }
-  );
+  const updateMutation = useMutation({
+    mutationFn: () => updateWebhookConfig(url, events),
+    onSuccess: () => {
+      queryClient.invalidateQueries('webhookConfig');
+      setSaveStatus({ type: 'success', message: 'Configuration webhook sauvegardée' });
+      setTimeout(() => setSaveStatus(null), 3000);
+    },
+    onError: (error) => {
+      setSaveStatus({ type: 'error', message: error.response?.data?.detail || 'Erreur lors de la sauvegarde' });
+    },
+  });
 
-  const testMutation = useMutation(testWebhook, {
+  const testMutation = useMutation({
+    mutationFn: testWebhook,
     onSuccess: () => {
       setTestStatus({ type: 'success', message: 'Webhook de test envoyé avec succès' });
       setTimeout(() => setTestStatus(null), 5000);

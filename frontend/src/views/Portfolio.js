@@ -56,7 +56,8 @@ const Portfolio = () => {
     )
     .sort((a, b) => (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4));
 
-  const createMutation = useMutation(createClientFile, {
+  const createMutation = useMutation({
+    mutationFn: createClientFile,
     onSuccess: () => { queryClient.invalidateQueries('client-files-summary'); setShowForm(false); setForm(EMPTY_FORM); },
     onError: (err) => {
       if (err.response?.status === 403) {
@@ -66,10 +67,12 @@ const Portfolio = () => {
       }
     }
   });
-  const updateMutation = useMutation(({ id, data }) => updateClientFile(id, data), {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => updateClientFile(id, data),
     onSuccess: () => { queryClient.invalidateQueries('client-files-summary'); setEditingFile(null); setForm(EMPTY_FORM); }
   });
-  const archiveMutation = useMutation(deleteClientFile, {
+  const archiveMutation = useMutation({
+    mutationFn: deleteClientFile,
     onSuccess: () => queryClient.invalidateQueries('client-files-summary')
   });
 
