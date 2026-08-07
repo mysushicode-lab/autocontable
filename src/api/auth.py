@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Header, Depends, Request
 import src.config  # noqa: F401
 
 from src.storage.database import db
-from src.storage.models import User, UserToken, Organization, UserRole, PasswordResetToken
+from src.storage.models import User, UserToken, Organization, UserRole, PasswordResetToken, InvitationToken, DossierPermission
 from src.api.schemas import RegisterRequest, LoginRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.utils.defaults import create_default_settings
 from src.api.rate_limit import limiter
@@ -440,6 +440,84 @@ def change_email(request: ChangeEmailRequest, current_user: dict = Depends(get_c
         user.email = request.new_email
         session.commit()
         return {"message": "Email changé avec succès"}
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@router.post("/join-from-invitation")
+def join_from_invitation(body: dict):
+    """PME creates account and joins organization via invitation token.
+
+    body: {"token": "abc...", "username": "pme", "password": "...", "name": "PME Name"}
+    """
+    session = db.get_session()
+    try:
+        token_str = body.get("token", "").strip()
+        username = body.get("username", "").strip()
+        password = body.get("password", "")
+        name = body.get("name", "").strip()
+
+        if not all([token_str, username, password, name]):
+            raise HTTPException(400, "Tous les champs requis")
+
+        # Validate invitation token
+        invitation = session.query(InvitationToken).filter(
+            InvitationToken.token == token_str,
+            InvitationToken.used_at.is_(None),  # Not yet used
+            InvitationToken.expires_at > datetime.utcnow()
+        ).first()
+
+        if not invitation:
+            raise HTTPException(400, "Lien d'invitation invalide ou expiré")
+
+        # Check username doesn't already exist
+        if session.query(User).filter(User.username == username).first():
+            raise HTTPException(400, "Ce nom d'utilisateur est déjà pris")
+
+        # Create user in the org from the invitation
+        user = User(
+            username=username,
+            password_hash=_hash_password(password),
+            name=name,
+            email=invitation.invited_email,
+            role=UserRole.CLIENT,
+            organization_id=invitation.organization_id
+        )
+        session.add(user)
+        session.flush()
+
+        # Grant dossier access if specified in invitation
+        if invitation.client_file_id:
+            session.add(DossierPermission(
+                user_id=user.id,
+                client_file_id=invitation.client_file_id,
+                permission_level=invitation.permission_level,
+            ))
+
+        # Mark invitation as used
+        invitation.used_by_user_id = user.id
+        invitation.used_at = datetime.utcnow()
+
+        session.commit()
+
+        # Create token and return
+        token_value = _create_user_token(session, user.id)
+
+        return {
+            "message": "Compte créé et accès accordé",
+            "token": token_value,
+            "user": {
+                "id": user.id,
+                "username": username,
+                "name": name,
+                "role": UserRole.CLIENT.value,
+                "organization_id": invitation.organization_id,
+                "email": invitation.invited_email,
+            }
+        }
     except Exception:
         session.rollback()
         raise

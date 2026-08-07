@@ -245,6 +245,23 @@ class DossierPermission(Base):
     )
 
 
+class InvitationToken(Base):
+    """Invitation links for PME/clients to join cabinet's organization and access dossiers"""
+    __tablename__ = 'invitation_tokens'
+
+    id = Column(Integer, primary_key=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True, index=True)
+    invited_email = Column(String(255), nullable=False)
+    permission_level = Column(String(20), default='read_write')
+    expires_at = Column(DateTime, nullable=False)
+    used_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    used_at = Column(DateTime, nullable=True)
+    created_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class AuditLog(Base):
     __tablename__ = 'audit_logs'
 

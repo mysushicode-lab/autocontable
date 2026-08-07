@@ -114,7 +114,9 @@
       "Bash(xargs sed -i 's/bg-gray-900 text-white/bg-blue-600 text-white/g')",
       "Bash(grep -E \"\\\\.\\(tsx|jsx|ts|js\\)$\")",
       "Bash(grep -E \"\\\\.svg$\")",
-      "Bash(python -c 'import ast; import glob; errors=[] *)"
+      "Bash(python -c 'import ast; import glob; errors=[] *)",
+      "Bash(git commit *)",
+      "Bash(xargs grep -l \"DossierPermission\\\\|grant.*permission\\\\|invite\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",

@@ -1,7 +1,10 @@
 """Dossier permission management endpoints."""
+import os
+import secrets
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from src.storage.database import db
-from src.storage.models import DossierPermission, ClientFile, User, UserRole
+from src.storage.models import DossierPermission, ClientFile, User, UserRole, InvitationToken
 from src.api.auth import get_current_user
 from src.api.billing import require_feature
 
@@ -184,6 +187,75 @@ def revoke_permission(payload: dict, current_user: dict = Depends(require_featur
             session.commit()
 
         return {"success": True}
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+@router.post("/invite")
+def invite_user_to_dossier(payload: dict, current_user: dict = Depends(require_feature("permissions"))):
+    """Generate invitation link for a PME/client to join org and access a dossier.
+
+    payload: {"email": "pme@example.com", "client_file_id": 456, "permission_level": "read_write"}
+    Sends email with join link containing the token.
+    """
+    if current_user.get("role") != "admin":
+        raise HTTPException(403, "Admin requis")
+
+    session = db.get_session()
+    try:
+        org_id = current_user["organization_id"]
+        invited_email = payload.get("email", "").lower().strip()
+        cfid = payload.get("client_file_id")
+        level = payload.get("permission_level", "read_write")
+
+        if not invited_email:
+            raise HTTPException(400, "Email manquant")
+        if level not in ("read_only", "read_write", "admin"):
+            raise HTTPException(400, "permission_level invalide")
+
+        # Verify dossier exists
+        cf = session.query(ClientFile).filter(
+            ClientFile.id == cfid,
+            ClientFile.organization_id == org_id
+        ).first()
+        if not cf:
+            raise HTTPException(404, "Dossier non trouvé")
+
+        # Check if user already exists in org with this email
+        existing_user = session.query(User).filter(
+            User.email == invited_email,
+            User.organization_id == org_id
+        ).first()
+        if existing_user:
+            raise HTTPException(400, f"Utilisateur {invited_email} existe déjà dans l'organisation")
+
+        # Generate invitation token (valid 7 days)
+        token = secrets.token_urlsafe(32)
+        invitation = InvitationToken(
+            token=token,
+            organization_id=org_id,
+            client_file_id=cfid,
+            invited_email=invited_email,
+            permission_level=level,
+            created_by_user_id=current_user["id"],
+            expires_at=datetime.utcnow() + timedelta(days=7),
+        )
+        session.add(invitation)
+        session.commit()
+
+        # Send email (TODO: implement email service)
+        join_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/join?token={token}"
+        # TODO: send_invitation_email(invited_email, cf.name, join_url, current_user["name"])
+
+        return {
+            "success": True,
+            "invitation_id": invitation.id,
+            "join_url": join_url,
+            "expires_at": invitation.expires_at.isoformat(),
+        }
     except Exception:
         session.rollback()
         raise
