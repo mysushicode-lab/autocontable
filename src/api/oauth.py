@@ -224,8 +224,8 @@ async def google_callback(request: Request):
         session = db.get_session()
         try:
             token_value = _create_user_token(session, user_data['id'])
+            session.commit()
             role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
-            session.close()
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
             return RedirectResponse(
@@ -278,8 +278,8 @@ async def linkedin_callback(request: Request):
         session = db.get_session()
         try:
             token_value = _create_user_token(session, user_data['id'])
+            session.commit()
             role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
-            session.close()
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
             return RedirectResponse(

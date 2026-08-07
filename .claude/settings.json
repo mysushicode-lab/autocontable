@@ -116,7 +116,10 @@
       "Bash(grep -E \"\\\\.svg$\")",
       "Bash(python -c 'import ast; import glob; errors=[] *)",
       "Bash(git commit *)",
-      "Bash(xargs grep -l \"DossierPermission\\\\|grant.*permission\\\\|invite\")"
+      "Bash(xargs grep -l \"DossierPermission\\\\|grant.*permission\\\\|invite\")",
+      "Bash(grep -A 30 \"class ClientFile\" /c/Users/User/Documents/GitHub\\\\autocontable/src/storage/models.py | grep -E \"email|contact\")",
+      "Read(//c/Users/User/Documents/GitHubautocontable/src/storage/**)",
+      "Bash(git commit -m 'fix\\(oauth\\): ensure session commit and proper cleanup in OAuth callbacks *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",
