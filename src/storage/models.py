@@ -95,14 +95,18 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), default=UserRole.ACCOUNTANT)
     name = Column(String(100), nullable=True)
-    email = Column(String(100), nullable=True, unique=True, index=True)
+    email = Column(String(100), nullable=True, index=True)
     profile_photo = Column(String(255), nullable=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
     client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     organization = relationship("Organization", back_populates="users")
     tokens = relationship("UserToken", back_populates="user")
+
+    __table_args__ = (
+        UniqueConstraint('email', 'organization_id', name='uq_user_email_org'),
+    )
 
 
 class Settings(Base):
