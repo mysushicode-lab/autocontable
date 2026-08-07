@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plug,
@@ -24,6 +25,7 @@ import { useClientFile } from '../context/ClientFileContext';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import IntegrationConfigModal from '../components/IntegrationConfigModal';
 import HelpTooltip from '../components/ui/HelpTooltip';
+import ClientImapSetup from '../components/ClientImapSetup';
 import { generateMonthOptions } from '../utils/dateHelpers';
 import { INPUT_CLASS } from '../utils/formHelpers';
 import { usePlanGate } from '../hooks/usePlanGate';
@@ -32,6 +34,7 @@ import UpgradeModal from '../components/ui/UpgradeModal';
 const Integrations = () => {
   const { canAccess, getRequiredPlan, billing } = usePlanGate();
   const { activeClientFileId, activeClientFile } = useClientFile();
+  const { user } = useAuth();
   const { add: addNotification } = useNotifications();
   const queryClient = useQueryClient();
 
@@ -44,6 +47,7 @@ const Integrations = () => {
 
   const monthOptions = generateMonthOptions(12);
   const hasAccess = billing ? canAccess('integrations') : false;
+  const isClient = user?.role === 'client';
 
   const { data: integrations, isLoading: integrationsLoading } = useQuery({
     queryKey: ['available-integrations'],
@@ -135,6 +139,11 @@ const Integrations = () => {
   const isError = status?.status === 'error';
   const currentIntegration = integrations?.integrations?.find((i) => i.name === status?.integration_name);
   const supportsApi = currentIntegration?.supports_api !== false;
+
+  // Show IMAP setup for clients, normal integrations for accountants/admins
+  if (isClient) {
+    return <ClientImapSetup />;
+  }
 
   return (
     <div className="relative space-y-6">

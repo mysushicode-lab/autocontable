@@ -134,7 +134,9 @@
       "Bash(git commit -m 'fix+sec: enforce write permission check for PME uploads *)",
       "Bash(python -m py_compile src/api/invoices.py)",
       "Bash(git commit -m 'refactor: PME accès identique au comptable, données filtrées *)",
-      "Bash(git commit -m 'security: fix email unique constraint - now per-org not global *)"
+      "Bash(git commit -m 'security: fix email unique constraint - now per-org not global *)",
+      "Bash(python -m py_compile src/api/*.py)",
+      "Bash(git commit -m 'feat: PME IMAP setup in /integrations menu *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",
