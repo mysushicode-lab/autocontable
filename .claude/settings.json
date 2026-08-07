@@ -119,7 +119,14 @@
       "Bash(xargs grep -l \"DossierPermission\\\\|grant.*permission\\\\|invite\")",
       "Bash(grep -A 30 \"class ClientFile\" /c/Users/User/Documents/GitHub\\\\autocontable/src/storage/models.py | grep -E \"email|contact\")",
       "Read(//c/Users/User/Documents/GitHubautocontable/src/storage/**)",
-      "Bash(git commit -m 'fix\\(oauth\\): ensure session commit and proper cleanup in OAuth callbacks *)"
+      "Bash(git commit -m 'fix\\(oauth\\): ensure session commit and proper cleanup in OAuth callbacks *)",
+      "Bash(python -m py_compile src/api/oauth.py)",
+      "Bash(python -m py_compile src/api/auth.py)",
+      "Bash(python -m py_compile src/api/permissions.py)",
+      "Bash(git commit -m 'docs: add comprehensive PME invitation system documentation *)",
+      "Bash(python -m py_compile src/api/oauth.py src/api/auth.py src/api/permissions.py)",
+      "Bash(git commit -m 'docs: add comprehensive PME/Client UI access guide *)",
+      "Bash(git commit -m 'fix\\(pme-access\\): redirect clients to /portal instead of /portfolio *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",
