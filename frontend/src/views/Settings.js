@@ -18,16 +18,16 @@ import { SettingsWebhooks } from '../components/settings/SettingsWebhooks';
 import { SettingsWhatsApp } from '../components/settings/SettingsWhatsApp';
 
 const ALL_SECTIONS = [
-  { id: 'profil',         label: 'Profil',              icon: UserCircle,   adminOnly: false },
-  { id: 'security',       label: 'Sécurité',             icon: Lock,         adminOnly: false },
-  { id: 'privacy',        label: 'Confidentialité',      icon: Shield,       adminOnly: false },
-  { id: 'email',          label: 'Configuration Email',  icon: Mail,         adminOnly: true  },
-  { id: 'whatsapp',       label: 'WhatsApp',             icon: MessageSquare, adminOnly: true  },
-  { id: 'scheduler',      label: 'Planificateur',        icon: Clock,        adminOnly: true  },
-  { id: 'collaborations', label: 'Collaborations',       icon: Users,        adminOnly: true  },
-  { id: 'webhooks',       label: 'Webhooks',             icon: Webhook,      adminOnly: true  },
-  { id: 'billing',        label: 'Facturation',          icon: CreditCard,   adminOnly: true  },
-  { id: 'plan',           label: 'Plan',                 icon: Zap,          adminOnly: true  },
+  { id: 'profil',         label: 'Profil',              icon: UserCircle,   adminOnly: false, clientHidden: false },
+  { id: 'security',       label: 'Sécurité',             icon: Lock,         adminOnly: false, clientHidden: false },
+  { id: 'privacy',        label: 'Confidentialité',      icon: Shield,       adminOnly: false, clientHidden: false },
+  { id: 'email',          label: 'Configuration Email',  icon: Mail,         adminOnly: true,  clientHidden: true  },
+  { id: 'whatsapp',       label: 'WhatsApp',             icon: MessageSquare, adminOnly: true,  clientHidden: true  },
+  { id: 'scheduler',      label: 'Planificateur',        icon: Clock,        adminOnly: true,  clientHidden: true  },
+  { id: 'collaborations', label: 'Collaborations',       icon: Users,        adminOnly: true,  clientHidden: true  },
+  { id: 'webhooks',       label: 'Webhooks',             icon: Webhook,      adminOnly: true,  clientHidden: true  },
+  { id: 'billing',        label: 'Facturation',          icon: CreditCard,   adminOnly: true,  clientHidden: true  },
+  { id: 'plan',           label: 'Plan',                 icon: Zap,          adminOnly: true,  clientHidden: true  },
 ];
 
 const Settings = () => {
@@ -40,7 +40,11 @@ const Settings = () => {
 
   // Filter sections based on user role
   const isAdmin = user?.role === 'admin';
-  const SECTIONS = ALL_SECTIONS.filter(section => !section.adminOnly || isAdmin);
+  const isClient = user?.role === 'client';
+  const SECTIONS = ALL_SECTIONS.filter(section => {
+    if (isClient && section.clientHidden) return false;  // Hide for PME
+    return !section.adminOnly || isAdmin;
+  });
 
   const { data: settingsData, isLoading } = useQuery({
     queryKey: ['settings'],
