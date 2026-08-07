@@ -480,6 +480,7 @@ const Portfolio = () => {
         <PermissionsModal
           clientFileId={showPermissionsModal.id}
           clientFileName={showPermissionsModal.name}
+          contactEmail={showPermissionsModal.contact_email}
           onClose={() => setShowPermissionsModal(null)}
         />
       )}

@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, UserPlus, Trash2 } from 'lucide-react';
+import { X, UserPlus, Trash2, Mail } from 'lucide-react';
 import { fetchDossierPermissions, grantPermission, revokePermission, fetchUsers } from '../api';
 import { INPUT_CLASS } from '../utils/formHelpers';
 import { usePlanGate } from '../hooks/usePlanGate';
 
-const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
+const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose }) => {
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState('');
   const [permissionLevel, setPermissionLevel] = useState('read_write');
+  const [inviteEmail, setInviteEmail] = useState(contactEmail || '');
+  const [invitePermissionLevel, setInvitePermissionLevel] = useState('read_write');
+  const [showInviteForm, setShowInviteForm] = useState(false);
   const { billing, canAccess } = usePlanGate();
   const hasAccess = billing ? canAccess('permissions') : false;
 
@@ -46,10 +49,40 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
     },
   });
 
+  const inviteMutation = useMutation({
+    mutationFn: () => {
+      const token = localStorage.getItem('auth_token');
+      return fetch('/api/permissions/invite', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          client_file_id: clientFileId,
+          permission_level: invitePermissionLevel,
+        }),
+      }).then(r => r.json());
+    },
+    onSuccess: (data) => {
+      setInviteEmail(contactEmail || '');
+      setInvitePermissionLevel('read_write');
+      setShowInviteForm(false);
+      // TODO: Show success + copy link to clipboard
+      console.log('Invitation créée:', data.join_url);
+    },
+    onError: (err) => console.error('Erreur invitation:', err),
+  });
+
   const handleGrant = (e) => {
     e.preventDefault();
     if (selectedUserId) {
       grantMutation.mutate();
+    }
+  };
+
+  const handleInvite = (e) => {
+    e.preventDefault();
+    if (inviteEmail) {
+      inviteMutation.mutate();
     }
   };
 
@@ -147,10 +180,54 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
               </form>
             </div>
 
+            <div>
+              <button
+                onClick={() => setShowInviteForm(!showInviteForm)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 text-sm font-medium"
+              >
+                <Mail className="w-4 h-4" />
+                {showInviteForm ? 'Annuler invitation' : 'Inviter une PME'}
+              </button>
+
+              {showInviteForm && (
+                <form onSubmit={handleInvite} className="mt-3 p-4 bg-green-50 border border-green-200 rounded-md space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Email de la PME</label>
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className={INPUT_CLASS}
+                      placeholder="pme@example.com"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Niveau d'accès</label>
+                    <select
+                      value={invitePermissionLevel}
+                      onChange={(e) => setInvitePermissionLevel(e.target.value)}
+                      className={INPUT_CLASS}
+                    >
+                      <option value="read_only">Lecture seule</option>
+                      <option value="read_write">Lecture/Écriture (recommandé)</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!inviteEmail || inviteMutation.isLoading}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 text-sm font-medium disabled:opacity-50"
+                  >
+                    {inviteMutation.isLoading ? 'Envoi en cours...' : 'Générer lien d\'invitation'}
+                  </button>
+                </form>
+              )}
+            </div>
+
             <div className="flex justify-end pt-4">
               <button
                 onClick={onClose}
-                className="px-4 py-2 border text-gray-700 rounded-md  text-sm font-medium"
+                className="px-4 py-2 border text-gray-700 rounded-md text-sm font-medium"
               >
                 Fermer
               </button>
