@@ -32,8 +32,7 @@ export default function OAuthCallbackPage() {
       })
       .then((user) => {
         loginFromData({ token, user });
-        const redirect = role === 'client' ? '/portal' : '/dashboard';
-        router.replace(redirect);
+        router.replace('/dashboard');
       })
       .catch(() => {
         router.replace('/login?error=oauth_failed');

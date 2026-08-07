@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from src.storage.database import db
-from src.storage.models import Invoice, Supplier, ReconciliationMatch, InvoiceStatus, ProcessedFileHash
+from src.storage.models import Invoice, Supplier, ReconciliationMatch, InvoiceStatus, ProcessedFileHash, User
 from src.invoice_processor import InvoiceProcessor
 from src.api.utils import save_uploaded_file, create_or_update_invoice, get_month_date_range
 from src.api.schemas import UpdateInvoiceRequest
@@ -170,7 +170,27 @@ def list_invoices(
     """List all invoices with optional filters"""
     session = db.get_session()
     try:
-        query = session.query(Invoice).filter(Invoice.organization_id == current_user["organization_id"])
+        from src.api.permissions import user_has_access
+        from src.storage.models import ClientFile
+
+        org_id = current_user["organization_id"]
+        role = current_user.get("role", "accountant")
+        user_id = current_user["id"]
+
+        # For clients, force client_file_id to their own dossier
+        if role == "client":
+            user = session.query(User).get(user_id)
+            if not user or not user.client_file_id:
+                raise HTTPException(403, "Aucun dossier associé à votre compte")
+            client_file_id = user.client_file_id
+
+        # Verify access if client_file_id is specified
+        if client_file_id is not None:
+            has_access = user_has_access(session, user_id, client_file_id, org_id, role, "read_only")
+            if not has_access:
+                raise HTTPException(403, "Accès refusé à ce dossier")
+
+        query = session.query(Invoice).filter(Invoice.organization_id == org_id)
 
         if client_file_id is not None:
             query = query.filter(Invoice.client_file_id == client_file_id)

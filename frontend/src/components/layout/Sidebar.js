@@ -15,15 +15,14 @@ import DossierSwitcher from './DossierSwitcher';
 
 const NAV_ITEMS = [
   { path: '/portfolio',      icon: FolderKanban, label: 'Portefeuille',   roles: ['admin', 'accountant'] },
-  { path: '/dashboard',      icon: Gauge,        label: 'Tableau de bord', roles: ['admin', 'accountant'] },
-  { path: '/invoices',       icon: Receipt,      label: 'Factures',        roles: ['admin', 'accountant'] },
-  { path: '/reconciliation', icon: GitMerge,     label: 'Rapprochement',   roles: ['admin', 'accountant'] },
-  { path: '/integrations',   icon: Plug,         label: 'Connecteur',      roles: ['admin', 'accountant'] },
+  { path: '/dashboard',      icon: Gauge,        label: 'Tableau de bord', roles: ['admin', 'accountant', 'client'] },
+  { path: '/invoices',       icon: Receipt,      label: 'Factures',        roles: ['admin', 'accountant', 'client'] },
+  { path: '/reconciliation', icon: GitMerge,     label: 'Rapprochement',   roles: ['admin', 'accountant', 'client'] },
+  { path: '/integrations',   icon: Plug,         label: 'Connecteur',      roles: ['admin', 'accountant', 'client'] },
   { path: '/reference',      icon: BookMarked,   label: 'Référence',       roles: ['admin', 'accountant'] },
-  { path: '/reports',        icon: TrendingUp,   label: 'Rapports',        roles: ['admin', 'accountant'] },
-  { path: '/analytics',      icon: BarChart3,    label: 'Analytics',       roles: ['admin', 'accountant'] },
+  { path: '/reports',        icon: TrendingUp,   label: 'Rapports',        roles: ['admin', 'accountant', 'client'] },
+  { path: '/analytics',      icon: BarChart3,    label: 'Analytics',       roles: ['admin', 'accountant', 'client'] },
   { path: '/audit',          icon: Shield,       label: 'Journal d\'audit', roles: ['admin'] },
-  { path: '/portal',         icon: Gauge,        label: 'Mon Espace',      roles: ['client'] },
 ];
 
 const NavItem = ({ path, icon: Icon, label, open, badge }) => {
@@ -84,11 +83,9 @@ const SidebarNav = ({ open, planStatus }) => {
   return (
     <div className="flex flex-col h-full select-none">
       <nav className="flex-1 px-2 pt-3 pb-2 space-y-px overflow-y-auto">
-        {!isClient && (
-          <div className={`mb-1 ${!open ? 'flex justify-center' : ''}`}>
-            <DossierSwitcher open={open} />
-          </div>
-        )}
+        <div className={`mb-1 ${!open ? 'flex justify-center' : ''}`}>
+          <DossierSwitcher open={open} />
+        </div>
         {visibleNavItems.map((item) => (
           <NavItem
             key={item.path}

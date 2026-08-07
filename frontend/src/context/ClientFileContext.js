@@ -1,18 +1,29 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from './AuthContext';
 
 const ClientFileContext = createContext(null);
 
 export const ClientFileProvider = ({ children }) => {
+  const { user } = useAuth();
   // null = vue portefeuille (tous les dossiers), number = dossier actif
   const [activeClientFileId, setActiveClientFileId] = useState(null);
   const [activeClientFile, setActiveClientFile] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
-  // Restore from localStorage on mount
+  // Restore from localStorage on mount, or auto-select for clients
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Clients have only one dossier assigned - auto-select it if not already selected
+      if (user?.role === 'client' && user?.client_file_id && !activeClientFileId) {
+        const clientFileId = user.client_file_id;
+        setActiveClientFileId(clientFileId);
+        // We'll set activeClientFile when we fetch the dossier data
+        setInitialized(true);
+        return;
+      }
+
       const savedFile = localStorage.getItem('active_client_file');
       if (savedFile) {
         try {
@@ -25,7 +36,7 @@ export const ClientFileProvider = ({ children }) => {
       }
       setInitialized(true);
     }
-  }, []);
+  }, [user, activeClientFileId]);
 
   const selectClientFile = useCallback((file) => {
     setActiveClientFileId(file ? file.id : null);

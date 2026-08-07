@@ -63,9 +63,9 @@ export default function JoinPage() {
         return;
       }
 
-      // Store token and redirect to portal
+      // Store token and redirect to dashboard
       localStorage.setItem('auth_token', data.access_token);
-      router.push('/portal');
+      router.push('/dashboard');
     } catch (err) {
       setTokenError(err.message || 'Erreur serveur');
     } finally {
