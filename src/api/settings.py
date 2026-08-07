@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 from datetime import datetime
 
+import src.config  # noqa: F401
+
 from src.storage.database import db
 from src.storage.models import Settings, Organization
 from src.api.schemas import SettingUpdate, TestImapRequest
@@ -135,7 +137,7 @@ def get_plan_status(current_user: dict = Depends(get_current_user)):
     try:
         org = session.query(Organization).filter(Organization.id == current_user["organization_id"]).first()
         if not org:
-            raise HTTPException(status_code=404, detail="Organization not found")
+            raise HTTPException(status_code=404, detail="Organisation introuvable")
 
         # Sync from Stripe (no-op if no customer id or stripe unavailable)
         sync_plan_from_stripe(org, session)

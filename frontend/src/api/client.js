@@ -18,11 +18,14 @@ api.interceptors.response.use(
     const url = error.config?.url || '';
     const isAuthRoute = url.includes('/api/auth/');
     const isOnAuthPage = window.location.pathname === '/login' || window.location.pathname === '/signup';
+
+
     if (error.response?.status === 401 && !isAuthRoute && !isOnAuthPage) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       window.location.href = '/login';
     }
+
     return Promise.reject(error);
   }
 );

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAuditLogs } from '../api';
 import { formatDate } from '../utils/formatHelpers';
 import { Loader2, Shield, Calendar, User, FileText, Filter, X } from 'lucide-react';
+import { INPUT_CLASS } from '../utils/formHelpers';
 import { usePlanGate } from '../hooks/usePlanGate';
 import UpgradeOverlay from '../components/ui/UpgradeOverlay';
 
@@ -38,12 +39,14 @@ const ACTION_COLORS = {
 };
 
 const AuditLog = () => {
-  const { canAccess, getRequiredPlan } = usePlanGate();
+  const { canAccess, getRequiredPlan, billing } = usePlanGate();
   const [page, setPage] = useState(1);
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  const hasAccess = billing ? canAccess('audit_log') : false;
 
   const queryParams = useMemo(() => ({
     page,
@@ -54,8 +57,11 @@ const AuditLog = () => {
     date_to: dateTo || undefined,
   }), [page, entityTypeFilter, actionFilter, dateFrom, dateTo]);
 
-  const { data, isLoading } = useQuery(['audit-logs', queryParams], () => fetchAuditLogs(queryParams), {
-    keepPreviousData: true,
+  const { data, isLoading } = useQuery({
+    queryKey: ['audit-logs', queryParams],
+    queryFn: () => fetchAuditLogs(queryParams),
+    placeholderData: (prev) => prev,
+    enabled: hasAccess,
   });
 
   const logs = data?.logs || [];
@@ -88,91 +94,84 @@ const AuditLog = () => {
 
   return (
     <div className="relative space-y-4">
-      {!canAccess('audit_log') && (
-        <UpgradeOverlay requiredPlan={getRequiredPlan('audit_log')} featureName="Journal d'audit" />
-      )}
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Shield className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Journal d'audit</h1>
-            <p className="text-sm text-gray-500">Traçabilité de toutes les actions</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Journal d'audit</h1>
+          <p className="text-sm text-gray-500">Traçabilité de toutes les actions</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <Filter className="w-4 h-4" />
-          <span>Filtres</span>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="ml-auto text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-            >
-              <X className="w-3 h-3" />
-              Réinitialiser
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Type d'entité</label>
-            <select
-              value={entityTypeFilter}
-              onChange={(e) => { setEntityTypeFilter(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Tous les types</option>
-              {Object.entries(ENTITY_TYPE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Action</label>
-            <select
-              value={actionFilter}
-              onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Toutes les actions</option>
-              {Object.entries(ACTION_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Date début</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Date fin</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
+      {/* Filters + Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        {/* Filters */}
+        <div className="p-4 space-y-3 border-b border-gray-200">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Filter className="w-4 h-4" />
+            <span>Filtres</span>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="ml-auto text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <X className="w-3 h-3" />
+                Réinitialiser
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Type d'entité</label>
+              <select
+                value={entityTypeFilter}
+                onChange={(e) => { setEntityTypeFilter(e.target.value); setPage(1); }}
+                className={INPUT_CLASS}
+              >
+                <option value="">Tous les types</option>
+                {Object.entries(ENTITY_TYPE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Action</label>
+              <select
+                value={actionFilter}
+                onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
+                className={INPUT_CLASS}
+              >
+                <option value="">Toutes les actions</option>
+                {Object.entries(ACTION_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Date début</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Date fin</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                className={INPUT_CLASS}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -209,7 +208,7 @@ const AuditLog = () => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={log.id} className=" transition-colors">
                     <td className="px-4 py-3 text-sm text-gray-900">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-400" />
@@ -254,14 +253,14 @@ const AuditLog = () => {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md  disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Précédent
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md  disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Suivant
             </button>

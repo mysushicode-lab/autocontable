@@ -1,6 +1,8 @@
 """Centralized data paths — all configurable via env vars."""
 import os
 
+import src.config  # noqa: F401
+
 DATA_DIR = os.getenv("DATA_DIR", "data")
 
 INVOICES_DIR = os.getenv("INVOICES_DIR", os.path.join(DATA_DIR, "invoices"))

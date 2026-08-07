@@ -388,6 +388,12 @@ def startup_event():
     except Exception as e:
         print(f"client_files table migration: {e}")
 
+    try:
+        conn.execute(text("ALTER TABLE client_files ADD COLUMN contact_phone VARCHAR(30)"))
+        conn.commit()
+    except Exception:
+        pass  # column already exists
+
     for tbl in ("invoices", "bank_transactions", "reconciliation_matches"):
         try:
             conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN client_file_id INTEGER REFERENCES client_files(id)"))

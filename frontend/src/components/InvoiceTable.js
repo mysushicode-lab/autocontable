@@ -14,7 +14,7 @@ const InvoiceTable = ({ invoices, statusConfig, onEdit, onDelete, columnVisibili
   };
 
   return (
-    <div className="rounded-md border border-gray-100 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-md border border-gray-100 bg-white overflow-hidden">
       <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] table-fixed">
         <thead className="bg-gray-50 border-b">
@@ -36,7 +36,7 @@ const InvoiceTable = ({ invoices, statusConfig, onEdit, onDelete, columnVisibili
             const status = statusConfig[invoice.status] || statusConfig.pending;
             const StatusIcon = status.icon;
             return (
-              <tr key={invoice.id} className="hover:bg-gray-50">
+              <tr key={invoice.id} className="">
                 {columnVisibility?.invoice_number !== false && <td className="px-2 py-1.5 sm:px-4 sm:py-3 whitespace-nowrap overflow-hidden">
                   <div className="font-medium text-gray-900 truncate text-xs sm:text-sm" title={invoice.invoice_number}>{invoice.invoice_number}</div>
                   <div className="text-[10px] text-gray-500 truncate">{invoice.purchase_order || '-'}</div>

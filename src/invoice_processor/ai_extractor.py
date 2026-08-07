@@ -10,12 +10,10 @@ import tempfile
 import logging
 from typing import Dict, List, Optional, Literal
 from datetime import datetime
-from dotenv import load_dotenv
 from pydantic import BaseModel
 from src.utils.date_parser import parse_date
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

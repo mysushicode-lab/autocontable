@@ -50,15 +50,15 @@ echo ""
 echo "✅ All dependencies installed!"
 echo ""
 echo "🔧 Starting services..."
-echo "   - Backend:  http://localhost:8000"
+echo "   - Backend:  http://localhost:8001"
 echo "   - Frontend: http://localhost:3000"
-echo "   - API Docs: http://localhost:8000/docs"
+echo "   - API Docs: http://localhost:8001/docs"
 echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
 
 # Start backend in background
-python -m uvicorn src.api.main:app --reload --port 8000 &
+python -m uvicorn src.api.main:app --reload --port 8001 &
 BACKEND_PID=$!
 
 # Wait for backend to start

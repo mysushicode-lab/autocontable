@@ -1,25 +1,19 @@
 import React from 'react';
+import IconBox from '../ui/IconBox';
 
-const StatCard = ({ title, value, icon: Icon, color }) => {
-  const colors = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    yellow: 'bg-yellow-50 text-yellow-600',
-    red: 'bg-red-50 text-red-600',
-    purple: 'bg-purple-50 text-purple-600',
-  };
-
+const StatCard = ({ title, value, icon: Icon, color, period }) => {
   return (
-    <div className="rounded-md border border-gray-100 bg-white shadow-sm p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-xl font-bold text-gray-900">{value}</p>
-        </div>
-        <div className={`p-2 rounded-md ${colors[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
+    <div className="p-5">
+      <IconBox color={color} size="sm" className="inline-flex mb-3">
+        <Icon className="w-3.5 h-3.5" />
+      </IconBox>
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-medium text-gray-600">{title}</p>
+        {period && <span className="text-[10px] text-gray-400">{period}</span>}
       </div>
+
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
     </div>
   );
 };

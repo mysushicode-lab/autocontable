@@ -13,10 +13,8 @@ import os
 import logging
 import threading
 import secrets
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+import src.config  # noqa: F401 — loads .env + .env.local before anything else
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -111,12 +109,12 @@ def serve_profile_photo(filename: str, current_user: dict = Depends(get_current_
 
     # Reject path traversal attempts
     if ".." in filename or "/" in filename or "\\" in filename:
-        raise HTTPException(status_code=400, detail="Invalid filename")
+        raise HTTPException(status_code=400, detail="Nom de fichier invalide")
 
     # Only user_{id}.ext filenames are generated — enforce the pattern
     import re
     if not re.fullmatch(r"user_\d+\.(jpg|jpeg|png|gif|webp)", filename, re.IGNORECASE):
-        raise HTTPException(status_code=400, detail="Invalid filename")
+        raise HTTPException(status_code=400, detail="Nom de fichier invalide")
 
     user_id = int(filename.split("_")[1].split(".")[0])
     session = db.get_session()
@@ -126,16 +124,16 @@ def serve_profile_photo(filename: str, current_user: dict = Depends(get_current_
             User.organization_id == current_user["organization_id"],
         ).first()
         if not user:
-            raise HTTPException(status_code=404, detail="Photo not found")
+            raise HTTPException(status_code=404, detail="Photo introuvable")
     finally:
         session.close()
 
     safe_root = os.path.realpath(PROFILE_PHOTOS_DIR)
     file_path = os.path.realpath(os.path.join(safe_root, filename))
     if not (file_path == safe_root or file_path.startswith(safe_root + os.sep)):
-        raise HTTPException(status_code=400, detail="Invalid filename")
+        raise HTTPException(status_code=400, detail="Nom de fichier invalide")
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Photo not found")
+        raise HTTPException(status_code=404, detail="Photo introuvable")
 
     return FileResponse(file_path)
 
@@ -154,13 +152,20 @@ def trigger_email_fetch(since_days: int = 30, current_user: dict = Depends(get_c
     """Trigger immediate email fetching for the caller's organisation only.
 
     Args:
-        since_days: Fetch emails from last N days (default: 30)
+        since_days: Fetch emails from last N days (default: 30, max: 90)
     """
     from src.scheduler.main import InvoiceScheduler
 
+    role = current_user.get("role", "")
+    if role not in ("admin", "accountant"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et comptables")
+
+    if since_days < 1 or since_days > 90:
+        raise HTTPException(status_code=400, detail="since_days doit être entre 1 et 90")
+
     org_id = current_user.get("organization_id")
     if not org_id:
-        raise HTTPException(status_code=400, detail="No organisation associated with this account")
+        raise HTTPException(status_code=400, detail="Aucune organisation associée à ce compte")
 
     since_date = datetime.utcnow() - timedelta(days=since_days)
 
@@ -208,4 +213,4 @@ app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["WhatsApp"])
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("BACKEND_PORT", 8001)))

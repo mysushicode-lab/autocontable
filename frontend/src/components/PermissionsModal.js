@@ -3,19 +3,27 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, UserPlus, Trash2 } from 'lucide-react';
 import { fetchDossierPermissions, grantPermission, revokePermission, fetchUsers } from '../api';
+import { INPUT_CLASS } from '../utils/formHelpers';
+import { usePlanGate } from '../hooks/usePlanGate';
 
 const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState('');
   const [permissionLevel, setPermissionLevel] = useState('read_write');
+  const { billing, canAccess } = usePlanGate();
+  const hasAccess = billing ? canAccess('permissions') : false;
 
-  const { data: permissionsData, isLoading: loadingPermissions } = useQuery(
-    ['dossier-permissions', clientFileId],
-    () => fetchDossierPermissions(clientFileId),
-    { enabled: !!clientFileId }
-  );
+  const { data: permissionsData, isLoading: loadingPermissions } = useQuery({
+    queryKey: ['dossier-permissions', clientFileId],
+    queryFn: () => fetchDossierPermissions(clientFileId),
+    enabled: !!clientFileId && hasAccess,
+  });
 
-  const { data: usersData, isLoading: loadingUsers } = useQuery('users', fetchUsers);
+  const { data: usersData, isLoading: loadingUsers } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers,
+    enabled: hasAccess,
+  });
 
   const permissions = permissionsData?.permissions || [];
   const allUsers = usersData?.users || [];
@@ -55,7 +63,7 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
       }}
     >
       <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 25%, white 100%)' }} />
-      <div className="bg-white rounded-md p-6 w-full max-w-2xl shadow-md">
+      <div className="bg-white rounded-md p-6 w-full max-w-2xl">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
             Permissions - {clientFileName}
@@ -108,7 +116,7 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
                   <select
                     value={selectedUserId}
                     onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                     required
                   >
                     <option value="">Sélectionner un utilisateur</option>
@@ -121,7 +129,7 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
                   <select
                     value={permissionLevel}
                     onChange={(e) => setPermissionLevel(e.target.value)}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   >
                     <option value="read_only">Lecture seule</option>
                     <option value="read_write">Lecture/Écriture</option>
@@ -131,7 +139,7 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
                 <button
                   type="submit"
                   disabled={!selectedUserId || grantMutation.isLoading}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                 >
                   <UserPlus className="w-4 h-4" />
                   {grantMutation.isLoading ? 'Ajout...' : 'Ajouter'}
@@ -142,7 +150,7 @@ const PermissionsModal = ({ clientFileId, clientFileName, onClose }) => {
             <div className="flex justify-end pt-4">
               <button
                 onClick={onClose}
-                className="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium"
+                className="px-4 py-2 border text-gray-700 rounded-md  text-sm font-medium"
               >
                 Fermer
               </button>

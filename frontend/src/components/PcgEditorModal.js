@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, RotateCcw } from 'lucide-react';
 import { fetchDossierPcg, updateDossierPcg, resetDossierPcg } from '../api';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
   const queryClient = useQueryClient();
@@ -11,11 +12,10 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
   const [tvaCompte, setTvaCompte] = useState(['', '']);
   const [fournisseurCompte, setFournisseurCompte] = useState(['', '']);
 
-  const { data, isLoading } = useQuery(
-    ['dossier-pcg', clientFileId],
-    () => fetchDossierPcg(clientFileId),
-    {
-      enabled: !!clientFileId,
+  const { data, isLoading } = useQuery({
+    queryKey: ['dossier-pcg', clientFileId],
+    queryFn: () => fetchDossierPcg(clientFileId),
+    enabled: !!clientFileId,
       onSuccess: (data) => {
         setComptes(data.comptes || {});
         setDefaultCompte(data.default || ['', '']);
@@ -62,7 +62,7 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
       }}
     >
       <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 25%, white 100%)' }} />
-      <div className="bg-white rounded-md p-6 w-full max-w-3xl shadow-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-md p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
             Plan Comptable - {clientFileName}
@@ -87,14 +87,14 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
                       value={numero}
                       onChange={(e) => handleUpdateCompte(category, 0, e.target.value)}
                       placeholder="Numéro"
-                      className="px-3 py-2 border rounded text-sm"
+                      className={INPUT_CLASS}
                     />
                     <input
                       type="text"
                       value={libelle}
                       onChange={(e) => handleUpdateCompte(category, 1, e.target.value)}
                       placeholder="Libellé"
-                      className="px-3 py-2 border rounded text-sm"
+                      className={INPUT_CLASS}
                     />
                   </div>
                 ))}
@@ -110,13 +110,13 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
                     type="text"
                     value={defaultCompte[0]}
                     onChange={(e) => setDefaultCompte([e.target.value, defaultCompte[1]])}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   />
                   <input
                     type="text"
                     value={defaultCompte[1]}
                     onChange={(e) => setDefaultCompte([defaultCompte[0], e.target.value])}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -125,13 +125,13 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
                     type="text"
                     value={tvaCompte[0]}
                     onChange={(e) => setTvaCompte([e.target.value, tvaCompte[1]])}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   />
                   <input
                     type="text"
                     value={tvaCompte[1]}
                     onChange={(e) => setTvaCompte([tvaCompte[0], e.target.value])}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -140,13 +140,13 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
                     type="text"
                     value={fournisseurCompte[0]}
                     onChange={(e) => setFournisseurCompte([e.target.value, fournisseurCompte[1]])}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   />
                   <input
                     type="text"
                     value={fournisseurCompte[1]}
                     onChange={(e) => setFournisseurCompte([fournisseurCompte[0], e.target.value])}
-                    className="px-3 py-2 border rounded text-sm"
+                    className={INPUT_CLASS}
                   />
                 </div>
               </div>
@@ -156,21 +156,21 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
               <button
                 onClick={() => updateMutation.mutate()}
                 disabled={updateMutation.isLoading}
-                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 text-sm font-medium disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm font-medium disabled:opacity-50"
               >
                 {updateMutation.isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
               </button>
               <button
                 onClick={() => resetMutation.mutate()}
                 disabled={resetMutation.isLoading}
-                className="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 border text-gray-700 rounded-md  text-sm font-medium flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
                 Réinitialiser
               </button>
               <button
                 onClick={onClose}
-                className="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium"
+                className="px-4 py-2 border text-gray-700 rounded-md  text-sm font-medium"
               >
                 Annuler
               </button>

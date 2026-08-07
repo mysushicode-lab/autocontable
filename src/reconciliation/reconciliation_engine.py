@@ -5,13 +5,12 @@ from datetime import timedelta
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus
-from dotenv import load_dotenv
 import os
 import openai
 import json
 import unicodedata
 
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 # ── Tuning constants ──────────────────────────────────────────────────────────
 # Exact-match tolerance (≤ 1 cent counts as "exact")

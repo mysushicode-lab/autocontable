@@ -72,7 +72,7 @@ def get_audit_logs(
     """
     # Check if user is admin
     if current_user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Only administrators can view audit logs")
+        raise HTTPException(status_code=403, detail="Seuls les administrateurs peuvent consulter les logs d'audit")
 
     session = db.get_session()
     org_id = current_user["organization_id"]

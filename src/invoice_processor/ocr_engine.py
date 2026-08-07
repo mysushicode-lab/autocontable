@@ -5,10 +5,8 @@ import os
 from PIL import Image
 import pytesseract
 from typing import Optional
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 TESSERACT_PATH = os.getenv('TESSERACT_PATH')
 OCR_LANGUAGE = os.getenv('OCR_LANGUAGE', 'fra+eng')

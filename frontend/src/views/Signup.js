@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { register, createStripeCheckoutSession } from '../api';
 import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const Signup = () => {
   const router = useRouter();
@@ -130,7 +131,7 @@ const Signup = () => {
                     type="text"
                     value={form.name}
                     onChange={set('name')}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="Jean Dupont"
                     required
                   />
@@ -145,7 +146,7 @@ const Signup = () => {
                     type="text"
                     value={form.username}
                     onChange={set('username')}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="jean.dupont"
                     required
                   />
@@ -160,7 +161,7 @@ const Signup = () => {
                     type="email"
                     value={form.email}
                     onChange={set('email')}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="jean@exemple.fr"
                     required
                   />
@@ -175,7 +176,7 @@ const Signup = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={set('password')}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-10 py-2.5`}
                     placeholder="••••••••"
                     required
                   />
@@ -193,7 +194,7 @@ const Signup = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={form.confirm}
                     onChange={set('confirm')}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="••••••••"
                     required
                   />

@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
+import { useNotifications, NOTIF_TYPES, NotificationHelpers } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
 import { useClientFile } from '../context/ClientFileContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -86,23 +86,36 @@ const Reconciliation = () => {
     ...(activeClientFileId != null ? { client_file_id: activeClientFileId } : {}),
   };
 
-  const { data: statsData } = useQuery(['reconciliation-status', filters], () => fetchReconciliationStatus(filters));
-  const { data: detailsData, isLoading } = useQuery(['reconciliation-details', filters], () => fetchReconciliationDetails(filters));
-  const { data: pendingData } = useQuery(['pending-matches'], fetchPendingMatches);
+  const periodLabel = periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes';
+  const periodDisplay = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
+
+  const { data: statsData } = useQuery({
+    queryKey: ['reconciliation-status', filters],
+    queryFn: () => fetchReconciliationStatus(filters),
+  });
+  const { data: detailsData, isLoading } = useQuery({
+    queryKey: ['reconciliation-details', filters],
+    queryFn: () => fetchReconciliationDetails(filters),
+  });
+  const { data: pendingData } = useQuery({
+    queryKey: ['pending-matches'],
+    queryFn: fetchPendingMatches,
+  });
   
   // Auto-set month filter to most recent invoice date on initial load
   useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
+
   const refreshAll = () => {
-    queryClient.invalidateQueries('reconciliation-status');
-    queryClient.invalidateQueries('reconciliation-details');
-    queryClient.invalidateQueries('invoices');
-    queryClient.invalidateQueries('transactions');
-    queryClient.invalidateQueries('all-transactions');
-    queryClient.invalidateQueries('dashboard-reconciliation-status');
-    queryClient.invalidateQueries('dashboard-reconciliation-details');
-    queryClient.invalidateQueries('dashboard-invoices');
-    queryClient.invalidateQueries('dashboard-report');
-    queryClient.invalidateQueries('pending-matches');
+    queryClient.invalidateQueries(['reconciliation-status']);
+    queryClient.invalidateQueries(['reconciliation-details']);
+    queryClient.invalidateQueries(['invoices']);
+    queryClient.invalidateQueries(['transactions']);
+    queryClient.invalidateQueries(['all-transactions']);
+    queryClient.invalidateQueries(['dashboard-reconciliation-status']);
+    queryClient.invalidateQueries(['dashboard-reconciliation-details']);
+    queryClient.invalidateQueries(['dashboard-invoices']);
+    queryClient.invalidateQueries(['dashboard-report']);
+    queryClient.invalidateQueries(['pending-matches']);
   };
 
   const importMutation = useMutation({
@@ -113,7 +126,8 @@ const Reconciliation = () => {
     onSuccess: (result) => {
       refreshAll();
       setActiveTab('transactions');
-      addNotif(NOTIF_TYPES.SUCCESS, 'Relevé bancaire importé', `${result.imported_count} opération${result.imported_count > 1 ? 's' : ''} importée${result.imported_count > 1 ? 's' : ''} avec succès.`);
+      const notif = NotificationHelpers.bankImported(result.imported_count);
+      addNotif(notif.type, notif.title, notif.message);
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur import bancaire', error?.response?.data?.detail || 'Impossible d\'importer le relevé.');
@@ -130,12 +144,14 @@ const Reconciliation = () => {
     },
     onSuccess: (result) => {
       refreshAll();
-      const n = result.matches_created;
-      addNotif(
-        n > 0 ? NOTIF_TYPES.SUCCESS : NOTIF_TYPES.INFO,
-        'Rapprochement automatique terminé',
-        n > 0 ? `${n} correspondance${n > 1 ? 's' : ''} créée${n > 1 ? 's' : ''} automatiquement.` : 'Aucune nouvelle correspondance trouvée.'
-      );
+      const n = result.matches_created || 0;
+      const total = result.total_invoices || n;
+      if (n > 0) {
+        const notif = NotificationHelpers.reconciliationComplete(n, total);
+        addNotif(notif.type, notif.title, notif.message);
+      } else {
+        addNotif(NOTIF_TYPES.INFO, 'Rapprochement terminé', 'Aucune nouvelle correspondance trouvée.');
+      }
     },
     onError: (error) => {
       addNotif(NOTIF_TYPES.ERROR, 'Erreur rapprochement', error?.response?.data?.detail || 'Analyse automatique échouée.');
@@ -200,7 +216,10 @@ const Reconciliation = () => {
     },
   });
 
-  const { data: transactionsData } = useQuery(['all-transactions', filters], () => fetchTransactions(filters));
+  const { data: transactionsData } = useQuery({
+    queryKey: ['all-transactions', filters],
+    queryFn: () => fetchTransactions(filters),
+  });
   const allTransactions = transactionsData?.transactions || [];
 
   const matches = detailsData?.matches || [];
@@ -364,9 +383,6 @@ const Reconciliation = () => {
 
   return (
     <div className={`relative space-y-6 ${isImporting || isRunningReconciliation ? 'blur-sm pointer-events-none' : ''}`}>
-      {!canAccess('reconciliation') && (
-        <UpgradeOverlay requiredPlan={getRequiredPlan('reconciliation')} featureName="Rapprochement bancaire" />
-      )}
       {/* Header */}
       <ReconciliationHeader
         globalPeriod={globalPeriod}
@@ -384,11 +400,11 @@ const Reconciliation = () => {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard title="Rapprochées" value={stats.totalMatched} icon={Link} color="blue" />
-        <StatCard title="Auto" value={stats.autoMatched} icon={RefreshCw} color="green" />
-        <StatCard title="Manuelles" value={stats.manualMatched} icon={CheckCircle} color="yellow" />
-        <StatCard title="Non rapprochées" value={stats.unmatched} icon={Unlink} color="red" />
+      <div className="grid grid-cols-2 md:grid-cols-4 border border-gray-200 rounded-lg overflow-hidden bg-white divide-y divide-x-0 md:divide-y-0 md:divide-x divide-gray-200">
+        <StatCard title="Rapprochées" value={stats.totalMatched} icon={Link} color="purple" period={periodDisplay} />
+        <StatCard title="Auto" value={stats.autoMatched} icon={RefreshCw} color="purple" period={periodDisplay} />
+        <StatCard title="Manuelles" value={stats.manualMatched} icon={CheckCircle} color="purple" period={periodDisplay} />
+        <StatCard title="Non rapprochées" value={stats.unmatched} icon={Unlink} color="purple" period={periodDisplay} />
       </div>
 
       {/* Tabs */}

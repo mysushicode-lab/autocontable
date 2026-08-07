@@ -1,10 +1,9 @@
 """Client portal endpoints — read-only access for business owners."""
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from datetime import datetime
-import os
 import logging
 from src.storage.database import db
-from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, ClientFile, User, UserRole, InvoiceStatus, ProcessedFileHash
+from src.storage.models import Invoice, ClientFile, User, UserRole, InvoiceStatus, ProcessedFileHash
 from src.api.auth import get_current_user, _hash_password
 import secrets
 

@@ -9,6 +9,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 import threading
 
+import src.config  # noqa: F401
+
 from src.storage.database import db
 from src.storage.models import Settings
 from src.api.auth import get_current_user

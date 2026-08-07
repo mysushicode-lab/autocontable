@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const Login = () => {
   const router = useRouter();
@@ -95,7 +96,7 @@ const Login = () => {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="admin"
                     required
                   />
@@ -115,7 +116,7 @@ const Login = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-10 py-2.5`}
                     placeholder="••••••••"
                     required
                   />

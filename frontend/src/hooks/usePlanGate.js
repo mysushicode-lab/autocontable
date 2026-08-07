@@ -2,27 +2,29 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchBillingUsage } from '../api';
 
 export const FEATURE_PLAN_MAP = {
-  reconciliation: 'pro',
+  reconciliation: 'starter',
   integrations: 'pro',
   whatsapp: 'pro',
   portal_client: 'pro',
   analytics: 'pro',
   audit_log: 'cabinet',
-  custom_pcg: 'cabinet',
-  webhooks: 'cabinet',
+  custom_pcg: 'reseau',
+  webhooks: 'reseau',
   auto_push: 'cabinet',
-  permissions: 'reseau',
-  api_access: 'reseau',
+  permissions: 'cabinet',
+  api_access: 'cabinet',
 };
 
 export const usePlanGate = () => {
-  const { data: billing } = useQuery('billing-usage', fetchBillingUsage, {
+  const { data: billing, isLoading } = useQuery({
+    queryKey: ['billing-usage'],
+    queryFn: fetchBillingUsage,
     staleTime: 60000,
-    retry: false,
+    retry: false
   });
 
   const canAccess = (feature) => {
-    if (!billing || !billing.features) return true; // Allow if billing not loaded yet
+    if (!billing || !billing.features) return false;
     return billing.features.includes(feature);
   };
 
@@ -30,5 +32,5 @@ export const usePlanGate = () => {
     return FEATURE_PLAN_MAP[feature] || 'pro';
   };
 
-  return { canAccess, getRequiredPlan, billing };
+  return { canAccess, getRequiredPlan, billing, isLoading };
 };

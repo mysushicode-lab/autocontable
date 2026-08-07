@@ -4,6 +4,7 @@ import { Filter, Search, Calendar, Hash } from 'lucide-react';
 import DropdownButton from './DropdownButton';
 import { generateMonthOptions } from '../utils/dateHelpers';
 import { PREDEFINED_CATEGORIES } from '../constants/categories';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const AdvancedFiltersDropdown = ({
   show,
@@ -41,7 +42,7 @@ const AdvancedFiltersDropdown = ({
     <>
       <div className="fixed inset-0 z-50" onClick={onClose} />
       <div 
-        className="fixed bg-white rounded-md shadow-xl border z-[100] p-4 space-y-4"
+        className="fixed bg-white rounded-md border z-[100] p-4 space-y-4"
         style={{ top: `${position.top}px`, left: `${Math.max(16, position.left)}px`, width: '384px' }}
       >
         {/* Date Range */}
@@ -53,13 +54,13 @@ const AdvancedFiltersDropdown = ({
           <div className="grid grid-cols-2 gap-2">
             <input
               type="date"
-              className="w-full px-3 py-2 border rounded-md text-sm"
+              className={INPUT_CLASS}
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
             <input
               type="date"
-              className="w-full px-3 py-2 border rounded-md text-sm"
+              className={INPUT_CLASS}
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
@@ -73,14 +74,14 @@ const AdvancedFiltersDropdown = ({
             <input
               type="number"
               placeholder="Min"
-              className="w-full px-3 py-2 border rounded-md text-sm"
+              className={INPUT_CLASS}
               value={amountMin}
               onChange={(e) => setAmountMin(e.target.value)}
             />
             <input
               type="number"
               placeholder="Max"
-              className="w-full px-3 py-2 border rounded-md text-sm"
+              className={INPUT_CLASS}
               value={amountMax}
               onChange={(e) => setAmountMax(e.target.value)}
             />
@@ -93,7 +94,7 @@ const AdvancedFiltersDropdown = ({
           <input
             type="text"
             placeholder="Nom du fournisseur..."
-            className="w-full px-3 py-2 border rounded-md text-sm"
+            className={INPUT_CLASS}
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
           />
@@ -108,7 +109,7 @@ const AdvancedFiltersDropdown = ({
           <input
             type="text"
             placeholder="Immatriculation, dossier, ref…"
-            className="w-full px-3 py-2 border rounded-md uppercase text-sm"
+            className={`${INPUT_CLASS} uppercase`}
             value={referenceFilter}
             onChange={(e) => setReferenceFilter(e.target.value)}
             maxLength={30}
@@ -190,7 +191,7 @@ const InvoiceFilters = ({
 
   return (
     <>
-      <div className="rounded-md border border-gray-100 bg-white shadow-sm px-3 py-2">
+      <div className="rounded-md border border-gray-100 bg-white px-3 py-2">
         <div className="flex items-center gap-2 overflow-x-auto">
           <div className="relative flex-1 min-w-[140px]">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />

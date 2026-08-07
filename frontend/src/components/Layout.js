@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Bell, Zap, Menu, ChevronRight, X, Clock, Gift, BookOpen, HelpCircle } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
+import { useClientFile } from '../context/ClientFileContext';
 import { fetchPlanStatus } from '../api';
 import SidebarNav from './layout/Sidebar';
 import NotificationPanel from './layout/NotificationPanel';
@@ -29,6 +30,7 @@ const Layout = ({ children }) => {
   const pathname = usePathname();
   const { notifications, unreadCount, markRead, markAllRead, remove, clearAll } = useNotifications();
   const { user } = useAuth();
+  const { activeClientFile } = useClientFile();
   const router = useRouter();
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -63,31 +65,45 @@ const Layout = ({ children }) => {
   )?.[1] || '';
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-dvh overflow-hidden bg-white">
       <header className="fixed top-0 left-0 right-0 h-12 z-[70] bg-gray-50/70 backdrop-blur-md border-b border-gray-200 px-4 md:px-6 flex items-center gap-3">
         <button
           onClick={() => setSidebarOpen(true)}
+          aria-label="Ouvrir le menu"
           className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <Link href="/dashboard">
-          <img src="/automatchfact.png" alt="FactPilot" className="h-5 w-auto" />
+          <img src="/automatchfact_blanc.png" alt="FactPilot" className="h-5 w-auto" />
         </Link>
 
-        {currentPageName && (
-          <div className="hidden lg:flex items-center gap-2">
-            <span className="text-gray-300 text-sm">/</span>
-            <span className="text-sm font-medium text-gray-800">{currentPageName}</span>
-          </div>
-        )}
+        <div className="hidden lg:flex items-center gap-2">
+          {activeClientFile && (
+            <>
+              <span className="text-gray-300 text-sm">/</span>
+              <span className="text-sm font-medium text-gray-700">{activeClientFile.name}</span>
+            </>
+          )}
+          {currentPageName && (
+            <>
+              <span className="text-gray-300 text-sm">/</span>
+              <span className="text-sm font-medium text-gray-800">{currentPageName}</span>
+            </>
+          )}
+        </div>
 
         <div className="flex-1" />
 
         <div className="flex items-center gap-0.5">
-          {[Clock, Gift, BookOpen, HelpCircle].map((Icon, i) => (
-            <button key={i} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+          {[
+            { Icon: Clock, label: 'Historique' },
+            { Icon: Gift, label: 'Nouveautés' },
+            { Icon: BookOpen, label: 'Documentation' },
+            { Icon: HelpCircle, label: 'Aide' },
+          ].map(({ Icon, label }) => (
+            <button key={label} aria-label={label} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
               <Icon style={{ width: 15, height: 15 }} />
             </button>
           ))}
@@ -128,7 +144,7 @@ const Layout = ({ children }) => {
         </div>
       </header>
 
-      <div className="flex pt-12 h-screen overflow-hidden w-full">
+      <div className="flex pt-12 h-dvh overflow-hidden w-full">
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
         )}
@@ -137,7 +153,7 @@ const Layout = ({ children }) => {
           <SidebarNav open={desktopOpen} planStatus={planStatus} />
           <button
             onClick={() => setDesktopOpen(v => !v)}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors z-20"
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors z-20"
           >
             <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${desktopOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -161,7 +177,7 @@ const Layout = ({ children }) => {
 
       {showUpgradePopup && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-50 rounded-lg">
                 <Zap className="w-5 h-5 text-red-600" />

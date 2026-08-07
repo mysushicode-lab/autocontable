@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8001';
 
 export async function GET(request, { params }) {
   return proxyRequest(request, params, 'GET');
@@ -108,13 +108,13 @@ async function proxyRequest(request, params, method) {
 
     if (error.code === 'ECONNREFUSED') {
       return NextResponse.json(
-        { detail: 'Service temporarily unavailable' },
+        { detail: 'Service temporairement indisponible' },
         { status: 503 }
       );
     }
 
     return NextResponse.json(
-      { detail: 'An unexpected error occurred' },
+      { detail: 'Une erreur inattendue est survenue' },
       { status: 500 }
     );
   }

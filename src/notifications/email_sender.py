@@ -5,9 +5,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Optional
-from dotenv import load_dotenv
 
-load_dotenv()
+import src.config  # noqa: F401
 logger = logging.getLogger(__name__)
 
 

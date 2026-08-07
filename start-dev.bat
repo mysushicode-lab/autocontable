@@ -54,15 +54,15 @@ echo.
 echo All dependencies installed!
 echo.
 echo Starting services...
-echo   - Backend:  http://localhost:8000
+echo   - Backend:  http://localhost:8001
 echo   - Frontend: http://localhost:3000
-echo   - API Docs: http://localhost:8000/docs
+echo   - API Docs: http://localhost:8001/docs
 echo.
 echo Press Ctrl+C to stop all services
 echo.
 
 REM Start backend
-start "Backend" cmd /c "venv\Scripts\activate.bat && python -m uvicorn src.api.main:app --reload --port 8000"
+start "Backend" cmd /c "venv\Scripts\activate.bat && python -m uvicorn src.api.main:app --reload --port 8001"
 
 REM Wait a bit for backend to start
 timeout /t 3 /nobreak >nul

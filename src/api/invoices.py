@@ -38,10 +38,10 @@ def _resolve_invoice_file_path(raw_path: str) -> str:
         resolved = os.path.realpath(raw_path)
 
     if not (resolved == _SAFE_DATA_ROOT or resolved.startswith(_SAFE_DATA_ROOT + os.sep)):
-        raise HTTPException(status_code=400, detail="Invalid file path")
+        raise HTTPException(status_code=400, detail="Chemin de fichier invalide")
 
     if not os.path.exists(resolved):
-        raise HTTPException(status_code=404, detail="PDF file not found")
+        raise HTTPException(status_code=404, detail="Fichier PDF introuvable")
 
     return resolved
 
@@ -57,7 +57,7 @@ async def upload_invoice(
     allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
     extension = os.path.splitext(file.filename or "")[1].lower()
     if extension not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="Unsupported invoice file format")
+        raise HTTPException(status_code=400, detail="Format de fichier facture non supporté")
 
     file_bytes = await file.read()
     content_hash = hashlib.md5(file_bytes).hexdigest()
@@ -246,7 +246,7 @@ def list_invoices(
             ]
         }
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid invoice status")
+        raise HTTPException(status_code=400, detail="Statut de facture invalide")
     finally:
         session.close()
 
@@ -258,7 +258,7 @@ def delete_invoice(invoice_id: int, current_user: dict = Depends(get_current_use
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Facture introuvable")
 
         # Store details before deletion
         invoice_details = {
@@ -327,7 +327,7 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Facture introuvable")
 
         # Store old values for audit
         old_values = {
@@ -351,7 +351,7 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
                 try:
                     invoice.date = datetime.strptime(request.date, "%Y-%m-%d")
                 except ValueError:
-                    raise HTTPException(status_code=422, detail=f"Invalid date format: {request.date}. Expected YYYY-MM-DD or ISO format.")
+                    raise HTTPException(status_code=422, detail=f"Format de date invalide : {request.date}. Format attendu : AAAA-MM-JJ")
         if request.due_date is not None:
             if request.due_date:
                 try:
@@ -360,7 +360,7 @@ def update_invoice(invoice_id: int, request: UpdateInvoiceRequest, current_user:
                     try:
                         invoice.due_date = datetime.strptime(request.due_date, "%Y-%m-%d")
                     except ValueError:
-                        raise HTTPException(status_code=422, detail=f"Invalid due_date format: {request.due_date}. Expected YYYY-MM-DD or ISO format.")
+                        raise HTTPException(status_code=422, detail=f"Format de date d'échéance invalide : {request.due_date}. Format attendu : AAAA-MM-JJ")
             else:
                 invoice.due_date = None
         if request.category is not None:
@@ -451,7 +451,7 @@ def get_invoice(invoice_id: int, current_user: dict = Depends(get_current_user))
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         
         if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Facture introuvable")
         
         return {
             "id": invoice.id,
@@ -487,10 +487,10 @@ def download_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_curre
     try:
         invoice = session.query(Invoice).filter(Invoice.id == invoice_id, Invoice.organization_id == current_user["organization_id"]).first()
         if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Facture introuvable")
 
         if not invoice.file_path:
-            raise HTTPException(status_code=404, detail="PDF file not found")
+            raise HTTPException(status_code=404, detail="Fichier PDF introuvable")
 
         file_path = _resolve_invoice_file_path(invoice.file_path)
         actual_path = get_decrypted_path(file_path)
@@ -520,10 +520,10 @@ def view_invoice_pdf(invoice_id: int, current_user: dict = Depends(get_current_u
             Invoice.organization_id == current_user["organization_id"],
         ).first()
         if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Facture introuvable")
 
         if not invoice.file_path:
-            raise HTTPException(status_code=404, detail="PDF file not found")
+            raise HTTPException(status_code=404, detail="Fichier PDF introuvable")
 
         file_path = _resolve_invoice_file_path(invoice.file_path)
         actual_path = get_decrypted_path(file_path)

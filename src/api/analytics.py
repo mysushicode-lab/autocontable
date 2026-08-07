@@ -2,31 +2,56 @@
 import os
 import logging
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from src.storage.database import db
-from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, ClientFile, InvoiceStatus, Organization
+from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, ClientFile, InvoiceStatus
 from src.api.auth import get_current_user
 from src.api.billing import require_feature
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Analytics constants
+TIME_MANUAL_MINUTES = 3.0  # Time to manually enter one invoice
+TIME_AI_SECONDS = 15.0     # Time with AI assistance
+COST_PER_INVOICE_USD = 0.003  # GPT-4o-mini vision cost estimate
+USD_TO_EUR_RATE = 0.92     # Approximate exchange rate
+
 
 @router.get("/overview")
-def get_analytics_overview(current_user: dict = Depends(require_feature("analytics"))):
-    """Get overall analytics for the organization."""
+def get_analytics_overview(
+    month: int = None,
+    year: int = None,
+    current_user: dict = Depends(require_feature("analytics"))
+):
+    """Get overall analytics for the organization, optionally filtered by month/year."""
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
         now = datetime.utcnow()
-        thirty_days_ago = now - timedelta(days=30)
+
+        # Calculate month boundaries if filter is present
+        month_start = None
+        month_end = None
+        if month and year:
+            month_start = datetime(year, month, 1)
+            month_end = month_start + relativedelta(months=1)
+
+        # Build base query filters
+        base_filters = [Invoice.organization_id == org_id]
+
+        # Add optional month/year filter
+        if month_start and month_end:
+            base_filters.append(Invoice.date >= month_start.date())
+            base_filters.append(Invoice.date < month_end.date())
 
         # Total counts
-        total_invoices = session.query(Invoice).filter(Invoice.organization_id == org_id).count()
+        total_invoices = session.query(Invoice).filter(*base_filters).count()
         total_matched = session.query(Invoice).filter(
-            Invoice.organization_id == org_id,
+            *base_filters,
             Invoice.status == InvoiceStatus.MATCHED
         ).count()
         total_dossiers = session.query(ClientFile).filter(
@@ -34,7 +59,7 @@ def get_analytics_overview(current_user: dict = Depends(require_feature("analyti
             ClientFile.is_active == True
         ).count()
 
-        # This month
+        # This month (current month stats, independent of filter)
         first_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         invoices_this_month = session.query(Invoice).filter(
             Invoice.organization_id == org_id,
@@ -44,42 +69,77 @@ def get_analytics_overview(current_user: dict = Depends(require_feature("analyti
         # Match rate
         match_rate = round(total_matched / total_invoices * 100, 1) if total_invoices > 0 else 0
 
-        # Auto vs manual matches
-        auto_matches = session.query(ReconciliationMatch).filter(
-            ReconciliationMatch.organization_id == org_id,
-            ReconciliationMatch.match_type == 'automatic'
-        ).count()
-        manual_matches = session.query(ReconciliationMatch).filter(
-            ReconciliationMatch.organization_id == org_id,
-            ReconciliationMatch.match_type == 'manual'
-        ).count()
+        # Auto vs manual matches (filtered by invoice date if applicable)
+        match_base_filters = [ReconciliationMatch.organization_id == org_id]
+        if month_start and month_end:
+            # Join with invoices to filter matches by invoice date
+            auto_matches = session.query(ReconciliationMatch).join(
+                Invoice, ReconciliationMatch.invoice_id == Invoice.id
+            ).filter(
+                ReconciliationMatch.organization_id == org_id,
+                ReconciliationMatch.match_type == 'automatic',
+                Invoice.date >= month_start.date(),
+                Invoice.date < month_end.date()
+            ).count()
+            manual_matches = session.query(ReconciliationMatch).join(
+                Invoice, ReconciliationMatch.invoice_id == Invoice.id
+            ).filter(
+                ReconciliationMatch.organization_id == org_id,
+                ReconciliationMatch.match_type == 'manual',
+                Invoice.date >= month_start.date(),
+                Invoice.date < month_end.date()
+            ).count()
+        else:
+            auto_matches = session.query(ReconciliationMatch).filter(
+                ReconciliationMatch.organization_id == org_id,
+                ReconciliationMatch.match_type == 'automatic'
+            ).count()
+            manual_matches = session.query(ReconciliationMatch).filter(
+                ReconciliationMatch.organization_id == org_id,
+                ReconciliationMatch.match_type == 'manual'
+            ).count()
 
         # Time saved estimate: 3 min per invoice (manual entry) vs 15 sec (AI)
-        time_saved_minutes = total_invoices * 2.75  # 3min - 15sec = 2min45 saved
+        time_saved_minutes = total_invoices * (TIME_MANUAL_MINUTES - TIME_AI_SECONDS / 60)
 
         # Cost estimate: ~$0.003 per GPT-4o-mini vision call
-        ai_cost_estimate = total_invoices * 0.003
+        ai_cost_estimate = total_invoices * COST_PER_INVOICE_USD
 
-        # Per-dossier stats
+        # Per-dossier stats (optimized with GROUP BY to avoid N+1 queries)
+        if month_start and month_end:
+            # With month filter: only count invoices in that month
+            dossier_query = session.query(
+                ClientFile.id,
+                ClientFile.name,
+                func.count(Invoice.id).label('invoices'),
+                func.sum(case((Invoice.status == InvoiceStatus.MATCHED, 1), else_=0)).label('matched')
+            ).outerjoin(
+                Invoice,
+                (Invoice.client_file_id == ClientFile.id) &
+                (Invoice.date >= month_start.date()) &
+                (Invoice.date < month_end.date())
+            ).filter(
+                ClientFile.organization_id == org_id,
+                ClientFile.is_active == True
+            ).group_by(ClientFile.id, ClientFile.name).all()
+        else:
+            # No filter: count all invoices
+            dossier_query = session.query(
+                ClientFile.id,
+                ClientFile.name,
+                func.count(Invoice.id).label('invoices'),
+                func.sum(case((Invoice.status == InvoiceStatus.MATCHED, 1), else_=0)).label('matched')
+            ).outerjoin(Invoice, Invoice.client_file_id == ClientFile.id) \
+             .filter(ClientFile.organization_id == org_id, ClientFile.is_active == True) \
+             .group_by(ClientFile.id, ClientFile.name).all()
+
         dossier_stats = []
-        dossiers = session.query(ClientFile).filter(
-            ClientFile.organization_id == org_id,
-            ClientFile.is_active == True
-        ).all()
-
-        for cf in dossiers:
-            inv_count = session.query(Invoice).filter(
-                Invoice.organization_id == org_id,
-                Invoice.client_file_id == cf.id
-            ).count()
-            matched_count = session.query(Invoice).filter(
-                Invoice.organization_id == org_id,
-                Invoice.client_file_id == cf.id,
-                Invoice.status == InvoiceStatus.MATCHED
-            ).count()
+        for row in dossier_query:
+            inv_count = row.invoices or 0
+            matched_count = row.matched or 0
             dossier_stats.append({
-                "id": cf.id,
-                "name": cf.name,
+                "id": row.id,
+                "name": row.name,
                 "invoices": inv_count,
                 "matched": matched_count,
                 "rate": round(matched_count / inv_count * 100, 1) if inv_count > 0 else 0,
@@ -100,8 +160,8 @@ def get_analytics_overview(current_user: dict = Depends(require_feature("analyti
             },
             "savings": {
                 "time_saved_hours": round(time_saved_minutes / 60, 1),
-                "ai_cost_eur": round(ai_cost_estimate * 0.92, 2),  # USD to EUR approx
-                "cost_per_invoice_eur": 0.003,
+                "ai_cost_eur": round(ai_cost_estimate * USD_TO_EUR_RATE, 2),
+                "cost_per_invoice_eur": round(COST_PER_INVOICE_USD * USD_TO_EUR_RATE, 4),
             },
             "dossiers": sorted(dossier_stats, key=lambda x: x["invoices"], reverse=True),
         }
@@ -119,13 +179,9 @@ def get_monthly_trend(months: int = 6, current_user: dict = Depends(require_feat
 
         trends = []
         for i in range(months - 1, -1, -1):
-            # Calculate month start/end
-            month_date = now - timedelta(days=i * 30)
-            month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            if month_start.month == 12:
-                month_end = month_start.replace(year=month_start.year + 1, month=1)
-            else:
-                month_end = month_start.replace(month=month_start.month + 1)
+            # Calculate month start/end using relativedelta for accurate month arithmetic
+            month_start = (now - relativedelta(months=i)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_end = month_start + relativedelta(months=1)
 
             count = session.query(Invoice).filter(
                 Invoice.organization_id == org_id,

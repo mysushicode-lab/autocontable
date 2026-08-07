@@ -1,6 +1,9 @@
 """Authentication endpoints"""
 import os
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
+
+import src.config  # noqa: F401
+
 from src.storage.database import db
 from src.storage.models import User, UserToken, Organization, UserRole, PasswordResetToken
 from src.api.schemas import RegisterRequest, LoginRequest, ChangeUsernameRequest, ChangeEmailRequest
@@ -342,7 +345,7 @@ def delete_own_account(current_user: dict = Depends(get_current_user)):
     """Delete the authenticated user's own account and all associated data (RGPD Art. 17)."""
     from src.storage.models import (
         Invoice, BankTransaction, ReconciliationMatch,
-        ClientFile, DossierPermission, AuditLog, PasswordResetToken, ProcessedFileHash
+        ClientFile, DossierPermission, AuditLog, PasswordResetToken, ProcessedFileHash, Settings
     )
     session = db.get_session()
     try:

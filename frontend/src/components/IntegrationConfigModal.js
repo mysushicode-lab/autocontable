@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Modal from './ui/Modal';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const IntegrationConfigModal = ({ integration, onClose, onSave, onTest }) => {
   const [formData, setFormData] = useState({});
@@ -46,7 +47,7 @@ const IntegrationConfigModal = ({ integration, onClose, onSave, onTest }) => {
       return (
         <input
           type="password"
-          className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className={INPUT_CLASS}
           value={value}
           onChange={(e) => handleFieldChange(field.name, e.target.value)}
           placeholder={field.placeholder || ''}
@@ -58,7 +59,7 @@ const IntegrationConfigModal = ({ integration, onClose, onSave, onTest }) => {
     if (field.type === 'select') {
       return (
         <select
-          className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className={`${INPUT_CLASS} bg-white`}
           value={value}
           onChange={(e) => handleFieldChange(field.name, e.target.value)}
           required={field.required}
@@ -74,7 +75,7 @@ const IntegrationConfigModal = ({ integration, onClose, onSave, onTest }) => {
     return (
       <input
         type="text"
-        className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className={INPUT_CLASS}
         value={value}
         onChange={(e) => handleFieldChange(field.name, e.target.value)}
         placeholder={field.placeholder || ''}

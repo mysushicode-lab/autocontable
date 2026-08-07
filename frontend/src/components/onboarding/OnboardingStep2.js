@@ -1,4 +1,6 @@
 import React from 'react';
+import HelpTooltip from '../ui/HelpTooltip';
+import { INPUT_CLASS } from '../../utils/formHelpers';
 
 const OnboardingStep2 = ({
   clientName,
@@ -8,7 +10,11 @@ const OnboardingStep2 = ({
   siretError,
   handleSiretChange,
   activity,
-  setActivity
+  setActivity,
+  clientEmail,
+  setClientEmail,
+  clientPhone,
+  setClientPhone
 }) => {
   return (
     <div>
@@ -17,37 +23,73 @@ const OnboardingStep2 = ({
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nom du client <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nom du client <span className="text-red-400">*</span></label>
           <input
             type="text"
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
             placeholder="Ex: SARL Boulangerie Martin"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={INPUT_CLASS}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">SIRET <span className="text-xs text-gray-400">(optionnel)</span></label>
-          <input
-            type="text"
-            value={siret}
-            onChange={(e) => handleSiretChange(e.target.value)}
-            placeholder="123 456 789 01234"
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${siretError ? 'border-red-300' : 'border-gray-300'}`}
-          />
-          {siretError && <p className="text-xs text-red-500 mt-1">{siretError}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">SIRET <span className="text-xs text-gray-400">(optionnel)</span></label>
+            <input
+              type="text"
+              value={siret}
+              onChange={(e) => handleSiretChange(e.target.value)}
+              placeholder="123 456 789 01234"
+              className={`${INPUT_CLASS} ${siretError ? '!border-red-300' : ''}`}
+            />
+            {siretError && <p className="text-xs text-red-500 mt-1">{siretError}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Activité / Secteur</label>
+            <input
+              type="text"
+              value={activity}
+              onChange={(e) => setActivity(e.target.value)}
+              placeholder="Ex: Boulangerie-pâtisserie"
+              className={INPUT_CLASS}
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Activité / Secteur</label>
-          <input
-            type="text"
-            value={activity}
-            onChange={(e) => setActivity(e.target.value)}
-            placeholder="Ex: Boulangerie-pâtisserie"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        <div className="pt-3 border-t border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Contact</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                Email
+                <HelpTooltip text="Email du client pour contact et import automatique des factures" />
+              </label>
+              <input
+                type="email"
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                placeholder="contact@client.fr"
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                Téléphone
+                <HelpTooltip text="Téléphone du client pour contact et notifications WhatsApp" />
+              </label>
+              <input
+                type="tel"
+                value={clientPhone}
+                onChange={(e) => setClientPhone(e.target.value)}
+                placeholder="+33 6 12 34 56 78"
+                className={INPUT_CLASS}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

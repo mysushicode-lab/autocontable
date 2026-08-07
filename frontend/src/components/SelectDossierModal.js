@@ -1,11 +1,14 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Briefcase } from 'lucide-react';
+import Overlay from './ui/Overlay';
 
 const SelectDossierModal = ({ clientFiles, onSelect, onClose }) => {
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-md shadow-2xl w-full max-w-sm">
+    <>
+      <Overlay show={true} onClick={onClose} />
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+        <div className="pointer-events-auto bg-white rounded-md shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h3 className="text-base font-semibold text-gray-900">Choisir un dossier</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-md text-gray-400 hover:text-gray-600">
@@ -30,8 +33,9 @@ const SelectDossierModal = ({ clientFiles, onSelect, onClose }) => {
             ))}
           </div>
         </div>
+        </div>
       </div>
-    </div>,
+    </>,
     document.body
   );
 };

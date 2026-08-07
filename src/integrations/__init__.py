@@ -3,6 +3,7 @@ from .registry import get_integration, list_integrations
 
 # Import all integrations to register them
 from . import sage
+from . import pennylane
 from . import cegid
 from . import acd
 from . import quadratus

@@ -25,35 +25,37 @@ import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
 import IntegrationConfigModal from '../components/IntegrationConfigModal';
 import HelpTooltip from '../components/ui/HelpTooltip';
 import { generateMonthOptions } from '../utils/dateHelpers';
+import { INPUT_CLASS } from '../utils/formHelpers';
 import { usePlanGate } from '../hooks/usePlanGate';
-import UpgradeOverlay from '../components/ui/UpgradeOverlay';
+import UpgradeModal from '../components/ui/UpgradeModal';
 
 const Integrations = () => {
-  const { canAccess, getRequiredPlan } = usePlanGate();
+  const { canAccess, getRequiredPlan, billing } = usePlanGate();
   const { activeClientFileId, activeClientFile } = useClientFile();
   const { add: addNotification } = useNotifications();
   const queryClient = useQueryClient();
 
   const [selectedIntegration, setSelectedIntegration] = useState(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeIntegration, setUpgradeIntegration] = useState(null);
   const [pushYear, setPushYear] = useState(new Date().getFullYear());
   const [pushMonth, setPushMonth] = useState(new Date().getMonth() + 1);
 
   const monthOptions = generateMonthOptions(12);
+  const hasAccess = billing ? canAccess('integrations') : false;
 
-  const { data: integrations, isLoading: integrationsLoading } = useQuery(
-    'available-integrations',
-    fetchAvailableIntegrations
-  );
+  const { data: integrations, isLoading: integrationsLoading } = useQuery({
+    queryKey: ['available-integrations'],
+    queryFn: fetchAvailableIntegrations,
+  });
 
-  const { data: status, isLoading: statusLoading } = useQuery(
-    ['integration-status', activeClientFileId],
-    () => fetchIntegrationStatus(activeClientFileId),
-    {
-      enabled: !!activeClientFileId,
-      refetchInterval: 30000,
-    }
-  );
+  const { data: status, isLoading: statusLoading } = useQuery({
+    queryKey: ['integration-status', activeClientFileId],
+    queryFn: () => fetchIntegrationStatus(activeClientFileId),
+    enabled: !!activeClientFileId,
+    refetchInterval: 30000,
+  });
 
   const configureMutation = useMutation({
     mutationFn: ({ integrationName, config }) =>
@@ -98,6 +100,15 @@ const Integrations = () => {
   });
 
   const handleConfigureClick = (integration) => {
+    if (!activeClientFileId) {
+      addNotification(NOTIF_TYPES.WARNING, 'Sélectionnez un dossier', 'Veuillez sélectionner un dossier pour configurer une intégration.');
+      return;
+    }
+    if (!hasAccess) {
+      setUpgradeIntegration(integration);
+      setShowUpgradeModal(true);
+      return;
+    }
     setSelectedIntegration(integration);
     setShowConfigModal(true);
   };
@@ -119,15 +130,6 @@ const Integrations = () => {
     window.open(url, '_blank');
   };
 
-  if (!activeClientFileId) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <Plug className="w-12 h-12 text-gray-300 mb-4" />
-        <p className="text-sm text-gray-500">Sélectionnez un dossier pour configurer une intégration</p>
-      </div>
-    );
-  }
-
   const isConnected = status?.status === 'connected';
   const isNotConfigured = status?.status === 'not_configured';
   const isError = status?.status === 'error';
@@ -136,8 +138,10 @@ const Integrations = () => {
 
   return (
     <div className="relative space-y-6">
-      {!canAccess('integrations') && (
-        <UpgradeOverlay requiredPlan={getRequiredPlan('integrations')} featureName="Intégrations comptables" />
+      {!activeClientFileId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-700">💡 Sélectionnez un dossier pour configurer une intégration</p>
+        </div>
       )}
       {/* Header */}
       <div>
@@ -148,74 +152,29 @@ const Integrations = () => {
         <p className="text-xs text-gray-500 mt-0.5">Poussez vos écritures directement dans votre logiciel</p>
       </div>
 
-      {/* Status Card */}
-      {!isNotConfigured && status && (
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-md ${
-                isConnected ? 'bg-green-50' : isError ? 'bg-red-50' : 'bg-gray-50'
-              }`}>
-                <Plug className={`w-5 h-5 ${
-                  isConnected ? 'text-green-600' : isError ? 'text-red-600' : 'text-gray-400'
-                }`} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-900">{currentIntegration?.display_name || status.integration_name}</h3>
-                  {isConnected && <CheckCircle className="w-4 h-4 text-green-600" />}
-                  {isError && <XCircle className="w-4 h-4 text-red-600" />}
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {isConnected ? 'Connecté et prêt à envoyer' : isError ? 'Erreur de connexion' : 'Déconnecté'}
-                </p>
-                {status.last_push_date && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    Dernier envoi: {new Date(status.last_push_date).toLocaleDateString('fr-FR')}
-                  </p>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => testMutation.mutate()}
-              disabled={testMutation.isLoading}
-              className="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              {testMutation.isLoading ? 'Test...' : 'Tester la connexion'}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Integration Selector */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">
-          {isNotConfigured ? 'Choisir une intégration' : 'Intégrations disponibles'}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {integrationsLoading && <div className="text-sm text-gray-500">Chargement...</div>}
-          {integrations?.integrations?.map((integration) => (
-            <IntegrationCard
-              key={integration.name}
-              integration={integration}
-              isActive={status?.integration_name === integration.name}
-              onConfigure={() => handleConfigureClick(integration)}
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {integrationsLoading && <div className="text-sm text-gray-500">Chargement...</div>}
+        {integrations?.integrations?.map((integration) => (
+          <IntegrationCard
+            key={integration.name}
+            integration={integration}
+            isActive={status?.integration_name === integration.name}
+            onConfigure={() => handleConfigureClick(integration)}
+          />
+        ))}
       </div>
 
       {/* Push Section */}
       {isConnected && (
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-md border border-gray-100 bg-white p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Pousser les écritures</h3>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
             <div className="flex-1 space-y-1">
               <label className="text-xs font-medium text-gray-600">Période</label>
               <div className="flex gap-2">
                 <select
-                  className="px-3 py-2 border border-gray-200 rounded-md text-sm bg-white"
+                  className={`${INPUT_CLASS} bg-white`}
                   value={pushYear}
                   onChange={(e) => setPushYear(Number(e.target.value))}
                 >
@@ -224,7 +183,7 @@ const Integrations = () => {
                   ))}
                 </select>
                 <select
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-md text-sm bg-white"
+                  className={`flex-1 ${INPUT_CLASS} bg-white`}
                   value={pushMonth}
                   onChange={(e) => setPushMonth(Number(e.target.value))}
                 >
@@ -240,7 +199,7 @@ const Integrations = () => {
               {!supportsApi && (
                 <button
                   onClick={handleDownload}
-                  className="px-4 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-600 bg-gray-50 transition-colors flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
                   Télécharger le fichier
@@ -274,49 +233,94 @@ const Integrations = () => {
           onTest={handleTestConnection}
         />
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        show={showUpgradeModal}
+        onClose={() => {
+          setShowUpgradeModal(false);
+          setUpgradeIntegration(null);
+        }}
+        title="Plan Pro requis"
+        description="Les intégrations comptables sont disponibles à partir du plan Pro."
+        integration={upgradeIntegration}
+      />
     </div>
+  );
+};
+
+const StatusBadge = ({ isActive }) => {
+  if (!isActive) return null;
+  return (
+    <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-100">
+      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+      Actif
+    </span>
   );
 };
 
 const IntegrationCard = ({ integration, isActive, onConfigure }) => {
   const comingSoon = integration.coming_soon;
-  const badgeColor = comingSoon
-    ? 'bg-amber-100 text-amber-700'
-    : integration.supports_api ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
 
   return (
-    <div className={`rounded-md border p-4 transition-all ${
-      comingSoon ? 'border-gray-100 bg-gray-50 opacity-75' :
-      isActive ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100 bg-white hover:border-gray-200'
-    }`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded flex items-center justify-center ${comingSoon ? 'bg-gray-100' : 'bg-blue-50'}`}>
-            <Plug className={`w-4 h-4 ${comingSoon ? 'text-gray-400' : 'text-blue-600'}`} />
-          </div>
-          <div>
-            <h4 className={`font-semibold text-sm ${comingSoon ? 'text-gray-500' : 'text-gray-900'}`}>{integration.display_name}</h4>
-          </div>
-        </div>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${badgeColor}`}>
-          {comingSoon ? 'Bientôt' : integration.supports_api ? 'API' : 'Fichier'}
-        </span>
-      </div>
-      <p className="text-xs text-gray-500 mb-4">{integration.description}</p>
-      {comingSoon ? (
-        <div className="w-full px-3 py-1.5 bg-gray-200 text-gray-500 rounded-md text-xs font-medium text-center cursor-default">
-          Partenariat en cours
-        </div>
-      ) : (
-        <button
-          onClick={onConfigure}
-          className="w-full px-3 py-1.5 bg-gray-900 text-white rounded-md text-xs font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5"
+    <div
+      className={`border rounded-2xl bg-white p-5 flex flex-col gap-4 transition-colors ${
+        comingSoon ? 'opacity-60 border-gray-200' : isActive ? 'border-gray-300' : 'border-gray-200'
+      }`}
+      style={{ minHeight: 240 }}
+    >
+      <div className="flex items-start justify-between">
+        <div
+          className={`w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center ${
+            integration.name.toLowerCase() === 'acd' ? 'bg-[#003366]' : 'bg-white'
+          }`}
         >
-          <Settings className="w-3.5 h-3.5" />
-          {isActive ? 'Reconfigurer' : 'Configurer'}
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      )}
+          <img
+            src={`/logos/${['pennylane', 'quadratus', 'acd', 'cegid'].includes(integration.name.toLowerCase()) ? integration.name + '.png' : integration.name + '.svg'}`}
+            alt={integration.display_name}
+            className="w-full h-full object-contain p-1"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+          <Plug className="w-5 h-5 text-gray-400 hidden" />
+        </div>
+        <StatusBadge isActive={isActive} />
+      </div>
+
+      <div className="flex-1 mt-2">
+        <div className="flex items-center gap-2 mb-1">
+          <p className={`text-sm font-semibold ${comingSoon ? 'text-gray-500' : 'text-gray-900'}`}>
+            {integration.display_name}
+          </p>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+            comingSoon
+              ? 'bg-amber-100 text-amber-700'
+              : integration.supports_api
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-700'
+          }`}>
+            {comingSoon ? 'Bientôt' : integration.supports_api ? 'API' : 'Fichier'}
+          </span>
+        </div>
+        <p className="text-xs text-gray-400 mt-1 leading-relaxed">{integration.description}</p>
+      </div>
+
+      <div className="flex justify-end">
+        {comingSoon ? (
+          <button className="h-8 px-4 rounded-lg border border-gray-200 bg-gray-50 text-xs font-medium text-gray-500 cursor-not-allowed">
+            Partenariat en cours
+          </button>
+        ) : (
+          <button
+            onClick={onConfigure}
+            className="h-8 px-4 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 bg-gray-50 transition-colors"
+          >
+            {isActive ? 'Reconfigurer' : 'Configurer'}
+          </button>
+        )}
+      </div>
     </div>
   );
 };

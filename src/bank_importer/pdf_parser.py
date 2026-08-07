@@ -5,10 +5,9 @@ import os
 import base64
 from typing import List, Dict, Optional
 from datetime import datetime
-from dotenv import load_dotenv
 from src.utils.date_parser import parse_date
 
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 
 class BankPDFParser:

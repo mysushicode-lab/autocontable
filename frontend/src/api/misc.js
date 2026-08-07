@@ -7,8 +7,8 @@ export const fetchAuditLogs = async (params = {}) => {
 };
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
-export const fetchAnalytics = async () => {
-  const { data } = await api.get('/api/analytics/overview');
+export const fetchAnalytics = async (filters = {}) => {
+  const { data } = await api.get('/api/analytics/overview', { params: filters });
   return data;
 };
 

@@ -62,7 +62,7 @@ function TooltipContent({ className = '', sideOffset = 8, side = 'top', children
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         side={side}
-        className={['relative z-[9999] max-w-[220px] rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-600 shadow-lg', className].join(' ')}
+        className={['relative z-[9999] max-w-[220px] rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-600', className].join(' ')}
         {...props}
       >
         {children}

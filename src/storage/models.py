@@ -2,7 +2,7 @@
 Database models for invoice processing and bank reconciliation
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Enum, JSON, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, Numeric, DateTime, ForeignKey, Text, Enum, JSON, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
@@ -19,11 +19,13 @@ class ClientFile(Base):
     __tablename__ = 'client_files'
 
     id = Column(Integer, primary_key=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
     name = Column(String(200), nullable=False)           # "Boulangerie Martin"
     siret = Column(String(14), nullable=True)
     activity = Column(String(200), nullable=True)        # "Boulangerie-pâtisserie"
     contact_email = Column(String(200), nullable=True)   # email du client
+    scheduler_email = Column(String(200), nullable=True)  # email surveillé par le scheduler pour import auto
+    contact_phone = Column(String(30), nullable=True)    # mobile WhatsApp du client
     notes = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -53,6 +55,9 @@ class Organization(Base):
     trial_end_date = Column(DateTime, nullable=True)
     is_trial_active = Column(Boolean, default=True)
     stripe_customer_id = Column(String(255), nullable=True)  # Stripe customer ID for billing
+    # TODO: Migration needed for these columns
+    # invoices_processed_this_month = Column(Integer, default=0)  # Compteur mensuel de factures IA
+    # monthly_quota_reset_date = Column(DateTime, nullable=True)  # Date de réinitialisation (1er du mois)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     users = relationship("User", back_populates="organization")
@@ -118,16 +123,16 @@ class Invoice(Base):
     id = Column(Integer, primary_key=True)
     invoice_number = Column(String(100), nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
-    amount = Column(Float, nullable=False)
-    amount_ht = Column(Float, nullable=True)
-    amount_tax = Column(Float, nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
+    amount = Column(Numeric(12, 2), nullable=False)
+    amount_ht = Column(Numeric(12, 2), nullable=True)
+    amount_tax = Column(Numeric(12, 2), nullable=True)
     date = Column(DateTime, nullable=False)
     due_date = Column(DateTime, nullable=True)
     category = Column(String(100), nullable=True)
     status = Column(Enum(InvoiceStatus), default=InvoiceStatus.PENDING)
-    
-    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
+
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True, index=True)
 
     purchase_order = Column(String(100), nullable=True)
     delivery_note = Column(String(100), nullable=True)
@@ -191,10 +196,10 @@ class BankTransaction(Base):
 
     id = Column(Integer, primary_key=True)
     transaction_id = Column(String(100), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
-    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True, index=True)
     date = Column(DateTime, nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
     description = Column(Text, nullable=False)
     reference = Column(String(200), nullable=True)
     account_number = Column(String(50), nullable=True)
@@ -210,10 +215,10 @@ class ReconciliationMatch(Base):
     __tablename__ = 'reconciliation_matches'
 
     id = Column(Integer, primary_key=True)
-    invoice_id = Column(Integer, ForeignKey('invoices.id'), nullable=False)
-    transaction_id = Column(Integer, ForeignKey('bank_transactions.id'), nullable=False)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
-    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True)
+    invoice_id = Column(Integer, ForeignKey('invoices.id'), nullable=False, index=True)
+    transaction_id = Column(Integer, ForeignKey('bank_transactions.id'), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=True, index=True)
     match_score = Column(Float, nullable=True)
     match_type = Column(String(50), default='automatic')
     status = Column(String(50), default='confirmed')
@@ -230,8 +235,8 @@ class DossierPermission(Base):
     __tablename__ = 'dossier_permissions'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    client_file_id = Column(Integer, ForeignKey('client_files.id'), nullable=False, index=True)
     permission_level = Column(String(20), default='read_write')  # 'read_only', 'read_write', 'admin'
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -244,8 +249,8 @@ class AuditLog(Base):
     __tablename__ = 'audit_logs'
 
     id = Column(Integer, primary_key=True)
-    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
     action = Column(String(50), nullable=False)
     entity_type = Column(String(50), nullable=False)
     entity_id = Column(Integer, nullable=True)

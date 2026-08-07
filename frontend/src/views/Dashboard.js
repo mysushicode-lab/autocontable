@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFilters } from '../context/FilterContext';
 import { useClientFile } from '../context/ClientFileContext';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
-import { 
-  FileText, 
-  CreditCard, 
-  AlertCircle, 
+import {
+  FileText,
+  CreditCard,
+  AlertCircle,
   TrendingUp,
   TrendingDown,
   Clock
@@ -20,10 +20,12 @@ import {
   fetchReconciliationDetails,
   fetchReconciliationStatus,
   fetchTrends,
-  fetchTransactions
+  fetchTransactions,
+  fetchClientFilesSummary
 } from '../api';
 import DropdownButton from '../components/DropdownButton';
 import HelpTooltip from '../components/ui/HelpTooltip';
+import IconBox from '../components/ui/IconBox';
 import { formatCurrency, formatDate } from '../utils/formatHelpers';
 import { generateMonthOptions } from '../utils/dateHelpers';
 import { getInvoiceStatus } from '../constants/statusConfig';
@@ -32,11 +34,25 @@ import { getInvoiceStatus } from '../constants/statusConfig';
 const Dashboard = () => {
   const router = useRouter();
   const { selectedMonth, setSelectedMonth } = useFilters();
-  const { activeClientFileId, activeClientFile } = useClientFile();
+  const { activeClientFileId, activeClientFile, selectClientFile, initialized } = useClientFile();
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const monthButtonRef = useRef(null);
   const trendMonths = 12; // Default to 12 months for trends
   const today = new Date();
+
+  // Auto-select first dossier if none selected
+  const { data: clientFilesData } = useQuery({
+    queryKey: ['client-files-summary'],
+    queryFn: fetchClientFilesSummary,
+    enabled: initialized && !activeClientFileId,
+  });
+
+  useEffect(() => {
+    if (initialized && !activeClientFileId && clientFilesData?.client_files?.length > 0) {
+      // Auto-select the first dossier
+      selectClientFile(clientFilesData.client_files[0]);
+    }
+  }, [initialized, activeClientFileId, clientFilesData, selectClientFile]);
   
   // Use selectedMonth from FilterContext, default to current month if not set
   const globalPeriod = selectedMonth !== undefined ? selectedMonth : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -44,21 +60,42 @@ const Dashboard = () => {
     ...(globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {}),
     ...(activeClientFileId != null ? { client_file_id: activeClientFileId } : {}),
   };
-  
+
   const periodOptions = [
     { value: '', label: 'Toutes périodes' },
     ...generateMonthOptions(12),
   ];
 
+  const periodLabel = periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes';
+  const periodDisplay = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
+
   // Note: Automatic email fetch disabled to avoid conflicts with scheduler
   // Scheduler handles initial fetch on startup (from start of current month)
 
-  const { data: invoicesData } = useQuery(['dashboard-invoices', filters], () => fetchInvoices(filters));
-  const { data: reportData } = useQuery(['dashboard-report', filters], () => fetchMonthlyReport(filters));
-  const { data: reconciliationStatus } = useQuery(['dashboard-reconciliation-status', filters], () => fetchReconciliationStatus(filters));
-  const { data: reconciliationDetails } = useQuery(['dashboard-reconciliation-details', filters], () => fetchReconciliationDetails(filters));
-  const { data: trendsData } = useQuery(['dashboard-trends', trendMonths], () => fetchTrends(trendMonths));
-  const { data: transactionsData } = useQuery(['dashboard-transactions', filters], () => fetchTransactions(filters));
+  const { data: invoicesData } = useQuery({
+    queryKey: ['dashboard-invoices', filters],
+    queryFn: () => fetchInvoices(filters),
+  });
+  const { data: reportData } = useQuery({
+    queryKey: ['dashboard-report', filters],
+    queryFn: () => fetchMonthlyReport(filters),
+  });
+  const { data: reconciliationStatus } = useQuery({
+    queryKey: ['dashboard-reconciliation-status', filters],
+    queryFn: () => fetchReconciliationStatus(filters),
+  });
+  const { data: reconciliationDetails } = useQuery({
+    queryKey: ['dashboard-reconciliation-details', filters],
+    queryFn: () => fetchReconciliationDetails(filters),
+  });
+  const { data: trendsData } = useQuery({
+    queryKey: ['dashboard-trends', trendMonths],
+    queryFn: () => fetchTrends(trendMonths),
+  });
+  const { data: transactionsData } = useQuery({
+    queryKey: ['dashboard-transactions', filters],
+    queryFn: () => fetchTransactions(filters),
+  });
   
   // Get recent invoices (first 5)
   const recentInvoices = invoicesData?.invoices?.slice(0, 5) || [];
@@ -111,42 +148,46 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-gray-200 rounded-lg overflow-hidden bg-white divide-y md:divide-y-0 md:divide-x divide-gray-200">
+        <StatCard
           title="Factures ce mois"
           value={stats.totalInvoices}
           icon={FileText}
-          color="blue"
+          color="orange"
+          period={periodDisplay}
         />
-        <StatCard 
+        <StatCard
           title="En attente rapprochement"
           value={stats.pendingReconciliation}
           icon={Clock}
           alert={stats.pendingReconciliation > 20}
-          color="yellow"
+          color="orange"
+          period={periodDisplay}
         />
-        <StatCard 
+        <StatCard
           title="Paiements non rapprochés"
           value={stats.unmatchedBank}
           icon={AlertCircle}
           alert={stats.unmatchedBank > 0}
-          color="red"
+          color="orange"
+          period={periodDisplay}
         />
-        <StatCard 
+        <StatCard
           title="Montant total"
           value={formatCurrency(stats.totalAmount)}
           icon={CreditCard}
           trend={stats.monthlyChange.toFixed(1)}
           trendUp={stats.trendDirection === 'up'}
           trendDown={stats.trendDirection === 'down'}
-          color="green"
+          color="orange"
+          period={periodDisplay}
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Bank Transactions */}
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Transactions Bancaires Récentes</h3>
             <a href="/reconciliation" className="text-blue-600 text-sm hover:underline">
@@ -182,7 +223,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Factures Récentes</h3>
             <a href="/invoices" className="text-blue-600 text-sm hover:underline">
@@ -246,36 +287,43 @@ const Dashboard = () => {
   );
 };
 
-const StatCard = ({ title, value, icon: Icon, trend, trendUp, trendDown, alert, color }) => {
-  const colors = {
-    blue: 'bg-blue-50 text-blue-600',
-    yellow: 'bg-yellow-50 text-yellow-600',
-    red: 'bg-red-50 text-red-600',
-    green: 'bg-green-50 text-green-600',
+const StatCard = ({ title, value, icon: Icon, trend, trendUp, trendDown, alert, color, period }) => {
+  const getTrendIcon = () => {
+    if (trendUp) return <TrendingUp className="w-3.5 h-3.5" />;
+    if (trendDown) return <TrendingDown className="w-3.5 h-3.5" />;
+    return null;
+  };
+
+  const getTrendColor = () => {
+    if (trendUp) return 'text-green-600';
+    if (trendDown) return 'text-red-600';
+    return 'text-gray-600';
   };
 
   return (
-    <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          {trend !== undefined && (
-            <div className={`flex items-center gap-1 mt-2 text-sm ${
-              trendUp ? 'text-green-600' : trendDown ? 'text-red-600' : 'text-gray-600'
-            }`}>
-              {trendUp ? <TrendingUp className="w-4 h-4" /> : trendDown ? <TrendingDown className="w-4 h-4" /> : <span className="w-4 h-4">−</span>}
-              {Math.abs(trend)}%
-              <span className="text-gray-500 ml-1">vs mois dernier</span>
-            </div>
-          )}
-        </div>
-        <div className={`p-3 rounded-md ${colors[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
+    <div className="p-5">
+      <IconBox color={color} size="sm" className="inline-flex mb-3">
+        <Icon className="w-3.5 h-3.5" />
+      </IconBox>
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-medium text-gray-600">{title}</p>
+        {period && <span className="text-[10px] text-gray-400">{period}</span>}
       </div>
+
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+
+      {trend !== undefined && (
+        <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${getTrendColor()}`}>
+          {getTrendIcon()}
+          <span>{Math.abs(trend)}%</span>
+          <span className="text-gray-400 font-normal">vs mois dernier</span>
+        </div>
+      )}
+
       {alert && (
-        <div className="mt-3 px-3 py-1 bg-red-50 text-red-700 text-xs rounded-full inline-block">
+        <div className="mt-3 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-medium rounded-md inline-flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
           Action requise
         </div>
       )}

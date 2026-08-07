@@ -2,19 +2,29 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Webhook, Send } from 'lucide-react';
 import { fetchWebhookConfig, updateWebhookConfig, testWebhook } from '../../api';
+import { INPUT_CLASS } from '../../utils/formHelpers';
+import { usePlanGate } from '../../hooks/usePlanGate';
 
 export const SettingsWebhooks = ({ setSaveStatus }) => {
   const queryClient = useQueryClient();
   const [url, setUrl] = useState('');
   const [events, setEvents] = useState([]);
   const [testStatus, setTestStatus] = useState(null);
+  const { billing, canAccess } = usePlanGate();
+  const hasAccess = billing ? canAccess('webhooks') : false;
 
-  const { data, isLoading } = useQuery('webhookConfig', fetchWebhookConfig, {
-    onSuccess: (data) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['webhookConfig'],
+    queryFn: fetchWebhookConfig,
+    enabled: hasAccess,
+  });
+
+  React.useEffect(() => {
+    if (data) {
       setUrl(data.url || '');
       setEvents(data.events || []);
-    },
-  });
+    }
+  }, [data]);
 
   const updateMutation = useMutation({
     mutationFn: () => updateWebhookConfig(url, events),
@@ -79,7 +89,7 @@ export const SettingsWebhooks = ({ setSaveStatus }) => {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://votre-serveur.com/webhook"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className={INPUT_CLASS}
           />
           <p className="mt-1 text-sm text-gray-500">
             Les événements seront envoyés en POST à cette URL avec un header X-Webhook-Signature pour vérification.
@@ -118,7 +128,7 @@ export const SettingsWebhooks = ({ setSaveStatus }) => {
             type="button"
             onClick={handleTest}
             disabled={!url || testMutation.isLoading}
-            className="px-6 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition disabled:opacity-50 flex items-center"
+            className="px-6 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg  transition disabled:opacity-50 flex items-center"
           >
             <Send className="h-4 w-4 mr-2" />
             {testMutation.isLoading ? 'Envoi...' : 'Tester'}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   FileText,
@@ -16,17 +16,60 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveCont
 import { fetchAnalytics, fetchMonthlyTrend } from '../api';
 import { CHART_COLORS_ARRAY } from '../constants/colors';
 import HelpTooltip from '../components/ui/HelpTooltip';
+import IconBox from '../components/ui/IconBox';
 import { usePlanGate } from '../hooks/usePlanGate';
 import UpgradeOverlay from '../components/ui/UpgradeOverlay';
+import { useFilters } from '../context/FilterContext';
+import DropdownButton from '../components/DropdownButton';
+import { generateMonthOptions } from '../utils/dateHelpers';
 
 const COLORS = CHART_COLORS_ARRAY;
 
 const Analytics = () => {
   const [trendMonths, setTrendMonths] = useState(6);
-  const { canAccess, getRequiredPlan } = usePlanGate();
+  const { selectedMonth, setSelectedMonth } = useFilters();
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showTrendDropdown, setShowTrendDropdown] = useState(false);
+  const monthButtonRef = useRef(null);
+  const trendButtonRef = useRef(null);
+  const { canAccess, getRequiredPlan, billing } = usePlanGate();
 
-  const { data: analytics, isLoading } = useQuery(['analytics'], fetchAnalytics);
-  const { data: trendData } = useQuery(['analytics-trend', trendMonths], () => fetchMonthlyTrend(trendMonths));
+  const today = new Date();
+  const globalPeriod = selectedMonth !== undefined ? selectedMonth : `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+  const periodOptions = [
+    { value: '', label: 'Toutes périodes' },
+    ...generateMonthOptions(12),
+  ];
+
+  const trendOptions = [
+    { value: 3, label: '3 mois' },
+    { value: 6, label: '6 mois' },
+    { value: 12, label: '12 mois' },
+    { value: 24, label: 'Tout' },
+  ];
+
+  const filters = useMemo(() => {
+    if (!globalPeriod) return {};
+    const [year, month] = globalPeriod.split('-').map(Number);
+    return { month, year };
+  }, [globalPeriod]);
+
+  const periodLabel = periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes';
+  const periodDisplay = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
+
+  const hasAccess = billing ? canAccess('analytics') : false;
+
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ['analytics', filters],
+    queryFn: () => fetchAnalytics(filters),
+    enabled: hasAccess,
+  });
+  const { data: trendData } = useQuery({
+    queryKey: ['analytics-trend', trendMonths],
+    queryFn: () => fetchMonthlyTrend(trendMonths),
+    enabled: hasAccess,
+  });
 
   if (isLoading) {
     return (
@@ -49,61 +92,77 @@ const Analytics = () => {
 
   return (
     <div className="relative space-y-6">
-      {!canAccess('analytics') && (
-        <UpgradeOverlay requiredPlan={getRequiredPlan('analytics')} featureName="Analytics" />
-      )}
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-1.5">
-          <h1 className="text-lg font-semibold text-gray-900">Analytics</h1>
-          <HelpTooltip text="Métriques opérationnelles pour suivre l'efficacité du système de traitement automatique des factures." />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-lg font-semibold text-gray-900">Analytics</h1>
+            <HelpTooltip text="Métriques opérationnelles pour suivre l'efficacité du système de traitement automatique des factures." />
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">Suivi des performances et du ROI</p>
         </div>
-        <p className="text-xs text-gray-500 mt-0.5">Suivi des performances et du ROI</p>
+        <div className="flex gap-3 items-center">
+          <DropdownButton
+            label={periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes'}
+            value={globalPeriod}
+            options={periodOptions}
+            onChange={setSelectedMonth}
+            isOpen={showMonthDropdown}
+            onToggle={() => setShowMonthDropdown(!showMonthDropdown)}
+            buttonRef={monthButtonRef}
+            width="200px"
+          />
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-gray-200 rounded-lg overflow-hidden bg-white divide-y md:divide-y-0 md:divide-x divide-gray-200">
         <KpiCard
           title="Factures traitées"
           value={totals.invoices || 0}
           icon={FileText}
           color="blue"
+          period={periodDisplay}
         />
         <KpiCard
           title="Taux de rapprochement"
           value={`${totals.match_rate || 0}%`}
           icon={CheckCircle}
-          color="green"
+          color="blue"
+          period={periodDisplay}
         />
         <KpiCard
           title="Temps gagné"
           value={`${savings.time_saved_hours || 0}h`}
           icon={Clock}
-          color="purple"
+          color="blue"
+          period={periodDisplay}
         />
         <KpiCard
           title="Coût IA"
           value={`${savings.ai_cost_eur || 0}€`}
           icon={DollarSign}
-          color="orange"
+          color="blue"
+          period={periodDisplay}
         />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trend */}
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Factures traitées par mois</h3>
-            <select
+            <DropdownButton
+              label={trendOptions.find(o => o.value === trendMonths)?.label || '6 mois'}
               value={trendMonths}
-              onChange={(e) => setTrendMonths(Number(e.target.value))}
-              className="text-sm border border-gray-200 rounded px-2 py-1"
-            >
-              <option value={3}>3 mois</option>
-              <option value={6}>6 mois</option>
-              <option value={12}>12 mois</option>
-            </select>
+              options={trendOptions}
+              onChange={(val) => setTrendMonths(Number(val))}
+              isOpen={showTrendDropdown}
+              onToggle={() => setShowTrendDropdown(!showTrendDropdown)}
+              buttonRef={trendButtonRef}
+              width="120px"
+            />
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -118,10 +177,13 @@ const Analytics = () => {
         </div>
 
         {/* Automation Rate */}
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
+          <div className="flex items-start justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Taux d'automatisation</h3>
-            <span className="text-2xl font-bold text-blue-600">{automation.automation_rate || 0}%</span>
+            <div className="text-right">
+              <div className="text-sm text-gray-400 mb-1">{periodDisplay}</div>
+              <div className="text-2xl font-bold text-blue-600">{automation.automation_rate || 0}%</div>
+            </div>
           </div>
           {automationData.some(d => d.value > 0) ? (
             <div className="flex gap-4">
@@ -161,10 +223,10 @@ const Analytics = () => {
       </div>
 
       {/* Dossiers Table */}
-      <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900">Performance par dossier</h3>
-          <Folder className="w-5 h-5 text-gray-400" />
+          <span className="text-sm text-gray-400">{periodDisplay}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -178,7 +240,7 @@ const Analytics = () => {
             </thead>
             <tbody className="divide-y">
               {dossiers.map((dossier) => (
-                <tr key={dossier.id} className="hover:bg-gray-50">
+                <tr key={dossier.id} className="">
                   <td className="px-6 py-4 font-medium text-gray-900">{dossier.name}</td>
                   <td className="px-6 py-4 text-gray-700">{dossier.invoices}</td>
                   <td className="px-6 py-4 text-gray-700">{dossier.matched}</td>
@@ -206,57 +268,48 @@ const Analytics = () => {
       </div>
 
       {/* Savings Info */}
-      <div className="bg-blue-50 rounded-md p-6 border border-blue-100">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-blue-100 rounded-md">
-            <Activity className="w-6 h-6 text-blue-600" />
+      {totals.invoices > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Estimation des gains</h3>
+            <Activity className="w-5 h-5 text-gray-400" />
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-2">Estimation des gains</h3>
-            <p className="text-sm text-gray-700 mb-3">
-              Le système a traité <strong>{totals.invoices || 0} factures</strong> avec l'IA,
-              économisant environ <strong>{savings.time_saved_hours || 0} heures</strong> de saisie manuelle.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-              <div>
-                <div className="text-gray-500">Temps manuel estimé</div>
-                <div className="text-lg font-semibold text-gray-900">{Math.round((totals.invoices || 0) * 3 / 60)}h</div>
-              </div>
-              <div>
-                <div className="text-gray-500">Temps avec IA</div>
-                <div className="text-lg font-semibold text-gray-900">{Math.round((totals.invoices || 0) * 0.25 / 60)}h</div>
-              </div>
-              <div>
-                <div className="text-gray-500">Coût IA total</div>
-                <div className="text-lg font-semibold text-gray-900">{savings.ai_cost_eur || 0}€</div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1">Temps économisé</div>
+              <div className="text-2xl font-bold text-gray-900">{savings.time_saved_hours || 0}h</div>
+              <div className="text-xs text-gray-500 mt-1">{totals.invoices} factures traitées</div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1">Saisie manuelle</div>
+              <div className="text-2xl font-bold text-gray-400">{Math.round((totals.invoices || 0) * 3 / 60)}h</div>
+              <div className="text-xs text-gray-500 mt-1">~3 min/facture</div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1">Coût IA</div>
+              <div className="text-2xl font-bold text-gray-900">{savings.ai_cost_eur || 0}€</div>
+              <div className="text-xs text-gray-500 mt-1">~{savings.cost_per_invoice_eur || 0}€/facture</div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-const KpiCard = ({ title, value, icon: Icon, color = 'blue' }) => {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
-  };
-
+const KpiCard = ({ title, value, icon: Icon, color = 'blue', period }) => {
   return (
-    <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
-        <div className={`p-3 rounded-md ${colorClasses[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
+    <div className="p-5">
+      <IconBox color={color} size="sm" className="inline-flex mb-3">
+        <Icon className="w-3.5 h-3.5" />
+      </IconBox>
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-medium text-gray-600">{title}</p>
+        {period && <span className="text-[10px] text-gray-400">{period}</span>}
       </div>
+
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
     </div>
   );
 };

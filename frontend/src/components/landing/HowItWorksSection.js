@@ -51,7 +51,7 @@ const HowItWorksSection = () => (
               key={step.number}
               className={`text-center p-8 ${index !== STEPS.length - 1 ? 'border-b md:border-b-0 md:border-r border-slate-200' : ''}`}
             >
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/80 backdrop-blur-sm mb-4 shadow-lg">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/80 backdrop-blur-sm mb-4">
                 <Icon className="w-5 h-5 text-white" strokeWidth={2} />
               </div>
               <h3 className="mb-2 text-base font-bold text-slate-900">{step.title}</h3>

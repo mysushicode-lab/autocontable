@@ -76,7 +76,7 @@ const TransactionsTab = ({ filteredTransactions, deleteTransactionMutation, upda
             {onDeleteAll && (
               <button
                 onClick={onDeleteAll}
-                className="px-3 py-1.5 border border-gray-300 text-gray-900 rounded-md text-sm hover:bg-gray-50"
+                className="px-3 py-1.5 border border-gray-300 text-gray-900 rounded-md text-sm "
               >
                 Supprimer tout le mois
               </button>

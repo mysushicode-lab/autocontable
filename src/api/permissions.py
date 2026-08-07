@@ -8,13 +8,15 @@ from src.api.billing import require_feature
 router = APIRouter()
 
 
-def user_has_access(session, user_id: int, client_file_id: int, org_id: int, role: str) -> bool:
-    """Check if a user has access to a specific dossier.
+_PERMISSION_HIERARCHY = {"read_only": 0, "read_write": 1, "admin": 2}
 
-    Admins always have access to all dossiers in their org.
-    Other users need explicit permission.
+
+def user_has_access(session, user_id: int, client_file_id: int, org_id: int, role: str, required_level: str = "read_only") -> bool:
+    """Check if a user has access to a specific dossier at the required level.
+
+    Admins always have full access to all dossiers in their org.
+    Other users need explicit permission at or above the required level.
     """
-    # Verify dossier belongs to the org first
     dossier = session.query(ClientFile).filter(
         ClientFile.id == client_file_id,
         ClientFile.organization_id == org_id
@@ -29,7 +31,12 @@ def user_has_access(session, user_id: int, client_file_id: int, org_id: int, rol
         DossierPermission.user_id == user_id,
         DossierPermission.client_file_id == client_file_id,
     ).first()
-    return perm is not None
+    if not perm:
+        return False
+
+    user_level = _PERMISSION_HIERARCHY.get(perm.permission_level, 0)
+    needed_level = _PERMISSION_HIERARCHY.get(required_level, 0)
+    return user_level >= needed_level
 
 
 def get_accessible_dossier_ids(session, user_id: int, org_id: int, role: str) -> list:

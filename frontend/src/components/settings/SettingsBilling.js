@@ -104,7 +104,7 @@ export const SettingsBilling = () => {
             <p className="text-xs text-gray-500">Cartes et moyens de paiement enregistrés</p>
           </div>
           <button onClick={handleManageBilling}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white  border border-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors">
             <ExternalLink className="w-3 h-3" />Gérer
           </button>
         </div>

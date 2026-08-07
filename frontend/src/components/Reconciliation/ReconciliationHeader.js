@@ -24,7 +24,10 @@ const ReconciliationHeader = ({
   isRunningReconciliation
 }) => {
   const router = useRouter();
-  const { data: clientFilesData } = useQuery('client-files-summary', fetchClientFilesSummary);
+  const { data: clientFilesData } = useQuery({
+    queryKey: ['client-files-summary'],
+    queryFn: fetchClientFilesSummary
+  });
   const hasDossier = (clientFilesData?.client_files?.length ?? 1) > 0;
 
   return (
@@ -51,7 +54,7 @@ const ReconciliationHeader = ({
           <button
             onClick={hasDossier ? handleBankImportClick : undefined}
             disabled={!hasDossier}
-            className="px-2 py-2 sm:px-3 bg-white border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-2 py-2 sm:px-3 bg-white border border-gray-200 rounded-md  flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <CreditCard className="w-4 h-4" />
             <span className="hidden sm:inline">{importMutation.isLoading ? 'Import...' : 'Import bancaire'}</span>

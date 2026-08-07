@@ -5,10 +5,8 @@ Only extracts raw text from PDF, no regex pattern matching
 import os
 from typing import Dict, Optional, List
 import pdfplumber
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 
 class PDFParser:

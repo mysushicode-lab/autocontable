@@ -22,6 +22,7 @@ import DropdownButton from '../components/DropdownButton';
 import { useFilters } from '../context/FilterContext';
 import { useClientFile } from '../context/ClientFileContext';
 import HelpTooltip from '../components/ui/HelpTooltip';
+import IconBox from '../components/ui/IconBox';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
 import { formatCurrency, formatDate } from '../utils/formatHelpers';
 import { downloadBlob, downloadAuthenticatedFile } from '../utils/downloadHelpers';
@@ -72,17 +73,23 @@ const Reports = () => {
   };
 
   // Fetch monthly report for selected period (KPI cards)
-  const { data, isLoading } = useQuery(['monthly-report', year, month, activeClientFileId], () => fetchMonthlyReport(reportFilters));
+  const { data, isLoading } = useQuery({
+    queryKey: ['monthly-report', year, month, activeClientFileId],
+    queryFn: () => fetchMonthlyReport(reportFilters),
+  });
 
   // Fetch individual invoices for client-side CSV exports (needs amount_ht, amount_tax, due_date)
-  const { data: invoicesData } = useQuery(['report-invoices', year, month, activeClientFileId], () => fetchInvoices({ ...reportFilters, include_reconciled: true }));
+  const { data: invoicesData } = useQuery({
+    queryKey: ['report-invoices', year, month, activeClientFileId],
+    queryFn: () => fetchInvoices({ ...reportFilters, include_reconciled: true }),
+  });
   const exportInvoices = invoicesData?.invoices || [];
 
   // Fetch trends for evolution chart with selected period
-  const { data: trendsData, isLoading: trendsLoading } = useQuery(
-    ['trends', trendMonths], 
-    () => fetchTrends(trendMonths)
-  );
+  const { data: trendsData, isLoading: trendsLoading } = useQuery({
+    queryKey: ['trends', trendMonths],
+    queryFn: () => fetchTrends(trendMonths),
+  });
   
   useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
 
@@ -258,37 +265,41 @@ const Reports = () => {
       {(isLoading || trendsLoading) && <div className="text-sm text-gray-500">Chargement du rapport mensuel...</div>}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <KpiCard 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border border-gray-200 rounded-lg overflow-hidden bg-white divide-y md:divide-y-0 md:divide-x divide-gray-200">
+        <KpiCard
           title="Total Dépenses TTC"
           value={formatCurrency(data?.total_amount || 0)}
           change={`${(trendsData?.month_over_month_change || 0).toFixed(1)}%`}
           trend={trendsData?.trend_direction || 'stable'}
           invertTrend
           icon={Wallet}
+          period={periodDisplay}
         />
-        <KpiCard 
+        <KpiCard
           title="Nombre de Factures"
           value={data?.total_invoices || 0}
           icon={FileText}
+          period={periodDisplay}
         />
-        <KpiCard 
+        <KpiCard
           title="Fournisseurs Actifs"
           value={topSuppliers.length}
           icon={Building2}
+          period={periodDisplay}
         />
-        <KpiCard 
+        <KpiCard
           title="Factures rapprochées"
           value={data?.matched_invoices || 0}
           icon={CheckCircle}
           trend={data?.total_invoices > 0 ? (data.matched_invoices / data.total_invoices >= 0.8 ? 'up' : 'down') : 'stable'}
+          period={periodDisplay}
         />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Dépenses mensuelles */}
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Évolution des Dépenses</h3>
             <DropdownButton
@@ -315,7 +326,7 @@ const Reports = () => {
         </div>
 
         {/* Répartition par catégorie */}
-        <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Répartition par Catégorie</h3>
             <span className="text-sm text-gray-400">{periodDisplay}</span>
@@ -362,7 +373,7 @@ const Reports = () => {
       </div>
 
       {/* Top Fournisseurs */}
-      <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900">Top Fournisseurs</h3>
           <span className="text-sm text-gray-400">{periodDisplay}</span>
@@ -380,7 +391,7 @@ const Reports = () => {
             </thead>
             <tbody className="divide-y">
               {topSuppliers.map((supplier, index) => (
-                <tr key={index} className="hover:bg-gray-50">
+                <tr key={index} className="">
                   <td className="px-3 sm:px-6 py-2 sm:py-4 font-medium truncate max-w-[120px] sm:max-w-none">{supplier.name}</td>
                   <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">{formatCurrency(supplier.amount)}</td>
                   <td className="hidden sm:table-cell px-6 py-4">{supplier.invoices}</td>
@@ -410,86 +421,101 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* Export Options */}
-      <div className="bg-blue-600 rounded-md p-6 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-semibold mb-1">Export du dossier</h3>
-            <p className="text-blue-100 text-sm">Générez les fichiers comptables pour le dossier sélectionné</p>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <button onClick={handleCsvExport} className="px-2 py-1.5 sm:px-4 sm:py-2 bg-white text-blue-600 rounded-md font-medium hover:bg-blue-50 text-xs sm:text-sm">
-              CSV
-            </button>
-            <button onClick={handleExcelExport} className="px-2 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-400 border border-blue-400 text-xs sm:text-sm">
-              Excel
-            </button>
-            <button onClick={handleDossierExport} className="flex items-center gap-1.5 px-2 py-1.5 sm:px-4 sm:py-2 text-white rounded-md font-medium border border-blue-400 hover:bg-blue-500 text-xs sm:text-sm">
-              <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Dossier complet (ZIP)</span>
-              <span className="sm:hidden">ZIP</span>
-            </button>
+      {/* Export Options - Fusionné */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+        {/* Section Export principale */}
+        <div className="relative bg-blue-600 p-6 text-white overflow-hidden">
+          {/* Texture grain papier nuageux */}
+          <div className="absolute inset-0 opacity-40" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            backgroundSize: '150px 150px',
+            mixBlendMode: 'overlay'
+          }} />
+
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold mb-1">Export du dossier</h3>
+              <p className="text-blue-100 text-sm">Générez les fichiers comptables pour le dossier sélectionné</p>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <button onClick={handleCsvExport} className="px-2 py-1.5 sm:px-4 sm:py-2 bg-white text-blue-600 rounded-md font-medium text-xs sm:text-sm">
+                CSV
+              </button>
+              <button onClick={handleExcelExport} className="px-2 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-md font-medium border border-blue-400 text-xs sm:text-sm">
+                Excel
+              </button>
+              <button onClick={handleDossierExport} className="flex items-center gap-1.5 px-2 py-1.5 sm:px-4 sm:py-2 text-white rounded-md font-medium border border-blue-400 text-xs sm:text-sm">
+                <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Dossier complet (ZIP)</span>
+                <span className="sm:hidden">ZIP</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Documents comptables */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <DocumentCard
-          title="Grand Livre"
-          description="Toutes les écritures comptables"
-          icon={FileText}
-          onExport={exportGrandLivre}
-        />
-        <DocumentCard
-          title="Balance"
-          description="Synthèse par compte"
-          icon={BarChart3}
-          onExport={exportBalance}
-        />
-        <DocumentCard
-          title="Journal des Achats"
-          description="Détail des factures fournisseurs"
-          icon={TrendingUp}
-          onExport={exportJournalAchats}
-        />
-        <DocumentCard
-          title="Export FEC (DGFiP)"
-          description="Fichier des Écritures Comptables"
-          icon={FileCheck}
-          onExport={handleFecExport}
-        />
+        {/* Documents comptables */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+          <DocumentCard
+            title="Grand Livre"
+            description="Toutes les écritures comptables"
+            icon={FileText}
+            onExport={exportGrandLivre}
+          />
+          <DocumentCard
+            title="Balance"
+            description="Synthèse par compte"
+            icon={BarChart3}
+            onExport={exportBalance}
+          />
+          <DocumentCard
+            title="Journal des Achats"
+            description="Détail des factures fournisseurs"
+            icon={TrendingUp}
+            onExport={exportJournalAchats}
+          />
+          <DocumentCard
+            title="Export FEC (DGFiP)"
+            description="Fichier des Écritures Comptables"
+            icon={FileCheck}
+            onExport={handleFecExport}
+          />
+        </div>
       </div>
     </div>
   );
 };
 
-const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend }) => {
+const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend, period }) => {
   const isUp = trend === 'up';
   const isDown = trend === 'down';
   // For expenses: up = bad (red), down = good (green)
   const isPositive = invertTrend ? isDown : isUp;
   const isNegative = invertTrend ? isUp : isDown;
 
+  const colorName = Icon.name === 'Wallet' ? 'blue' : Icon.name === 'FileText' ? 'green' : Icon.name === 'Building2' ? 'purple' : 'yellow';
+
   return (
-    <div className="rounded-md border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {change && (
-            <div className={`flex items-center gap-1 mt-1 text-sm ${
-              isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-600'
-            }`}>
-              {isUp ? <TrendingUp className="w-4 h-4" /> : isDown ? <TrendingDown className="w-4 h-4" /> : <span className="w-4 h-4">−</span>}
-              {change} vs mois dernier
-            </div>
-          )}
-        </div>
-        <div className="p-3 bg-blue-50 rounded-md">
-          <Icon className="w-5 h-5 text-blue-600" />
-        </div>
+    <div className="p-5">
+      <IconBox color={colorName} size="sm" className="inline-flex mb-3">
+        <Icon className="w-3.5 h-3.5" />
+      </IconBox>
+
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-medium text-gray-600">{title}</p>
+        {period && <span className="text-[10px] text-gray-400">{period}</span>}
       </div>
+
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+
+      {change && (
+        <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${
+          isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-600'
+        }`}>
+          {isUp ? <TrendingUp className="w-3.5 h-3.5" /> : isDown ? <TrendingDown className="w-3.5 h-3.5" /> : null}
+          <span>{change}</span>
+          <span className="text-gray-400 font-normal">vs mois dernier</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -497,17 +523,17 @@ const KpiCard = ({ title, value, change, icon: Icon, trend, invertTrend }) => {
 const DocumentCard = ({ title, description, icon: Icon, onExport }) => (
   <button
     onClick={onExport}
-    className="rounded-md border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md transition-shadow text-left w-full"
+    className="p-5 text-left w-full"
   >
-    <div className="flex items-start gap-4">
-      <div className="p-3 bg-blue-100 rounded-md">
-        <Icon className="w-5 h-5 text-blue-600" />
+    <div className="flex items-start gap-3">
+      <IconBox color="blue" size="md" className="flex-shrink-0">
+        <Icon className="w-4 h-4" />
+      </IconBox>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-semibold text-gray-900 text-sm mb-1">{title}</h4>
+        <p className="text-xs text-gray-500">{description}</p>
       </div>
-      <div className="flex-1">
-        <h4 className="font-semibold text-gray-900">{title}</h4>
-        <p className="text-sm text-gray-500 mt-1">{description}</p>
-      </div>
-      <Download className="w-5 h-5 text-blue-400" />
+      <Download className="w-4 h-4 text-blue-400 flex-shrink-0 mt-1" />
     </div>
   </button>
 );

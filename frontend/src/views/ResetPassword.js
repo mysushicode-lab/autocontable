@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { resetPassword } from '../api';
 import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const ResetPassword = () => {
   const router = useRouter();
@@ -102,7 +103,7 @@ const ResetPassword = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="••••••••"
                     required
                   />
@@ -117,7 +118,7 @@ const ResetPassword = () => {
                     type="password"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white/80 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                     placeholder="••••••••"
                     required
                   />

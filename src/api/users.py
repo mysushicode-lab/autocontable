@@ -52,9 +52,9 @@ def create_user(request: CreateUserRequest, current_user: dict = Depends(require
     session = db.get_session()
     try:
         if session.query(User).filter(User.username == request.username).first():
-            raise HTTPException(status_code=400, detail="Username already exists")
+            raise HTTPException(status_code=400, detail="Ce nom d'utilisateur existe déjà")
         if session.query(User).filter(User.email == request.email).first():
-            raise HTTPException(status_code=400, detail="Email already exists")
+            raise HTTPException(status_code=400, detail="Cet email existe déjà")
 
         password_hash = _hash_password(request.password)
         user = User(
@@ -82,7 +82,7 @@ def delete_user(user_id: int, current_user: dict = Depends(require_admin)):
     try:
         user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
         if user.id == current_user["id"]:
             raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
 
@@ -109,7 +109,7 @@ def update_user(user_id: int, request: UpdateUserRequest, current_user: dict = D
     try:
         user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
         if request.name is not None:
             user.name = request.name
@@ -147,13 +147,13 @@ def upload_profile_photo(user_id: int, file: UploadFile = File(...), current_use
     if ext not in ALLOWED_PHOTO_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Format d'image non supporté")
     if not file.content_type or not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        raise HTTPException(status_code=400, detail="Le fichier doit être une image")
 
     session = db.get_session()
     try:
         user = session.query(User).filter(User.id == user_id, User.organization_id == current_user["organization_id"]).first()
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="Utilisateur introuvable")
 
         # Create uploads directory if not exists
         upload_dir = os.path.join("data", "uploads", "profile_photos")
@@ -199,6 +199,7 @@ def get_onboarding_status(current_user: dict = Depends(get_current_user)):
 def mark_onboarding_complete(current_user: dict = Depends(get_current_user)):
     """Mark onboarding as completed for the current user's organization."""
     from src.storage.models import Settings
+    from fastapi import HTTPException
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
@@ -206,6 +207,14 @@ def mark_onboarding_complete(current_user: dict = Depends(get_current_user)):
             Settings.organization_id == org_id,
             Settings.key == "onboarding_completed"
         ).first()
+
+        # Prevent re-onboarding if already completed
+        if existing and existing.value == "true":
+            raise HTTPException(
+                status_code=400,
+                detail="L'onboarding a déjà été complété pour cette organisation."
+            )
+
         if existing:
             existing.value = "true"
         else:

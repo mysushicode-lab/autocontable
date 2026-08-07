@@ -3,6 +3,8 @@ import os
 import logging
 from typing import Optional
 
+import src.config  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 # Encryption key from env (32 bytes = 256 bits, hex-encoded = 64 chars)

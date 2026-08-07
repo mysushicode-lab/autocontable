@@ -5,11 +5,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
-from dotenv import load_dotenv
 from .models import Base
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401 — centralized env loading
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/accounting.db')
 

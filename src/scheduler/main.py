@@ -12,7 +12,8 @@ from typing import List, Optional
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from dotenv import load_dotenv
+
+import src.config  # noqa: F401
 
 from src.email_ingestion import IMAPClient
 from src.storage.models import Settings, Organization, ClientFile
@@ -22,9 +23,6 @@ from src.storage.database import db
 from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash, BankTransaction
 from src.reconciliation import run_auto_reconciliation
 import calendar
-
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 
 # Default global cadence (seconds) when an org doesn't override via settings
 DEFAULT_INTERVAL_SECONDS = int(os.getenv('SCHEDULER_DEFAULT_INTERVAL', 480))
@@ -130,6 +128,27 @@ class InvoiceScheduler:
                 filename=filename,
                 organization_id=organization_id,
             ))
+
+    def _match_client_by_email(self, session, organization_id: int, email_from: str) -> Optional[int]:
+        """Match sender email to a client dossier. Returns client_file_id or None."""
+        if not email_from:
+            return None
+        # Extract email address from "Name <email@domain.com>" format
+        import re
+        match = re.search(r'[\w.+-]+@[\w-]+\.[\w.-]+', email_from)
+        if not match:
+            return None
+        sender_email = match.group(0).lower()
+
+        # Find client file with matching contact_email
+        cf = session.query(ClientFile).filter(
+            ClientFile.organization_id == organization_id,
+            ClientFile.is_active == True,
+        ).all()
+        for client_file in cf:
+            if client_file.contact_email and client_file.contact_email.lower() == sender_email:
+                return client_file.id
+        return None
 
     def _build_invoice(self, invoice_data: dict, organization_id: int) -> Invoice:
         extraction_confidence = invoice_data.get('extraction_confidence', 'low')
@@ -239,6 +258,12 @@ class InvoiceScheduler:
                             invoice_data['category'] = category
 
                     invoice = self._build_invoice(invoice_data, organization_id)
+
+                    # Auto-route to client dossier based on sender email
+                    client_file_id = self._match_client_by_email(session, organization_id, mail.get('from', ''))
+                    if client_file_id:
+                        invoice.client_file_id = client_file_id
+
                     session.add(invoice)
                     self._register_hash(session, content_hash, filename, organization_id)
                     processed_count += 1

@@ -1,6 +1,7 @@
 import React from 'react';
 import DropdownButton from '../DropdownButton';
 import { formatCurrency, formatDate } from '../../utils/formatHelpers';
+import { INPUT_CLASS } from '../../utils/formHelpers';
 
 const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMonthFilter, setLinkMonthFilter, showLinkMonthDropdown, setShowLinkMonthDropdown, linkMonthButtonRef, periodMonths, unmatchedInvoices, bankOnly, linkSelectedIds, setLinkSelectedIds, submitManualLink }) => {
   const isTx2Inv = linkModal.type === 'tx2inv';
@@ -55,7 +56,7 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-md shadow-xl p-6 w-full max-w-md mx-4 flex flex-col" style={{ maxHeight: '80vh' }}>
+      <div className="bg-white rounded-md p-6 w-full max-w-md mx-4 flex flex-col" style={{ maxHeight: '80vh' }}>
         <h3 className="font-semibold text-gray-900 mb-1">
           {isTx2Inv ? 'Lier à une facture' : 'Lier à un paiement bancaire'}
         </h3>
@@ -67,7 +68,7 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
             value={linkSearch}
             onChange={e => setLinkSearch(e.target.value)}
             placeholder="Rechercher..."
-            className="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`flex-1 ${INPUT_CLASS}`}
           />
           <DropdownButton
             label={linkMonthOptions.find(o => o.value === linkMonthFilter)?.label || 'Mois'}
@@ -95,7 +96,7 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
                 key={id}
                 onClick={() => handleSelectOne(id)}
                 className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors flex items-center gap-3 ${
-                  selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                  selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 '
                 }`}
               >
                 <input type="checkbox" checked={selected} readOnly className="w-4 h-4 rounded border-gray-300" />
@@ -111,7 +112,7 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
                 key={id}
                 onClick={() => handleSelectOne(id)}
                 className={`w-full text-left px-3 py-2 rounded-md border text-sm transition-colors flex items-center gap-3 ${
-                  selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                  selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 '
                 }`}
               >
                 <input type="checkbox" checked={selected} readOnly className="w-4 h-4 rounded border-gray-300" />
@@ -125,7 +126,7 @@ const LinkModal = ({ linkModal, setLinkModal, linkSearch, setLinkSearch, linkMon
           })}
         </div>
         <div className="flex gap-2 justify-end border-t pt-3">
-          <button onClick={() => setLinkModal(null)} className="px-4 py-2 text-sm text-gray-600 border rounded-md hover:bg-gray-50">Annuler</button>
+          <button onClick={() => setLinkModal(null)} className="px-4 py-2 text-sm text-gray-600 border rounded-md ">Annuler</button>
           <button onClick={submitManualLink} disabled={linkSelectedIds.size === 0} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-40">
             Lier ({linkSelectedIds.size})
           </button>

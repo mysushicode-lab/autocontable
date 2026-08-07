@@ -25,12 +25,18 @@ _COMING_SOON = {"sage", "cegid"}
 
 
 @router.get("/available")
-def get_available_integrations(current_user: dict = Depends(require_feature("integrations"))):
-    """List all available integrations with their config requirements."""
+def get_available_integrations():
+    """List all available integrations with their config requirements (public endpoint)."""
     integrations = list_integrations()
     for i in integrations:
         i["coming_soon"] = i["name"] in _COMING_SOON
     return {"integrations": integrations}
+
+
+@router.get("/test-public")
+def test_public_endpoint():
+    """Test public endpoint without auth."""
+    return {"status": "ok", "message": "Public endpoint works"}
 
 
 @router.get("/status/{client_file_id}")

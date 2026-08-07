@@ -13,6 +13,57 @@ export const NOTIF_TYPES = {
   WARNING: 'warning',
 };
 
+// Helper functions for comptable-friendly notifications
+export const NotificationHelpers = {
+  invoiceImported: (invoice) => ({
+    type: NOTIF_TYPES.SUCCESS,
+    title: 'Facture importée',
+    message: `${invoice.invoice_number || 'N/A'} • ${invoice.supplier || 'Fournisseur'} • ${invoice.amount ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(invoice.amount) : '-'}`,
+  }),
+
+  invoicesImported: (count, total) => ({
+    type: NOTIF_TYPES.SUCCESS,
+    title: `${count} facture${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''}`,
+    message: total ? `Montant total: ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(total)}` : `${count} nouvelle${count > 1 ? 's' : ''} facture${count > 1 ? 's' : ''}`,
+  }),
+
+  reconciliationComplete: (matched, total) => ({
+    type: NOTIF_TYPES.INFO,
+    title: 'Rapprochement terminé',
+    message: `${matched}/${total} facture${total > 1 ? 's' : ''} rapprochée${matched > 1 ? 's' : ''} (${total > 0 ? Math.round((matched / total) * 100) : 0}%)`,
+  }),
+
+  bankImported: (count, period) => ({
+    type: NOTIF_TYPES.SUCCESS,
+    title: 'Relevé bancaire importé',
+    message: `${count} opération${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''}${period ? ` • ${period}` : ''}`,
+  }),
+
+  reconciliationPending: (count) => ({
+    type: NOTIF_TYPES.WARNING,
+    title: `${count} facture${count > 1 ? 's' : ''} en attente`,
+    message: `Rapprochement bancaire à effectuer`,
+  }),
+
+  dossierQuotaWarning: (used, limit) => ({
+    type: NOTIF_TYPES.WARNING,
+    title: 'Quota dossiers',
+    message: `${used}/${limit} dossiers utilisés`,
+  }),
+
+  invoiceUpdated: (invoice) => ({
+    type: NOTIF_TYPES.SUCCESS,
+    title: 'Facture mise à jour',
+    message: `${invoice.invoice_number || 'N/A'} • ${invoice.supplier || 'Fournisseur'}`,
+  }),
+
+  invoiceDeleted: (invoice) => ({
+    type: NOTIF_TYPES.SUCCESS,
+    title: 'Facture supprimée',
+    message: `${invoice.invoice_number || 'N/A'} • ${invoice.supplier || 'Fournisseur'}`,
+  }),
+};
+
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const prevInvoiceCount = useRef(null);

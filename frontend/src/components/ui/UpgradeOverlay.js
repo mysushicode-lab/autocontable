@@ -27,7 +27,7 @@ const UpgradeOverlay = ({ requiredPlan = 'pro', featureName = 'cette fonctionnal
         </p>
         <button
           onClick={() => router.push('/settings?tab=billing')}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white text-xs font-medium rounded-md hover:bg-gray-800 transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-500 transition-colors"
         >
           Passer au plan supérieur
           <ArrowUpRight className="w-3.5 h-3.5" />

@@ -1,7 +1,14 @@
 """WhatsApp Business API ingestion channel.
 
-Receives invoice images/PDFs from clients via WhatsApp.
-Webhook receives messages → downloads media → processes via InvoiceProcessor.
+Multi-tenant architecture:
+- Each organization stores its own credentials in Settings table
+- A single global WHATSAPP_VERIFY_TOKEN is used for Meta webhook verification
+- Phone-to-dossier mappings link client phone numbers to their cabinet's dossier
+
+Flow:
+  Client sends photo → Meta POST /api/whatsapp/webhook
+  → identify org via phone mapping → load org credentials
+  → download media → process invoice → reply confirmation
 """
 import os
 import logging
@@ -9,22 +16,26 @@ import hashlib
 import hmac
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException, Depends
+
+import src.config  # noqa: F401
+
 from src.storage.database import db
-from src.storage.models import Settings, ClientFile, Invoice, InvoiceStatus, ProcessedFileHash
+from src.storage.models import Settings, ClientFile, ProcessedFileHash
 from src.api.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "")
-WHATSAPP_API_TOKEN = os.getenv("WHATSAPP_API_TOKEN", "")
-WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
-WHATSAPP_APP_SECRET = os.getenv("WHATSAPP_APP_SECRET", "")
+WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "factpilot-verify-token-2026")
 
+
+# ─── Webhook endpoints ────────────────────────────────────────────────────────
 
 @router.get("/webhook")
 def verify_webhook(request: Request):
-    """WhatsApp webhook verification (GET challenge)."""
+    """Meta webhook verification (GET challenge).
+    https://developers.facebook.com/docs/graph-api/webhooks/getting-started
+    """
     params = request.query_params
     mode = params.get("hub.mode")
     token = params.get("hub.verify_token")
@@ -35,39 +46,13 @@ def verify_webhook(request: Request):
     raise HTTPException(403, "Verification failed")
 
 
-def _verify_meta_signature(payload: bytes, signature: str) -> bool:
-    """Verify Meta webhook signature (x-hub-signature-256)."""
-    if not WHATSAPP_APP_SECRET:
-        logger.warning("[whatsapp] WHATSAPP_APP_SECRET not set — skipping signature check")
-        return True
-    if not signature:
-        return False
-    expected = hmac.new(
-        WHATSAPP_APP_SECRET.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(f"sha256={expected}", signature)
-
-
 @router.post("/webhook")
 async def receive_message(request: Request):
-    """Receive WhatsApp messages containing invoice documents/images.
-
-    Flow:
-    1. Verify Meta signature
-    2. Extract media (image/document) from message
-    3. Download media via WhatsApp Cloud API
-    4. Match sender phone to a client dossier (via settings)
-    5. Process through InvoiceProcessor
-    6. Send confirmation reply
+    """Receive incoming WhatsApp messages (Meta Cloud API format).
+    https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components
     """
-    raw_body = await request.body()
-    signature = request.headers.get("x-hub-signature-256", "")
-    if not _verify_meta_signature(raw_body, signature):
-        raise HTTPException(403, "Invalid signature")
-
     import json
+    raw_body = await request.body()
     body = json.loads(raw_body)
 
     try:
@@ -80,113 +65,20 @@ async def receive_message(request: Request):
             return {"status": "ok"}
 
         for message in messages:
-            msg_type = message.get("type")
-            sender_phone = message.get("from", "")
-            msg_id = message.get("id", "")
-
-            # Only process images and documents
-            if msg_type not in ("image", "document"):
-                _send_reply(sender_phone, "Merci ! Envoyez vos factures en photo ou PDF pour qu'elles soient traitées automatiquement.")
-                continue
-
-            # Get media info
-            if msg_type == "image":
-                media = message.get("image", {})
-            else:
-                media = message.get("document", {})
-
-            media_id = media.get("id")
-            mime_type = media.get("mime_type", "")
-            filename = media.get("filename", f"whatsapp_{msg_id}.{'pdf' if 'pdf' in mime_type else 'jpg'}")
-
-            if not media_id:
-                continue
-
-            # Download media
-            file_path = _download_media(media_id, filename)
-            if not file_path:
-                _send_reply(sender_phone, "Erreur lors du téléchargement. Veuillez réessayer.")
-                continue
-
-            # Find client dossier by phone number
-            session = db.get_session()
-            try:
-                mapping = _find_dossier_by_phone(session, sender_phone)
-                if not mapping:
-                    _send_reply(sender_phone, "Votre numéro n'est pas encore associé à un dossier. Contactez votre comptable.")
-                    continue
-
-                org_id = mapping["organization_id"]
-                client_file_id = mapping["client_file_id"]
-
-                # Check duplicate
-                content_hash = _compute_file_hash(file_path)
-                existing = session.query(ProcessedFileHash).filter(
-                    ProcessedFileHash.content_hash == content_hash,
-                    ProcessedFileHash.organization_id == org_id,
-                ).first()
-                if existing:
-                    _send_reply(sender_phone, "Ce document a déjà été traité.")
-                    continue
-
-                # Process invoice
-                from src.invoice_processor import InvoiceProcessor
-                processor = InvoiceProcessor()
-                invoice_data = processor.process_invoice(file_path, email_metadata={
-                    "email_from": f"whatsapp:{sender_phone}",
-                    "email_subject": f"WhatsApp {filename}",
-                })
-
-                if invoice_data.get("not_an_invoice"):
-                    _send_reply(sender_phone, "Ce document ne semble pas être une facture.")
-                    continue
-
-                # Create invoice
-                invoice = Invoice(
-                    invoice_number=invoice_data.get("invoice_number") or f"WA-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                    supplier_id=invoice_data.get("supplier_id"),
-                    amount=invoice_data.get("amount") or 0,
-                    amount_ht=invoice_data.get("amount_ht"),
-                    amount_tax=invoice_data.get("amount_tax"),
-                    date=invoice_data.get("date") or datetime.now(),
-                    due_date=invoice_data.get("due_date"),
-                    category=invoice_data.get("category"),
-                    reference_number=invoice_data.get("reference_number"),
-                    organization_id=org_id,
-                    client_file_id=client_file_id,
-                    file_path=file_path,
-                    email_from=f"whatsapp:{sender_phone}",
-                    email_subject=f"WhatsApp — {filename}",
-                    content_hash=content_hash,
-                    status=InvoiceStatus.PROCESSED,
-                )
-                session.add(invoice)
-
-                # Register hash
-                session.add(ProcessedFileHash(
-                    content_hash=content_hash,
-                    filename=filename,
-                    organization_id=org_id,
-                ))
-                session.commit()
-
-                # Reply with confirmation
-                supplier = invoice_data.get("supplier_name") or "Fournisseur"
-                amount = invoice_data.get("amount") or 0
-                _send_reply(sender_phone, f"✓ Facture reçue : {supplier} — {amount:.2f}€. Elle sera traitée par votre comptable.")
-
-            finally:
-                session.close()
+            _handle_message(message, raw_body, request)
 
     except Exception as e:
-        logger.error(f"[whatsapp] Error processing message: {e}")
+        logger.error(f"[whatsapp] Webhook error: {e}")
 
+    # Always return 200 to avoid Meta retries
     return {"status": "ok"}
 
 
+# ─── Phone-to-dossier mapping API ────────────────────────────────────────────
+
 @router.get("/mappings")
 def get_phone_mappings(current_user: dict = Depends(get_current_user)):
-    """Get WhatsApp phone-to-dossier mappings for the organization."""
+    """List WhatsApp phone-to-dossier mappings for the organization."""
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
@@ -208,14 +100,13 @@ def get_phone_mappings(current_user: dict = Depends(get_current_user)):
 
 @router.post("/mappings")
 def add_phone_mapping(payload: dict, current_user: dict = Depends(get_current_user)):
-    """Map a WhatsApp phone number to a client dossier.
-
+    """Map a client's WhatsApp phone number to their dossier.
     payload: {"phone": "33612345678", "client_file_id": 42}
     """
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
-        phone = payload.get("phone", "").strip().replace("+", "")
+        phone = _normalize_phone(payload.get("phone", ""))
         client_file_id = payload.get("client_file_id")
 
         if not phone or not client_file_id:
@@ -260,7 +151,7 @@ def remove_phone_mapping(phone: str, current_user: dict = Depends(get_current_us
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
-        key = f"wa_phone_{phone}"
+        key = f"wa_phone_{_normalize_phone(phone)}"
         setting = session.query(Settings).filter(
             Settings.organization_id == org_id,
             Settings.key == key,
@@ -277,54 +168,139 @@ def remove_phone_mapping(phone: str, current_user: dict = Depends(get_current_us
         session.close()
 
 
-# ─── Helpers ───────────────────────────────────────────────────────────────
+# ─── Internal logic ───────────────────────────────────────────────────────────
 
-def _download_media(media_id: str, filename: str) -> str:
-    """Download media from WhatsApp Cloud API."""
-    import requests
+def _handle_message(message: dict, raw_body: bytes, request: Request):
+    """Process a single incoming WhatsApp message."""
+    msg_type = message.get("type")
+    sender_phone = message.get("from", "")
+    msg_id = message.get("id", "")
 
-    if not WHATSAPP_API_TOKEN:
-        logger.error("[whatsapp] WHATSAPP_API_TOKEN not configured")
-        return ""
-
-    # Step 1: Get media URL
-    url = f"https://graph.facebook.com/v18.0/{media_id}"
-    headers = {"Authorization": f"Bearer {WHATSAPP_API_TOKEN}"}
-
+    session = db.get_session()
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
-        resp.raise_for_status()
-        media_url = resp.json().get("url")
+        # Step 1: Identify org from sender phone
+        mapping = _find_dossier_by_phone(session, sender_phone)
+        if not mapping:
+            logger.info(f"[whatsapp] Unknown sender {sender_phone}")
+            return
 
-        if not media_url:
-            return ""
+        org_id = mapping["organization_id"]
+        client_file_id = mapping["client_file_id"]
 
-        # Step 2: Download file
-        resp = requests.get(media_url, headers=headers, timeout=30)
-        resp.raise_for_status()
+        # Step 2: Load org credentials
+        creds = _get_org_credentials(session, org_id)
+        api_token = creds.get("whatsapp_token", "")
+        phone_number_id = creds.get("whatsapp_phone_number_id", "")
 
-        from src.utils.paths import INVOICES_DIR
-        os.makedirs(INVOICES_DIR, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
-        safe_filename = f"{timestamp}_{filename.replace(' ', '_')}"
-        file_path = os.path.join(INVOICES_DIR, safe_filename)
+        if not api_token:
+            logger.error(f"[whatsapp] Org {org_id} has no whatsapp_token configured")
+            return
 
-        with open(file_path, "wb") as f:
-            f.write(resp.content)
+        # Step 3: Verify signature
+        signature = request.headers.get("x-hub-signature-256", "")
+        app_secret = creds.get("whatsapp_app_secret", "")
+        if app_secret and not _verify_signature(raw_body, signature, app_secret):
+            logger.warning(f"[whatsapp] Invalid signature for org {org_id}")
+            return
 
-        return file_path
+        # Step 4: Only process images and documents
+        if msg_type not in ("image", "document"):
+            _send_reply(
+                sender_phone,
+                "Merci ! Envoyez vos factures en photo ou PDF pour un traitement automatique.",
+                api_token, phone_number_id
+            )
+            return
+
+        # Step 5: Extract media info
+        media = message.get(msg_type, {})
+        media_id = media.get("id")
+        if not media_id:
+            return
+
+        mime_type = media.get("mime_type", "")
+        filename = media.get("filename", f"wa_{msg_id}.{'pdf' if 'pdf' in mime_type else 'jpg'}")
+
+        # Step 6: Download media
+        file_path = _download_media(media_id, filename, api_token)
+        if not file_path:
+            _send_reply(sender_phone, "Erreur lors du telechargement. Reessayez.", api_token, phone_number_id)
+            return
+
+        # Step 7: Deduplication
+        content_hash = _compute_file_hash(file_path)
+        if session.query(ProcessedFileHash).filter(
+            ProcessedFileHash.content_hash == content_hash,
+            ProcessedFileHash.organization_id == org_id,
+        ).first():
+            _send_reply(sender_phone, "Ce document a deja ete traite.", api_token, phone_number_id)
+            return
+
+        # Step 8: Process invoice
+        from src.invoice_processor import InvoiceProcessor
+        from src.api.utils import create_or_update_invoice
+
+        processor = InvoiceProcessor()
+        invoice_data = processor.process_invoice(file_path)
+
+        if invoice_data.get("not_an_invoice"):
+            _send_reply(sender_phone, "Ce document ne semble pas etre une facture.", api_token, phone_number_id)
+            return
+
+        invoice = create_or_update_invoice(session, file_path, invoice_data, org_id)
+        invoice.client_file_id = client_file_id
+        invoice.content_hash = content_hash
+
+        # Register hash
+        session.add(ProcessedFileHash(
+            content_hash=content_hash,
+            filename=filename,
+            organization_id=org_id,
+        ))
+        session.commit()
+
+        # Step 9: Fire outbound webhook
+        from src.api.webhooks import fire_webhook
+        fire_webhook(org_id, "invoice.created", {
+            "invoice_id": invoice.id,
+            "invoice_number": invoice.invoice_number,
+            "amount": invoice.amount,
+            "supplier": invoice.supplier.name if invoice.supplier else None,
+            "source": "whatsapp",
+        })
+
+        # Step 10: Reply confirmation
+        supplier = invoice.supplier.name if invoice.supplier else "Fournisseur"
+        amount = invoice.amount or 0
+        _send_reply(
+            sender_phone,
+            f"Facture recue : {supplier} - {amount:.2f} EUR. Traitement en cours.",
+            api_token, phone_number_id
+        )
+
     except Exception as e:
-        logger.error(f"[whatsapp] Media download failed: {e}")
-        return ""
+        logger.error(f"[whatsapp] Error handling message: {e}")
+    finally:
+        session.close()
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _get_org_credentials(session, org_id: int) -> dict:
+    """Load WhatsApp credentials for an organization from Settings."""
+    keys = ["whatsapp_token", "whatsapp_phone_number_id", "whatsapp_app_secret"]
+    settings = session.query(Settings).filter(
+        Settings.organization_id == org_id,
+        Settings.key.in_(keys)
+    ).all()
+    return {s.key: s.value for s in settings}
 
 
 def _find_dossier_by_phone(session, phone: str) -> dict:
     """Find organization and client_file_id mapped to a phone number."""
-    # Normalize phone (remove + prefix)
-    phone_clean = phone.strip().replace("+", "")
-
-    # Search across all orgs for this phone mapping
+    phone_clean = _normalize_phone(phone)
     key = f"wa_phone_{phone_clean}"
+
     setting = session.query(Settings).filter(
         Settings.key == key,
         Settings.category == "whatsapp",
@@ -338,8 +314,83 @@ def _find_dossier_by_phone(session, phone: str) -> dict:
     return None
 
 
+def _verify_signature(payload: bytes, signature: str, app_secret: str) -> bool:
+    """Verify Meta webhook signature (x-hub-signature-256).
+    https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
+    """
+    if not signature:
+        return False
+    expected = hmac.new(app_secret.encode(), payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
+
+
+def _download_media(media_id: str, filename: str, api_token: str) -> str:
+    """Download media from WhatsApp Cloud API.
+    https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media
+    """
+    import requests
+
+    try:
+        headers = {"Authorization": f"Bearer {api_token}"}
+
+        # Get media URL
+        resp = requests.get(f"https://graph.facebook.com/v18.0/{media_id}", headers=headers, timeout=10)
+        resp.raise_for_status()
+        media_url = resp.json().get("url")
+        if not media_url:
+            return ""
+
+        # Download file content
+        resp = requests.get(media_url, headers=headers, timeout=30)
+        resp.raise_for_status()
+
+        # Save locally
+        from src.utils.paths import INVOICES_DIR
+        os.makedirs(INVOICES_DIR, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        safe_filename = f"{timestamp}_{filename.replace(' ', '_')}"
+        file_path = os.path.join(INVOICES_DIR, safe_filename)
+
+        with open(file_path, "wb") as f:
+            f.write(resp.content)
+        return file_path
+
+    except Exception as e:
+        logger.error(f"[whatsapp] Media download failed: {e}")
+        return ""
+
+
+def _send_reply(to_phone: str, text: str, api_token: str, phone_number_id: str):
+    """Send a text reply via WhatsApp Cloud API.
+    https://developers.facebook.com/docs/whatsapp/cloud-api/messages/text-messages
+    """
+    import requests
+
+    if not api_token or not phone_number_id:
+        logger.warning(f"[whatsapp] Cannot reply (not configured): {text}")
+        return
+
+    try:
+        requests.post(
+            f"https://graph.facebook.com/v18.0/{phone_number_id}/messages",
+            json={
+                "messaging_product": "whatsapp",
+                "to": to_phone,
+                "type": "text",
+                "text": {"body": text},
+            },
+            headers={
+                "Authorization": f"Bearer {api_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        logger.error(f"[whatsapp] Reply failed: {e}")
+
+
 def _compute_file_hash(file_path: str) -> str:
-    """Compute MD5 hash of a file for deduplication."""
+    """Compute MD5 hash for deduplication."""
     h = hashlib.md5()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -347,27 +398,6 @@ def _compute_file_hash(file_path: str) -> str:
     return h.hexdigest()
 
 
-def _send_reply(to_phone: str, text: str):
-    """Send a text reply via WhatsApp Cloud API."""
-    import requests
-
-    if not WHATSAPP_API_TOKEN or not WHATSAPP_PHONE_NUMBER_ID:
-        logger.warning(f"[whatsapp] Cannot reply (not configured): {text}")
-        return
-
-    url = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
-    headers = {
-        "Authorization": f"Bearer {WHATSAPP_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to_phone,
-        "type": "text",
-        "text": {"body": text},
-    }
-
-    try:
-        requests.post(url, json=payload, headers=headers, timeout=10)
-    except Exception as e:
-        logger.error(f"[whatsapp] Reply failed: {e}")
+def _normalize_phone(phone: str) -> str:
+    """Normalize phone number: strip spaces, +, dashes."""
+    return phone.strip().replace("+", "").replace(" ", "").replace("-", "")

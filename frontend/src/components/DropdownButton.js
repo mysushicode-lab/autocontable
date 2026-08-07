@@ -45,7 +45,7 @@ const DropdownButton = ({ label, value, options, onChange, isOpen, onToggle, but
             style={{ pointerEvents: 'auto' }}
           />
           <div 
-            className="fixed bg-white rounded-md shadow-xl border z-[100] p-2"
+            className="fixed bg-white rounded-md border z-[100] p-2"
             style={{ top: `${position.top}px`, left: `${Math.max(16, position.left)}px`, width, pointerEvents: 'auto' }}
           >
             {options.map((opt) => (

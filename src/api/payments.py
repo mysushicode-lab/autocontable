@@ -10,6 +10,8 @@ conflict with the `stripe` package import.
 """
 import os
 import logging
+
+import src.config  # noqa: F401
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -43,16 +45,16 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get('stripe-signature')
 
     if not STRIPE_WEBHOOK_SECRET:
-        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+        raise HTTPException(status_code=500, detail="Secret webhook non configuré")
 
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid payload")
+        raise HTTPException(status_code=400, detail="Payload invalide")
     except stripe.error.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid signature")
+        raise HTTPException(status_code=400, detail="Signature invalide")
 
     session = db.get_session()
     try:
@@ -65,15 +67,13 @@ async def stripe_webhook(request: Request):
             handle_subscription_active(data, session)
         elif event_type == 'customer.subscription.deleted':
             handle_subscription_deleted(data, session)
-        elif event_type == 'invoice.paid':
-            handle_invoice_paid(data, session)
 
         session.commit()
         return {"status": "success"}
     except Exception as e:
         session.rollback()
         logger.error(f"Stripe Webhook error: {e}")
-        raise HTTPException(status_code=500, detail="Webhook processing failed")
+        raise HTTPException(status_code=500, detail="Échec du traitement du webhook")
     finally:
         session.close()
 
@@ -127,12 +127,6 @@ def handle_subscription_deleted(subscription, session):
         org.is_trial_active = False
 
 
-def handle_invoice_paid(invoice, session):
-    """Handle invoice.paid event."""
-    # Placeholder for future notifications/logging
-    pass
-
-
 # ---------------------------------------------------------------------------
 # Checkout session
 # ---------------------------------------------------------------------------
@@ -150,7 +144,7 @@ async def verify_checkout_session(
     Reference: https://docs.stripe.com/api/checkout/sessions/retrieve
     """
     if not stripe.api_key:
-        raise HTTPException(status_code=500, detail="Stripe is not configured")
+        raise HTTPException(status_code=500, detail="Stripe n'est pas configuré")
 
     db_session = db.get_session()
     try:
@@ -160,13 +154,13 @@ async def verify_checkout_session(
         # Verify it belongs to this organization
         org_id_from_meta = checkout_session.get('metadata', {}).get('organization_id')
         if org_id_from_meta and int(org_id_from_meta) != current_user["organization_id"]:
-            raise HTTPException(status_code=403, detail="Session does not belong to this organization")
+            raise HTTPException(status_code=403, detail="Cette session n'appartient pas à cette organisation")
 
         org = db_session.query(Organization).filter(
             Organization.id == current_user["organization_id"]
         ).first()
         if not org:
-            raise HTTPException(status_code=404, detail="Organization not found")
+            raise HTTPException(status_code=404, detail="Organisation introuvable")
 
         # Save customer id if not yet set
         customer_id = checkout_session.get('customer')
@@ -196,12 +190,12 @@ async def verify_checkout_session(
 
     except stripe.error.StripeError as e:
         msg = getattr(e, 'user_message', None) or str(e)
-        raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe : {msg}")
     except HTTPException:
         raise
     except Exception:
         logger.exception("Unexpected error in verify_checkout_session")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
     finally:
         db_session.close()
 
@@ -216,7 +210,7 @@ async def create_checkout_session(
     Reference: https://docs.stripe.com/api/checkout/sessions/create
     """
     if not stripe.api_key:
-        raise HTTPException(status_code=500, detail="Stripe is not configured (STRIPE_SECRET_KEY missing)")
+        raise HTTPException(status_code=500, detail="Stripe n'est pas configuré (STRIPE_SECRET_KEY manquant)")
 
     PRICE_MAP = {
         "pro": os.getenv("STRIPE_PRICE_PRO", ""),
@@ -237,7 +231,7 @@ async def create_checkout_session(
         ).first()
 
         if not org:
-            raise HTTPException(status_code=404, detail="Organization not found")
+            raise HTTPException(status_code=404, detail="Organisation introuvable")
 
         # Create or reuse Stripe customer
         if org.stripe_customer_id:
@@ -277,12 +271,12 @@ async def create_checkout_session(
     except stripe.error.StripeError as e:
         msg = getattr(e, 'user_message', None) or str(e)
         logger.error(f"Stripe StripeError: {msg}")
-        raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe : {msg}")
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("Unexpected error in create_checkout_session")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
     finally:
         db_session.close()
 
@@ -304,7 +298,7 @@ async def create_portal_session(current_user: dict = Depends(get_current_user)):
         ).first()
 
         if not org or not org.stripe_customer_id:
-            raise HTTPException(status_code=404, detail="No Stripe customer found")
+            raise HTTPException(status_code=404, detail="Aucun client Stripe trouvé")
 
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         portal_session = stripe.billing_portal.Session.create(
@@ -314,7 +308,7 @@ async def create_portal_session(current_user: dict = Depends(get_current_user)):
         return {"url": portal_session.url}
     except stripe.error.StripeError as e:
         msg = getattr(e, 'user_message', None) or str(e)
-        raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe : {msg}")
     finally:
         db_session.close()
 
@@ -350,7 +344,7 @@ async def get_payment_methods(current_user: dict = Depends(get_current_user)):
         }
     except stripe.error.StripeError as e:
         msg = getattr(e, 'user_message', None) or str(e)
-        raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe : {msg}")
     finally:
         db_session.close()
 
@@ -389,6 +383,6 @@ async def get_invoices(current_user: dict = Depends(get_current_user)):
         }
     except stripe.error.StripeError as e:
         msg = getattr(e, 'user_message', None) or str(e)
-        raise HTTPException(status_code=400, detail=f"Stripe error: {msg}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe : {msg}")
     finally:
         db_session.close()

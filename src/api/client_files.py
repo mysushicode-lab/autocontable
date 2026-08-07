@@ -22,7 +22,7 @@ class ClientFileCreate(BaseModel):
     activity: Optional[str] = None
     contact_email: Optional[str] = None
     scheduler_email: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = None  # Accept 'phone' from frontend
     notes: Optional[str] = None
 
 
@@ -32,16 +32,9 @@ class ClientFileUpdate(BaseModel):
     activity: Optional[str] = None
     contact_email: Optional[str] = None
     scheduler_email: Optional[str] = None
-    phone: Optional[str] = None
+    phone: Optional[str] = None  # Accept 'phone' from frontend
     notes: Optional[str] = None
     is_active: Optional[bool] = None
-
-
-def _require_management_role(current_user: dict):
-    """Raise 403 if user is not admin or accountant."""
-    role = current_user.get("role", "")
-    if role not in ("admin", "accountant"):
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et comptables")
 
 
 def _serialize(cf: ClientFile) -> dict:
@@ -87,7 +80,15 @@ def list_client_files(current_user: dict = Depends(get_current_user)):
         session.close()
 
 
+def _require_management_role(current_user: dict):
+    """Raise 403 if user is not admin or accountant."""
+    role = current_user.get("role", "")
+    if role not in ("admin", "accountant"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et comptables")
+
+
 @router.post("/")
+@router.post("")
 def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(get_current_user)):
     """Create a new dossier client."""
     _require_management_role(current_user)
@@ -123,7 +124,7 @@ def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(g
             activity=payload.activity,
             contact_email=payload.contact_email,
             scheduler_email=payload.scheduler_email,
-            contact_phone=payload.phone,
+            contact_phone=payload.phone,  # Map 'phone' to 'contact_phone'
             notes=payload.notes,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -131,6 +132,25 @@ def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(g
         session.add(cf)
         session.commit()
         session.refresh(cf)
+
+        # Auto-create WhatsApp phone mapping if phone provided
+        if payload.phone:
+            from src.storage.models import Settings
+            phone_clean = payload.phone.strip().replace("+", "").replace(" ", "").replace("-", "")
+            key = f"wa_phone_{phone_clean}"
+            existing = session.query(Settings).filter(
+                Settings.organization_id == org_id,
+                Settings.key == key,
+                Settings.category == "whatsapp",
+            ).first()
+            if not existing:
+                session.add(Settings(
+                    organization_id=org_id,
+                    key=key,
+                    value=str(cf.id),
+                    category="whatsapp",
+                ))
+                session.commit()
 
         # Fire webhook
         fire_webhook(org_id, "dossier.created", {
@@ -228,6 +248,7 @@ def get_client_file(file_id: int, current_user: dict = Depends(get_current_user)
 
 @router.put("/{file_id}")
 def update_client_file(file_id: int, payload: ClientFileUpdate, current_user: dict = Depends(get_current_user)):
+    _require_management_role(current_user)
     if payload.siret:
         siret_check = validate_siret(payload.siret)
         if not siret_check["valid"]:
@@ -243,7 +264,11 @@ def update_client_file(file_id: int, payload: ClientFileUpdate, current_user: di
         if not cf:
             raise HTTPException(status_code=404, detail="Dossier introuvable")
         for field, value in payload.model_dump(exclude_none=True).items():
-            setattr(cf, field, value)
+            # Map 'phone' to 'contact_phone' in database
+            if field == 'phone':
+                setattr(cf, 'contact_phone', value)
+            else:
+                setattr(cf, field, value)
         cf.updated_at = datetime.utcnow()
         session.commit()
         session.refresh(cf)
@@ -265,6 +290,7 @@ def check_siret(siret: str, current_user: dict = Depends(get_current_user)):
 @router.delete("/{file_id}")
 def delete_client_file(file_id: int, current_user: dict = Depends(get_current_user)):
     """Hard-delete: removes dossier, all linked invoices (files + hashes + matches), then the dossier itself."""
+    _require_management_role(current_user)
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:

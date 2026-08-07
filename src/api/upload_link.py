@@ -7,6 +7,8 @@ import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from typing import Optional
 
+import src.config  # noqa: F401
+
 from src.storage.database import db
 from src.storage.models import ClientFile, Invoice
 from src.invoice_processor.invoice_processor import InvoiceProcessor

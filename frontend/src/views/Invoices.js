@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
+import { useNotifications, NOTIF_TYPES, NotificationHelpers } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -95,36 +95,46 @@ const Invoices = () => {
   }), [searchTerm, statusFilter, categoryFilter, parsedMonth, dateFrom, dateTo, amountMin, amountMax, supplierFilter, referenceFilter, activeClientFileId]);
 
   const { add: addNotif } = useNotifications();
-  const { data, isLoading } = useQuery(['invoices', queryFilters], () => fetchInvoices(queryFilters));
-  const { data: clientFilesData } = useQuery('client-files-summary', fetchClientFilesSummary);
+  const { data, isLoading } = useQuery({
+    queryKey: ['invoices', queryFilters],
+    queryFn: () => fetchInvoices(queryFilters)
+  });
+  const { data: clientFilesData } = useQuery({
+    queryKey: ['client-files-summary'],
+    queryFn: fetchClientFilesSummary
+  });
   const clientFiles = clientFilesData?.client_files || [];
   const invoices = data?.invoices || [];
   
   // Auto-set month filter to most recent invoice date on initial load
   useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
 
+  const invalidateInvoiceQueries = () => {
+    queryClient.invalidateQueries(['invoices']);
+    queryClient.invalidateQueries(['dashboard-invoices']);
+    queryClient.invalidateQueries(['dashboard-report']);
+  };
+
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteInvoice(id),
     onSuccess: () => {
-      queryClient.invalidateQueries('invoices');
-      queryClient.invalidateQueries('dashboard-invoices');
-      queryClient.invalidateQueries('dashboard-report');
+      invalidateInvoiceQueries();
+      const notif = NotificationHelpers.invoiceDeleted(deleteConfirm);
+      addNotif(notif.type, notif.title, notif.message);
       setDeleteConfirm(null);
-      addNotif(NOTIF_TYPES.SUCCESS, 'Facture supprimée', 'La facture a été supprimée avec succès.');
     },
     onError: () => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur', 'Impossible de supprimer la facture.');
+      addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', 'Impossible de supprimer la facture.');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => updateInvoice(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries('invoices');
-      queryClient.invalidateQueries('dashboard-invoices');
-      queryClient.invalidateQueries('dashboard-report');
+    onSuccess: (result) => {
+      invalidateInvoiceQueries();
+      const notif = NotificationHelpers.invoiceUpdated(editingInvoice);
+      addNotif(notif.type, notif.title, notif.message);
       setEditingInvoice(null);
-      addNotif(NOTIF_TYPES.SUCCESS, 'Facture mise à jour', 'Les modifications ont été enregistrées.');
     },
     onError: (error) => {
       let errorMessage = 'Impossible de modifier la facture.';
@@ -175,24 +185,19 @@ const Invoices = () => {
   };
 
   const uploadMutation = useMutation({
-    mutationFn: ({ file, clientFileId }) => uploadInvoiceFile(file, clientFileId),
+    mutationFn: ({ file, clientFileId, mode }) => uploadInvoiceFile(file, clientFileId),
     onMutate: () => {
       setIsImporting(true);
     },
     onSuccess: (result, variables) => {
-      queryClient.invalidateQueries('invoices');
-      queryClient.invalidateQueries('dashboard-invoices');
-      queryClient.invalidateQueries('dashboard-report');
+      invalidateInvoiceQueries();
       const inv = result.invoice;
       if (variables.mode === 'manual') {
         // Open edit panel immediately for manual entry
         handleEditOpen(inv);
       } else {
-        addNotif(
-          NOTIF_TYPES.SUCCESS,
-          'Facture importée',
-          `N° ${inv.invoice_number}${inv.supplier ? ` — ${inv.supplier}` : ''}${inv.amount ? ` — ${formatCurrency(inv.amount)}` : ''}`
-        );
+        const notif = NotificationHelpers.invoiceImported(inv);
+        addNotif(notif.type, notif.title, notif.message);
       }
     },
     onError: (error) => {

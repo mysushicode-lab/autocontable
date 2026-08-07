@@ -64,12 +64,12 @@ export const ColumnSettings = ({ columnVisibility, onToggle, onClose, position }
     <>
       <div className="fixed inset-0 z-50" onClick={onClose} />
       <div 
-        className="fixed bg-white rounded-md shadow-xl border z-[100] p-2 w-48"
+        className="fixed bg-white rounded-md border z-[100] p-2 w-48"
         style={{ top: `${position.top}px`, left: `${Math.max(16, position.left)}px` }}
       >
         <div className="space-y-1">
           {Object.entries(COLUMN_LABELS).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+            <label key={key} className="flex items-center gap-2 px-2 py-1  rounded cursor-pointer">
               <input
                 type="checkbox"
                 checked={columnVisibility[key]}
@@ -106,7 +106,7 @@ export const ColumnSettingsButton = ({ columnVisibility, onToggle }) => {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2 py-2 sm:px-3 border rounded-md hover:bg-gray-50 flex items-center gap-2 text-gray-700 text-sm"
+        className="px-2 py-2 sm:px-3 border rounded-md  flex items-center gap-2 text-gray-700 text-sm"
       >
         <Settings className="w-4 h-4" />
         <span className="hidden sm:inline">Colonnes</span>

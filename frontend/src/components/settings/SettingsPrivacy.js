@@ -58,7 +58,7 @@ export const SettingsPrivacy = ({ deleteAccount, logout, isAdmin }) => {
         <button
           onClick={handleExport}
           disabled={exporting}
-          className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-md transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-3 py-1.5 bg-white  text-gray-700 border border-gray-200 rounded-md transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting
             ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Préparation de l'export...</>
@@ -113,7 +113,7 @@ export const SettingsPrivacy = ({ deleteAccount, logout, isAdmin }) => {
 
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md p-6 max-w-md w-full mx-4 border border-gray-200 shadow-lg">
+          <div className="bg-white rounded-md p-6 max-w-md w-full mx-4 border border-gray-200">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Supprimer votre compte</h3>
             <p className="text-xs text-gray-500 mb-4">
               Cette action est irréversible. Tapez <span className="font-bold text-red-500">SUPPRIMER</span> pour confirmer.
@@ -129,7 +129,7 @@ export const SettingsPrivacy = ({ deleteAccount, logout, isAdmin }) => {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
-                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600  transition-colors"
               >Annuler</button>
               <button
                 onClick={handleDeleteAccount}

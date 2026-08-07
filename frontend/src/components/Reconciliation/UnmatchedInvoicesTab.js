@@ -18,7 +18,7 @@ const UnmatchedInvoicesTab = ({ filteredUnmatchedInvoices, openLinkFromInvoice, 
             >
               Lier manuellement
             </button>
-            <button onClick={handleBankImportClick} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-gray-50">
+            <button onClick={handleBankImportClick} className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 ">
               Import relevé
             </button>
           </div>

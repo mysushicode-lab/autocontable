@@ -16,6 +16,7 @@ services:
       - CORS_ORIGINS=https://factpilot.fr
       - GOOGLE_REDIRECT_URI=https://factpilot.fr/api/auth/google/callback
       - LINKEDIN_REDIRECT_URI=https://factpilot.fr/api/auth/linkedin/callback
+      - WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN:-factpilot-verify-token-2026}
     restart: always
 
   frontend:

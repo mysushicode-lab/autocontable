@@ -9,10 +9,8 @@ import hashlib
 from email.header import decode_header
 from datetime import datetime
 from typing import List, Dict, Optional
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 SUPPORTED_ATTACHMENT_EXTENSIONS = ('.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp')
 

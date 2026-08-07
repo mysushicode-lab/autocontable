@@ -17,7 +17,10 @@ const statusDot = (status) => {
 const DossierSwitcher = ({ open }) => {
   const { activeClientFile, selectClientFile, clearClientFile } = useClientFile();
   const router = useRouter();
-  const { data: dossiersData } = useQuery('client-files-summary', fetchClientFilesSummary);
+  const { data: dossiersData } = useQuery({
+    queryKey: ['client-files-summary'],
+    queryFn: fetchClientFilesSummary,
+  });
   const [expanded, setExpanded] = useState(false);
 
   const dossiers = dossiersData?.client_files || [];
@@ -42,30 +45,22 @@ const DossierSwitcher = ({ open }) => {
       </button>
 
       {open && expanded && (
-        <div className="mt-1 space-y-px pl-3 ml-3 border-l border-gray-200">
-          <p className="px-2 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Dossiers</p>
-
-          <div className="relative">
-            {!activeClientFile && <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-full" />}
-            <button
-              onClick={() => { clearClientFile(); setExpanded(false); router.push('/portfolio'); }}
-              className={`w-full flex items-center px-2 py-1.5 rounded-md text-left text-[13px] transition-colors ${
-                !activeClientFile ? 'text-gray-800 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-              }`}
-            >
-              <span className="flex-1 truncate">Tous les dossiers</span>
-            </button>
-          </div>
+        <div className="mt-1 ml-3 pl-3 space-y-0.5 relative">
+          {/* Ligne verticale */}
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-200" />
 
           {dossiers.map(cf => {
             const active = activeClientFile?.id === cf.id;
             return (
               <div key={cf.id} className="relative">
-                {active && <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-500 rounded-full" />}
+                {/* Barre bleue pour le dossier actif */}
+                {active && (
+                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-px h-full bg-blue-500" />
+                )}
                 <button
                   onClick={() => { selectClientFile(cf); setExpanded(false); }}
                   className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-[13px] transition-colors ${
-                    active ? 'text-gray-800 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                    active ? 'text-gray-800 font-medium bg-gray-50' : 'text-gray-500'
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -80,7 +75,7 @@ const DossierSwitcher = ({ open }) => {
 
           <button
             onClick={() => { setExpanded(false); router.push('/portfolio'); }}
-            className="w-full text-left text-[11px] text-gray-400 hover:text-gray-600 transition-colors px-2 py-1"
+            className="w-full text-left text-[11px] text-gray-400 transition-colors px-2 py-1.5 mt-1"
           >
             Gérer les dossiers →
           </button>

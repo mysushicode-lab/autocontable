@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useMutation } from '@tanstack/react-query';
 import { forgotPassword } from '../api';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { INPUT_CLASS } from '../utils/formHelpers';
 
 const ForgotPassword = () => {
   const router = useRouter();
@@ -60,7 +61,7 @@ const ForgotPassword = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`${INPUT_CLASS} pl-10 pr-4 py-2.5`}
                       placeholder="jean@exemple.fr"
                       required
                     />

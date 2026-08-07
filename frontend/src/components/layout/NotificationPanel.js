@@ -20,7 +20,7 @@ const timeAgo = (date) => {
 
 const NotificationPanel = ({ panelRef, notifications, unreadCount, markRead, markAllRead, remove, clearAll }) => {
   return (
-    <div className="absolute right-0 top-10 w-80 sm:w-96 bg-white rounded-xl shadow-lg border border-gray-100 z-50 flex flex-col max-h-[480px]">
+    <div className="absolute right-0 top-10 w-80 sm:w-96 bg-white rounded-xl border border-gray-100 z-50 flex flex-col max-h-[480px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>

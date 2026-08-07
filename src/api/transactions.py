@@ -26,7 +26,7 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
     allowed_extensions = {".csv", ".ofx", ".qfx", ".pdf"}
     extension = os.path.splitext(file.filename or "")[1].lower()
     if extension not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="Unsupported bank statement format")
+        raise HTTPException(status_code=400, detail="Format de relevé bancaire non supporté")
 
     saved_path = save_uploaded_file(file, BANK_UPLOAD_DIR)
     session = db.get_session()
@@ -40,7 +40,7 @@ async def import_bank_statement(file: UploadFile = File(...), current_user: dict
         transactions = importer.import_file(saved_path)
         
         if not transactions:
-            raise HTTPException(status_code=400, detail="No transactions found in file")
+            raise HTTPException(status_code=400, detail="Aucune transaction trouvée dans le fichier")
         
         # Determine the month from the first transaction
         first_tx_date = transactions[0].get("date") or datetime.utcnow()
@@ -177,7 +177,7 @@ def update_transaction(
             BankTransaction.organization_id == org_id
         ).first()
         if not transaction:
-            raise HTTPException(status_code=404, detail="Transaction not found")
+            raise HTTPException(status_code=404, detail="Transaction introuvable")
         transaction.amount = amount
         session.commit()
 
@@ -200,7 +200,7 @@ def delete_transaction(transaction_id: int, current_user: dict = Depends(get_cur
         ).first()
         
         if not transaction:
-            raise HTTPException(status_code=404, detail="Transaction not found")
+            raise HTTPException(status_code=404, detail="Transaction introuvable")
         
         # Find reconciliation matches that reference this transaction
         matches = session.query(ReconciliationMatch).filter(

@@ -1,5 +1,4 @@
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
 
 const OnboardingStep5 = ({
   organizationName,
@@ -7,30 +6,33 @@ const OnboardingStep5 = ({
   ingestionMethod,
   selectedIntegration
 }) => {
-  return (
-    <div className="text-center py-8">
-      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <CheckCircle className="w-10 h-10 text-green-600" />
-      </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">C'est prêt !</h2>
-      <p className="text-sm text-gray-500 mb-6">Votre espace est configuré et prêt à l'emploi</p>
+  const ingestionLabel = {
+    email: 'Email (IMAP)',
+    whatsapp: 'WhatsApp Business',
+    manual: 'Upload manuel',
+  }[ingestionMethod] || 'Non configuré';
 
-      <div className="bg-gray-50 rounded-lg p-4 text-left space-y-2 mb-6">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Cabinet :</span>
-          <span className="font-medium text-gray-900">{organizationName}</span>
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">C&apos;est prêt !</h2>
+      <p className="text-sm text-gray-500 mb-6">Votre espace est configuré et prêt à l&apos;emploi</p>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Cabinet</span>
+          <span className="text-sm font-medium text-gray-900">{organizationName || '—'}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Premier dossier :</span>
-          <span className="font-medium text-gray-900">{clientName}</span>
+        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Premier dossier</span>
+          <span className="text-sm font-medium text-gray-900">{clientName || '—'}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Ingestion :</span>
-          <span className="font-medium text-gray-900">{ingestionMethod === 'email' ? 'Email (IMAP)' : 'Upload manuel'}</span>
+        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-600">Ingestion</span>
+          <span className="text-sm font-medium text-gray-900">{ingestionLabel}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Connecteur :</span>
-          <span className="font-medium text-gray-900">{selectedIntegration || 'Non configuré'}</span>
+        <div className="flex items-center justify-between py-2">
+          <span className="text-sm text-gray-600">Connecteur</span>
+          <span className="text-sm font-medium text-gray-900">{selectedIntegration || 'Non configuré'}</span>
         </div>
       </div>
     </div>

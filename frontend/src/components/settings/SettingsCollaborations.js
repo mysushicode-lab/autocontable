@@ -70,7 +70,7 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
                   </div>
                 </form>
               ) : (
-                <div className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200 hover:border-gray-300 transition-colors">
+                <div className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200  transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs shrink-0">
                       {u.name?.charAt(0).toUpperCase() || u.username.charAt(0).toUpperCase()}
@@ -134,7 +134,7 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
                 {createUserMutation.isLoading ? 'Création...' : 'Créer le compte'}
               </button>
               <button type="button" onClick={() => { setShowAddUser(false); setNewUser({ username: '', password: '', name: '', email: '', role: 'accountant' }); }}
-                className="px-4 py-2 border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">Annuler</button>
+                className="px-4 py-2 border border-gray-200 rounded-md text-xs font-medium text-gray-600  transition-colors">Annuler</button>
             </div>
           </form>
         </div>
@@ -142,7 +142,7 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md p-6 max-w-md w-full mx-4 border border-gray-200 shadow-lg">
+          <div className="bg-white rounded-md p-6 max-w-md w-full mx-4 border border-gray-200">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Confirmer la suppression</h3>
             <p className="text-xs text-gray-500 mb-4">
               Pour supprimer <span className="font-medium text-gray-700">{userToDelete?.username}</span>, tapez son nom d'utilisateur :
@@ -151,7 +151,7 @@ export const SettingsCollaborations = ({ users, user, createUserMutation, delete
               className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 transition-colors mb-4" />
             <div className="flex gap-3 justify-end">
               <button onClick={() => { setShowDeleteConfirm(false); setUserToDelete(null); setConfirmText(''); }}
-                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">Annuler</button>
+                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-medium text-gray-600  transition-colors">Annuler</button>
               <button onClick={confirmDeleteUser} disabled={confirmText !== userToDelete?.username}
                 className="px-3 py-1.5 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Supprimer</button>
             </div>

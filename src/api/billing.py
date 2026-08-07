@@ -12,24 +12,24 @@ router = APIRouter()
 
 PRICING_TIERS = [
     {
-        "name": "starter", "price": 0, "max_dossiers": 2, "label": "Starter",
-        "stripe_price_id": None,
-        "features": ["upload_manual", "extraction_ia", "export_fec"],
+        "name": "starter", "price": 29.00, "max_dossiers": 1, "max_invoices_per_month": 50, "label": "Starter",
+        "stripe_price_id": os.getenv("STRIPE_PRICE_STARTER", ""),
+        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation"],
     },
     {
-        "name": "pro", "price": 89.00, "max_dossiers": 10, "overage_price": 7.00, "label": "Pro",
+        "name": "pro", "price": 79.00, "max_dossiers": 5, "max_invoices_per_month": 200, "label": "Pro",
         "stripe_price_id": os.getenv("STRIPE_PRICE_PRO", ""),
-        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "integrations", "whatsapp", "portal_client", "analytics"],
+        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics"],
     },
     {
-        "name": "cabinet", "price": 199.00, "max_dossiers": 40, "overage_price": 5.00, "label": "Cabinet",
+        "name": "cabinet", "price": 199.00, "max_dossiers": None, "max_invoices_per_month": 1000, "label": "Cabinet",
         "stripe_price_id": os.getenv("STRIPE_PRICE_CABINET", ""),
-        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "integrations", "whatsapp", "portal_client", "analytics", "audit_log", "custom_pcg", "webhooks", "auto_push"],
+        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics", "permissions", "audit_log", "api_access"],
     },
     {
-        "name": "reseau", "price": 399.00, "max_dossiers": 100, "overage_price": 4.00, "label": "Réseau",
+        "name": "reseau", "price": None, "max_dossiers": None, "max_invoices_per_month": None, "label": "Réseau",
         "stripe_price_id": os.getenv("STRIPE_PRICE_RESEAU", ""),
-        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "integrations", "whatsapp", "portal_client", "analytics", "audit_log", "custom_pcg", "webhooks", "auto_push", "permissions", "api_access"],
+        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics", "permissions", "audit_log", "api_access", "webhooks", "custom_pcg"],
     },
 ]
 
@@ -48,14 +48,26 @@ def get_org_plan(session, org_id: int) -> dict:
 def calculate_monthly_cost(dossier_count: int, plan_name: str) -> dict:
     """Calculate monthly cost based on plan and active dossiers."""
     tier = next((t for t in PRICING_TIERS if t["name"] == plan_name), PRICING_TIERS[0])
-    overage = max(0, dossier_count - tier["max_dossiers"])
-    overage_cost = overage * tier.get("overage_price", 0)
-    total = tier["price"] + overage_cost
+
+    # Handle unlimited plans (None = illimité)
+    max_dossiers = tier.get("max_dossiers")
+    if max_dossiers is None:
+        overage = 0
+        overage_cost = 0
+    else:
+        overage = max(0, dossier_count - max_dossiers)
+        overage_cost = overage * tier.get("overage_price", 0)
+
+    # Handle custom pricing (None = sur devis)
+    base_price = tier.get("price")
+    total = base_price + overage_cost if base_price is not None else None
+
     return {
         "plan": tier["name"],
         "plan_label": tier["label"],
-        "base_price": tier["price"],
-        "max_dossiers": tier["max_dossiers"],
+        "base_price": base_price,
+        "max_dossiers": max_dossiers,
+        "max_invoices_per_month": tier.get("max_invoices_per_month"),
         "active_dossiers": dossier_count,
         "overage_dossiers": overage,
         "overage_price_per_dossier": tier.get("overage_price", 0),
@@ -96,7 +108,14 @@ def get_billing_usage(current_user: dict = Depends(get_current_user)):
             ClientFile.is_active == True
         ).count()
 
-        return calculate_monthly_cost(active_dossiers, plan_name)
+        result = calculate_monthly_cost(active_dossiers, plan_name)
+
+        # Add invoice quota usage (TODO: add migration for these columns)
+        result["invoices_processed_this_month"] = getattr(org, "invoices_processed_this_month", 0) or 0
+        quota_reset_date = getattr(org, "monthly_quota_reset_date", None)
+        result["quota_reset_date"] = quota_reset_date.isoformat() if quota_reset_date else None
+
+        return result
     finally:
         session.close()
 
@@ -104,7 +123,11 @@ def get_billing_usage(current_user: dict = Depends(get_current_user)):
 @router.get("/pricing")
 def get_pricing():
     """Get pricing tiers (public)."""
-    return {"tiers": PRICING_TIERS, "currency": "EUR"}
+    public_tiers = [
+        {k: v for k, v in tier.items() if k != "stripe_price_id"}
+        for tier in PRICING_TIERS
+    ]
+    return {"tiers": public_tiers, "currency": "EUR"}
 
 
 @router.get("/can-access/{feature}")

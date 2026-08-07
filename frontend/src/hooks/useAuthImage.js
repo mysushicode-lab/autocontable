@@ -9,11 +9,19 @@ export const useAuthImage = (url) => {
       return;
     }
 
+    const isExternal = url.startsWith('http://') || url.startsWith('https://');
+    const isInternalProtected = !isExternal;
+
+    if (isExternal) {
+      setSrc(url);
+      return;
+    }
+
     let objectUrl = null;
     const token = localStorage.getItem('auth_token');
 
     fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token && isInternalProtected ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((res) => {
         if (!res.ok) throw new Error('image unavailable');

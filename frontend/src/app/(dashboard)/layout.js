@@ -8,14 +8,14 @@ import { ClientFileProvider } from '@/context/ClientFileContext';
 
 export default function DashboardLayout({ children }) {
   return (
-    <ClientFileProvider>
-      <NotificationProvider>
-        <FilterProvider>
-          <ProtectedRoute>
+    <ProtectedRoute>
+      <ClientFileProvider>
+        <NotificationProvider>
+          <FilterProvider>
             <Layout>{children}</Layout>
-          </ProtectedRoute>
-        </FilterProvider>
-      </NotificationProvider>
-    </ClientFileProvider>
+          </FilterProvider>
+        </NotificationProvider>
+      </ClientFileProvider>
+    </ProtectedRoute>
   );
 }

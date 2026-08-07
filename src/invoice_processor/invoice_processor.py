@@ -7,10 +7,8 @@ from .pdf_parser import PDFParser
 from .ocr_engine import OCREngine
 from .ai_extractor import AIInvoiceExtractor
 from .facturx_extractor import extract_from_facturx
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+import src.config  # noqa: F401
 
 
 class InvoiceProcessor:

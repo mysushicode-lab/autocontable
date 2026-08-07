@@ -1,14 +1,13 @@
 """Reconciliation endpoints"""
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional
-from datetime import datetime
 
 from src.storage.database import db
 from src.storage.models import Invoice, BankTransaction, ReconciliationMatch, InvoiceStatus
 from src.reconciliation.reconciliation_engine import ReconciliationEngine
 from src.api.utils import serialize_match, get_month_date_range
 from src.api.schemas import ManualLinkPayload
-from src.api.auth import get_current_user, check_trial_active
+from src.api.auth import get_current_user
 from src.api.audit import log_action
 from src.api.webhooks import fire_webhook
 from src.api.billing import require_feature
@@ -56,7 +55,7 @@ def reject_match(match_id: int, current_user: dict = Depends(get_current_user), 
             ReconciliationMatch.organization_id == current_user["organization_id"]
         ).first()
         if not match:
-            raise HTTPException(status_code=404, detail="Match not found")
+            raise HTTPException(status_code=404, detail="Rapprochement introuvable")
 
         match.status = "rejected"
         match.matched_by = "user"
@@ -105,9 +104,9 @@ def create_manual_link(payload: ManualLinkPayload, current_user: dict = Depends(
         ).first()
 
         if not invoice:
-            raise HTTPException(status_code=404, detail="Invoice not found")
+            raise HTTPException(status_code=404, detail="Facture introuvable")
         if not transaction:
-            raise HTTPException(status_code=404, detail="Bank transaction not found")
+            raise HTTPException(status_code=404, detail="Transaction bancaire introuvable")
 
         # Allow multiple invoices to be linked to the same transaction
         # Removed transaction_already_linked check
@@ -336,7 +335,7 @@ def batch_validate_matches(payload: dict, current_user: dict = Depends(get_curre
         match_ids = payload.get("match_ids", [])
         action = payload.get("action", "confirm")
         if action not in ("confirm", "reject"):
-            raise HTTPException(400, "action must be 'confirm' or 'reject'")
+            raise HTTPException(400, "L'action doit être 'confirm' ou 'reject'")
 
         updated = 0
         for mid in match_ids:

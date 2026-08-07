@@ -16,7 +16,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm text-gray-500">{title}</span>
         <div className={`p-2 rounded-lg ${colorClasses[color] || colorClasses.blue}`}>
@@ -56,15 +56,15 @@ const ClientPortal = () => {
   // For accountants, they can pass client_file_id (future enhancement)
   const clientFileId = user?.role === 'client' ? null : null;
 
-  const { data: summary, isLoading: summaryLoading } = useQuery(
-    ['client-summary', clientFileId],
-    () => fetchClientSummary(clientFileId)
-  );
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: ['client-summary', clientFileId],
+    queryFn: () => fetchClientSummary(clientFileId),
+  });
 
-  const { data: invoicesData, isLoading: invoicesLoading } = useQuery(
-    ['client-invoices', clientFileId, currentPage],
-    () => fetchClientInvoices(clientFileId, currentPage)
-  );
+  const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
+    queryKey: ['client-invoices', clientFileId, currentPage],
+    queryFn: () => fetchClientInvoices(clientFileId, currentPage),
+  });
 
   const handleFiles = async (files) => {
     setUploading(true);
@@ -129,13 +129,13 @@ const ClientPortal = () => {
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+            dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 border-gray-300'
           }`}
         >
           <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
           <p className="text-sm text-gray-600 mb-1">Glissez vos factures ici</p>
           <p className="text-xs text-gray-400 mb-3">PDF, PNG, JPG — max 10 Mo</p>
-          <label className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-xs font-medium cursor-pointer hover:bg-gray-800">
+          <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium cursor-pointer bg-gray-800">
             <Camera className="w-3.5 h-3.5" />
             {uploading ? 'Import en cours...' : 'Scanner ou choisir un fichier'}
             <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileInput} className="hidden" disabled={uploading} />
@@ -186,7 +186,7 @@ const ClientPortal = () => {
       </div>
 
       {/* Recent Invoices */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-base font-semibold text-gray-900">Vos Factures</h2>
         </div>

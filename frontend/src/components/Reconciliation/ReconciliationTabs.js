@@ -1,9 +1,10 @@
 import React from 'react';
 import { Search } from 'lucide-react';
+import { INPUT_CLASS } from '../../utils/formHelpers';
 
 const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm, matches, unmatchedInvoices, bankOnly, allTransactions, pendingMatches, children }) => {
   return (
-    <div className="rounded-md border border-gray-100 bg-white shadow-sm">
+    <div className="rounded-md border border-gray-100 bg-white">
       <div className="border-b overflow-x-auto">
         <div className="flex min-w-max">
           <button
@@ -72,7 +73,7 @@ const ReconciliationTabs = ({ activeTab, onTabChange, searchTerm, setSearchTerm,
             placeholder="Rechercher par montant ou description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`${INPUT_CLASS} pl-10`}
           />
         </div>
       </div>
