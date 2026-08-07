@@ -6,12 +6,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
   Briefcase, Plus, CheckCircle, AlertTriangle, AlertCircle,
-  Pencil, Trash2, ChevronRight, Search, X, Building2, Check, Activity, Users
+  Pencil, Trash2, ChevronRight, Search, X, Building2, Check, Activity, Users, LogOut
 } from 'lucide-react';
 import {
   fetchClientFilesSummary, createClientFile, updateClientFile, deleteClientFile
 } from '../api';
 import { useClientFile } from '../context/ClientFileContext';
+import { useAuth } from '../context/AuthContext';
 import HelpTooltip from '../components/ui/HelpTooltip';
 import { formatCurrency } from '../utils/formatHelpers';
 import { INPUT_CLASS } from '../utils/formHelpers';
@@ -34,13 +35,16 @@ const Portfolio = () => {
   const queryClient = useQueryClient();
   const { selectClientFile } = useClientFile();
   const { add: addNotification } = useNotifications();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingFile, setEditingFile] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [archiveConfirm, setArchiveConfirm] = useState(null);
+  const [quitConfirm, setQuitConfirm] = useState(null);
   const [siretValidation, setSiretValidation] = useState({ valid: false, error: null });
   const [showPermissionsModal, setShowPermissionsModal] = useState(null);
+  const isClient = user?.role === 'client';
 
   const STATUS_ORDER = { alert: 0, warning: 1, empty: 2, ok: 3 };
   const { data, isLoading } = useQuery({
@@ -80,6 +84,28 @@ const Portfolio = () => {
   const archiveMutation = useMutation({
     mutationFn: deleteClientFile,
     onSuccess: () => queryClient.invalidateQueries('client-files-summary')
+  });
+
+  const quitMutation = useMutation({
+    mutationFn: (fileId) => {
+      const token = localStorage.getItem('auth_token');
+      return fetch(`/api/permissions/revoke`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ client_file_id: fileId }),
+      }).then(r => r.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('client-files-summary');
+      addNotification(NOTIF_TYPES.SUCCESS, 'Accès révoqué', 'Vous avez quitté ce dossier.');
+      setQuitConfirm(null);
+    },
+    onError: (err) => {
+      addNotification(NOTIF_TYPES.ERROR, 'Erreur', 'Impossible de quitter le dossier.');
+    }
   });
 
   const openDossier = (file) => {
@@ -299,27 +325,41 @@ const Portfolio = () => {
                     </p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button
-                      onClick={e => { e.stopPropagation(); setShowPermissionsModal(file); }}
-                      className="p-2 bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors"
-                      title="Gérer l'accès (PME/Clients)"
-                    >
-                      <Users className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={e => startEdit(file, e)}
-                      className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg border border-gray-200 transition-colors"
-                      title="Modifier"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); setArchiveConfirm(file); }}
-                      className="p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg border border-gray-200 hover:border-red-200 transition-colors"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {isClient ? (
+                      // PME: Only "Quit" button
+                      <button
+                        onClick={e => { e.stopPropagation(); setQuitConfirm(file); }}
+                        className="p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg border border-gray-200 hover:border-red-200 transition-colors"
+                        title="Quitter ce dossier"
+                      >
+                        <LogOut className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      // Admin/Comptable: All 3 buttons
+                      <>
+                        <button
+                          onClick={e => { e.stopPropagation(); setShowPermissionsModal(file); }}
+                          className="p-2 bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors"
+                          title="Gérer l'accès (PME/Clients)"
+                        >
+                          <Users className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={e => startEdit(file, e)}
+                          className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg border border-gray-200 transition-colors"
+                          title="Modifier"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setArchiveConfirm(file); }}
+                          className="p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg border border-gray-200 hover:border-red-200 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -336,6 +376,17 @@ const Portfolio = () => {
         onConfirm={() => { archiveMutation.mutate(archiveConfirm.id); setArchiveConfirm(null); }}
         onCancel={() => setArchiveConfirm(null)}
         loading={archiveMutation.isLoading}
+      />
+
+      <ConfirmationModal
+        show={!!quitConfirm}
+        title="Quitter ce dossier ?"
+        message={quitConfirm ? `Vous allez perdre l'accès au dossier "${quitConfirm.name}". Cette action ne peut pas être annulée.` : ''}
+        confirmLabel="Quitter définitivement"
+        onConfirm={() => { quitMutation.mutate(quitConfirm.id); setQuitConfirm(null); }}
+        onCancel={() => setQuitConfirm(null)}
+        loading={quitMutation.isLoading}
+        isDangerous={true}
       />
 
       {/* Create / Edit modal */}
