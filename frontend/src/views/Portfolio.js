@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
   Briefcase, Plus, CheckCircle, AlertTriangle, AlertCircle,
-  Pencil, Trash2, ChevronRight, Search, X, Building2, Check, Activity
+  Pencil, Trash2, ChevronRight, Search, X, Building2, Check, Activity, Users
 } from 'lucide-react';
 import {
   fetchClientFilesSummary, createClientFile, updateClientFile, deleteClientFile
@@ -18,6 +18,7 @@ import { INPUT_CLASS } from '../utils/formHelpers';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { validateSiret } from '../utils/siretValidation';
 import { useNotifications, NOTIF_TYPES } from '../context/NotificationContext';
+import PermissionsModal from '../components/PermissionsModal';
 
 const STATUS_CONFIG = {
   ok:      { label: 'À jour',          color: 'text-green-600',  bg: 'bg-green-50',  dot: 'bg-green-500',  Icon: CheckCircle },
@@ -39,6 +40,7 @@ const Portfolio = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [archiveConfirm, setArchiveConfirm] = useState(null);
   const [siretValidation, setSiretValidation] = useState({ valid: false, error: null });
+  const [showPermissionsModal, setShowPermissionsModal] = useState(null);
 
   const STATUS_ORDER = { alert: 0, warning: 1, empty: 2, ok: 3 };
   const { data, isLoading } = useQuery({
@@ -298,6 +300,13 @@ const Portfolio = () => {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button
+                      onClick={e => { e.stopPropagation(); setShowPermissionsModal(file); }}
+                      className="p-2 bg-gray-100 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors"
+                      title="Gérer l'accès (PME/Clients)"
+                    >
+                      <Users className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={e => startEdit(file, e)}
                       className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg border border-gray-200 transition-colors"
                       title="Modifier"
@@ -464,6 +473,15 @@ const Portfolio = () => {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Permissions Modal */}
+      {showPermissionsModal && (
+        <PermissionsModal
+          clientFileId={showPermissionsModal.id}
+          clientFileName={showPermissionsModal.name}
+          onClose={() => setShowPermissionsModal(null)}
+        />
       )}
     </div>
   );
