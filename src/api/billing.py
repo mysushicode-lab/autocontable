@@ -24,7 +24,7 @@ PRICING_TIERS = [
     {
         "name": "cabinet", "price": 199.00, "max_dossiers": None, "max_invoices_per_month": 1000, "label": "Cabinet",
         "stripe_price_id": os.getenv("STRIPE_PRICE_CABINET", ""),
-        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics", "permissions", "audit_log", "api_access"],
+        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics", "permissions", "audit_log", "api_access", "auto_push"],
     },
     {
         "name": "reseau", "price": None, "max_dossiers": None, "max_invoices_per_month": None, "label": "Réseau",
