@@ -126,7 +126,12 @@
       "Bash(git commit -m 'docs: add comprehensive PME invitation system documentation *)",
       "Bash(python -m py_compile src/api/oauth.py src/api/auth.py src/api/permissions.py)",
       "Bash(git commit -m 'docs: add comprehensive PME/Client UI access guide *)",
-      "Bash(git commit -m 'fix\\(pme-access\\): redirect clients to /portal instead of /portfolio *)"
+      "Bash(git commit -m 'fix\\(pme-access\\): redirect clients to /portal instead of /portfolio *)",
+      "Bash(git commit -m 'docs: add complete implementation summary *)",
+      "Bash(git commit -m 'docs: add quick French guide - PME UI access *)",
+      "Bash(git commit -m 'docs: final summary - PME invitation system complete *)",
+      "Bash(python -m py_compile src/api/client_portal.py)",
+      "Bash(git commit -m 'fix+sec: enforce write permission check for PME uploads *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",

@@ -28,6 +28,41 @@ def _get_client_file_id(current_user: dict, session):
     return None  # Accountants use the activeClientFileId from frontend
 
 
+def _check_write_permission(current_user: dict, session) -> bool:
+    """Check if current user has write permission (not just read_only).
+
+    Returns True if user can write, raises 403 if read_only.
+    """
+    role = current_user.get("role")
+    user_id = current_user.get("id")
+
+    # Admins and accountants always have write access
+    if role in ("admin", "accountant"):
+        return True
+
+    # Clients must check DossierPermission
+    if role == "client":
+        user = session.query(User).get(user_id)
+        if not user or not user.client_file_id:
+            raise HTTPException(403, "Aucun dossier associé à votre compte")
+
+        from src.storage.models import DossierPermission
+        perm = session.query(DossierPermission).filter(
+            DossierPermission.user_id == user_id,
+            DossierPermission.client_file_id == user.client_file_id
+        ).first()
+
+        if not perm:
+            raise HTTPException(403, "Vous n'avez pas accès à ce dossier")
+
+        if perm.permission_level == "read_only":
+            raise HTTPException(403, "Vous avez accès en lecture seule. Contact l'administrateur pour modifier.")
+
+        return True
+
+    raise HTTPException(403, "Accès refusé")
+
+
 @router.get("/summary")
 def get_client_summary(client_file_id: int = None, current_user: dict = Depends(get_current_user)):
     """Get a simplified summary for the client portal."""
@@ -162,6 +197,7 @@ async def portal_upload_invoice(
     """Allow client users to upload invoices from their portal.
 
     Only users with role 'client' and an assigned client_file_id can use this.
+    Clients must have write permission (not read_only).
     Processes the file through InvoiceProcessor like normal uploads.
     """
     role = current_user.get("role", "")
@@ -171,6 +207,13 @@ async def portal_upload_invoice(
     # Accountants and admins can also upload via portal if they have context
     if role == "client" and not client_file_id:
         raise HTTPException(400, "Aucun dossier associé à votre compte")
+
+    # Check write permission (blocks read_only users)
+    session = db.get_session()
+    try:
+        _check_write_permission(current_user, session)
+    finally:
+        session.close()
 
     # Validate file
     if not file.filename:
