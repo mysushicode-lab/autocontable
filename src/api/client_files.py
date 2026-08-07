@@ -21,6 +21,8 @@ class ClientFileCreate(BaseModel):
     siret: Optional[str] = None
     activity: Optional[str] = None
     contact_email: Optional[str] = None
+    scheduler_email: Optional[str] = None
+    phone: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -29,8 +31,17 @@ class ClientFileUpdate(BaseModel):
     siret: Optional[str] = None
     activity: Optional[str] = None
     contact_email: Optional[str] = None
+    scheduler_email: Optional[str] = None
+    phone: Optional[str] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
+
+
+def _require_management_role(current_user: dict):
+    """Raise 403 if user is not admin or accountant."""
+    role = current_user.get("role", "")
+    if role not in ("admin", "accountant"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs et comptables")
 
 
 def _serialize(cf: ClientFile) -> dict:
@@ -40,6 +51,8 @@ def _serialize(cf: ClientFile) -> dict:
         "siret": cf.siret,
         "activity": cf.activity,
         "contact_email": cf.contact_email,
+        "scheduler_email": cf.scheduler_email,
+        "contact_phone": cf.contact_phone,
         "notes": cf.notes,
         "is_active": cf.is_active,
         "created_at": cf.created_at.isoformat() if cf.created_at else None,
@@ -77,6 +90,7 @@ def list_client_files(current_user: dict = Depends(get_current_user)):
 @router.post("/")
 def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(get_current_user)):
     """Create a new dossier client."""
+    _require_management_role(current_user)
     if payload.siret:
         siret_check = validate_siret(payload.siret)
         if not siret_check["valid"]:
@@ -91,21 +105,25 @@ def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(g
         session.query(Organization).filter(Organization.id == org_id).with_for_update().first()
 
         plan = get_org_plan(session, org_id)
-        current_count = session.query(ClientFile).filter(
-            ClientFile.organization_id == org_id,
-            ClientFile.is_active == True
-        ).count()
-        if current_count >= plan["max_dossiers"]:
-            raise HTTPException(
-                403,
-                f"Limite de {plan['max_dossiers']} dossiers atteinte pour le plan {plan['label']}. Passez au plan supérieur."
-            )
+        max_dossiers = plan["max_dossiers"]
+        if max_dossiers is not None:
+            current_count = session.query(ClientFile).filter(
+                ClientFile.organization_id == org_id,
+                ClientFile.is_active == True
+            ).count()
+            if current_count >= max_dossiers:
+                raise HTTPException(
+                    403,
+                    f"Limite de {max_dossiers} dossiers atteinte pour le plan {plan['label']}. Passez au plan supérieur."
+                )
         cf = ClientFile(
             organization_id=org_id,
             name=payload.name,
             siret=payload.siret,
             activity=payload.activity,
             contact_email=payload.contact_email,
+            scheduler_email=payload.scheduler_email,
+            contact_phone=payload.phone,
             notes=payload.notes,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
