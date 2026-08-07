@@ -59,8 +59,82 @@ def _ensure_oauth_registered():
         logger.warning("LinkedIn OAuth NOT configured: LINKEDIN_CLIENT_ID or LINKEDIN_CLIENT_SECRET missing")
 
 
-def _get_or_create_user_from_oauth(email: str, name: str, provider: str, profile_photo: str = None):
-    """Get existing user or create new one from OAuth data"""
+def _get_or_create_user_from_oauth(email: str, name: str, provider: str, profile_photo: str = None, organization_id: int = None):
+    """Get existing user or create new one from OAuth data.
+
+    If organization_id provided (invitation flow), add to that org as CLIENT.
+    Otherwise creates new org as ADMIN (standard signup flow).
+    Returns tuple (user_dict, org_id) where user_dict contains serializable user data.
+    """
+    session = db.get_session()
+    try:
+        user = session.query(User).filter(User.email == email).first()
+
+        if user:
+            if profile_photo and not user.profile_photo:
+                user.profile_photo = profile_photo
+                session.commit()
+            return {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'username': user.username,
+                'organization_id': user.organization_id,
+                'role': user.role
+            }, user.organization_id
+
+        # If joining via invitation, use provided org_id. Otherwise create new org.
+        if organization_id:
+            role = UserRole.CLIENT
+            org_id = organization_id
+        else:
+            trial_start = datetime.utcnow()
+            trial_end = trial_start + timedelta(days=int(os.getenv("TRIAL_PERIOD_DAYS", 7)))
+            org = Organization(
+                name=name or email.split('@')[0],
+                plan_type='starter',
+                trial_start_date=trial_start,
+                trial_end_date=trial_end,
+                is_trial_active=True
+            )
+            session.add(org)
+            session.flush()
+            org_id = org.id
+            role = UserRole.ADMIN
+            # Create default settings for new org
+            from src.utils.defaults import create_default_settings
+            create_default_settings(session, org_id, company_name=name)
+
+        # Create user
+        username = email.split('@')[0] + '_' + secrets.token_hex(3)  # Ensure unique username
+        user = User(
+            username=username,
+            email=email,
+            name=name or email,
+            profile_photo=profile_photo,
+            role=role,
+            organization_id=org_id,
+        )
+        session.add(user)
+        session.flush()
+        session.commit()
+        return {
+            'id': user.id,
+            'email': user.email,
+            'name': user.name,
+            'username': user.username,
+            'organization_id': user.organization_id,
+            'role': user.role
+        }, org_id
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        if session:
+            session.close()
+
+def _get_or_create_user_from_oauth_legacy(email: str, name: str, provider: str, profile_photo: str = None):
+    """Legacy version for standard OAuth signup (creates new org)"""
     session = db.get_session()
     try:
         user = session.query(User).filter(User.email == email).first()
@@ -145,18 +219,21 @@ async def google_callback(request: Request):
         if not email:
             raise HTTPException(status_code=400, detail="Email non fourni par Google")
 
-        user, session = _get_or_create_user_from_oauth(email, name, 'google', picture)
+        user_data, org_id = _get_or_create_user_from_oauth(email, name, 'google', picture)
 
-        token_value = _create_user_token(session, user.id)
-        role = 'client' if user.role == UserRole.CLIENT else 'admin'
-        session.commit()
-        session.close()
+        session = db.get_session()
+        try:
+            token_value = _create_user_token(session, user_data['id'])
+            role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
+            session.close()
 
-        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-        return RedirectResponse(
-            url=f"{frontend_url}/oauth-callback#token={token_value}&role={role}",
-            status_code=302
-        )
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback#token={token_value}&role={role}",
+                status_code=302
+            )
+        finally:
+            session.close()
 
     except Exception as e:
         logger.error(f"Google OAuth callback error: {e}", exc_info=True)
@@ -196,23 +273,216 @@ async def linkedin_callback(request: Request):
         if not email:
             raise HTTPException(status_code=400, detail="Email non fourni par LinkedIn")
 
-        user, session = _get_or_create_user_from_oauth(email, name, 'linkedin', picture)
+        user_data, org_id = _get_or_create_user_from_oauth(email, name, 'linkedin', picture)
 
-        token_value = _create_user_token(session, user.id)
-        role = 'client' if user.role == UserRole.CLIENT else 'admin'
-        session.commit()
-        session.close()
+        session = db.get_session()
+        try:
+            token_value = _create_user_token(session, user_data['id'])
+            role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
+            session.close()
 
-        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-        return RedirectResponse(
-            url=f"{frontend_url}/oauth-callback#token={token_value}&role={role}",
-            status_code=302
-        )
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback#token={token_value}&role={role}",
+                status_code=302
+            )
+        finally:
+            session.close()
 
     except Exception as e:
         logger.error(f"LinkedIn OAuth callback error: {e}", exc_info=True)
         frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
         return RedirectResponse(
             url=f"{frontend_url}/login?error=oauth_failed",
+            status_code=302
+        )
+
+
+@router.get("/auth/google-invitation")
+async def google_login_invitation(request: Request):
+    """Redirect to Google OAuth for invitation flow (PME joining via token)"""
+    _ensure_oauth_registered()
+    token = request.query_params.get('token')
+    if not token:
+        raise HTTPException(status_code=400, detail="Token d'invitation manquant")
+
+    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI')
+    if not redirect_uri:
+        raise HTTPException(status_code=500, detail="OAuth Google non configuré")
+
+    # Store token in session for callback
+    request.session['invitation_token'] = token
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/auth/google-callback-invitation")
+async def google_callback_invitation(request: Request):
+    """Handle Google OAuth callback for invitation flow"""
+    _ensure_oauth_registered()
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get('userinfo')
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Impossible de récupérer les infos depuis Google")
+
+        email = user_info.get('email')
+        name = user_info.get('name')
+        picture = user_info.get('picture')
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email non fourni par Google")
+
+        # Get invitation from session
+        invitation_token = request.session.get('invitation_token')
+        if not invitation_token:
+            raise HTTPException(status_code=400, detail="Token d'invitation manquant en session")
+
+        # Validate invitation token
+        session = db.get_session()
+        try:
+            from src.storage.models import InvitationToken, DossierPermission
+            invitation = session.query(InvitationToken).filter(
+                InvitationToken.token == invitation_token,
+                InvitationToken.used_at.is_(None),
+                InvitationToken.expires_at > datetime.utcnow()
+            ).first()
+
+            if not invitation:
+                raise HTTPException(status_code=400, detail="Lien d'invitation invalide ou expiré")
+
+            # Get or create user in the org from invitation
+            user_data, org_id = _get_or_create_user_from_oauth(
+                email, name, 'google', picture,
+                organization_id=invitation.organization_id
+            )
+            user_id = user_data['id']
+
+            # Grant dossier access if specified
+            if invitation.client_file_id:
+                existing_perm = session.query(DossierPermission).filter(
+                    DossierPermission.user_id == user_id,
+                    DossierPermission.client_file_id == invitation.client_file_id
+                ).first()
+                if not existing_perm:
+                    session.add(DossierPermission(
+                        user_id=user_id,
+                        client_file_id=invitation.client_file_id,
+                        permission_level=invitation.permission_level,
+                    ))
+
+            # Mark invitation as used
+            invitation.used_by_user_id = user_id
+            invitation.used_at = datetime.utcnow()
+            session.commit()
+
+            token_value = _create_user_token(session, user_id)
+            session.close()
+
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback#token={token_value}&role=client",
+                status_code=302
+            )
+
+        finally:
+            session.close()
+
+    except Exception as e:
+        logger.error(f"Google OAuth invitation callback error: {e}", exc_info=True)
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+        return RedirectResponse(
+            url=f"{frontend_url}/join?error=oauth_failed",
+            status_code=302
+        )
+
+
+@router.get("/auth/linkedin-invitation")
+async def linkedin_login_invitation(request: Request):
+    """Redirect to LinkedIn OAuth for invitation flow"""
+    _ensure_oauth_registered()
+    token = request.query_params.get('token')
+    if not token:
+        raise HTTPException(status_code=400, detail="Token d'invitation manquant")
+
+    redirect_uri = os.getenv('LINKEDIN_REDIRECT_URI')
+    if not redirect_uri:
+        raise HTTPException(status_code=500, detail="OAuth LinkedIn non configuré")
+
+    request.session['invitation_token'] = token
+    return await oauth.linkedin.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/auth/linkedin-callback-invitation")
+async def linkedin_callback_invitation(request: Request):
+    """Handle LinkedIn OAuth callback for invitation flow"""
+    _ensure_oauth_registered()
+    try:
+        token = await oauth.linkedin.authorize_access_token(request)
+        user_info = token.get('userinfo')
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Impossible de récupérer les infos depuis LinkedIn")
+
+        email = user_info.get('email')
+        name = user_info.get('name')
+        picture = user_info.get('picture')
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email non fourni par LinkedIn")
+
+        invitation_token = request.session.get('invitation_token')
+        if not invitation_token:
+            raise HTTPException(status_code=400, detail="Token d'invitation manquant en session")
+
+        session = db.get_session()
+        try:
+            from src.storage.models import InvitationToken, DossierPermission
+            invitation = session.query(InvitationToken).filter(
+                InvitationToken.token == invitation_token,
+                InvitationToken.used_at.is_(None),
+                InvitationToken.expires_at > datetime.utcnow()
+            ).first()
+
+            if not invitation:
+                raise HTTPException(status_code=400, detail="Lien d'invitation invalide ou expiré")
+
+            user_data, org_id = _get_or_create_user_from_oauth(
+                email, name, 'linkedin', picture,
+                organization_id=invitation.organization_id
+            )
+            user_id = user_data['id']
+
+            if invitation.client_file_id:
+                existing_perm = session.query(DossierPermission).filter(
+                    DossierPermission.user_id == user_id,
+                    DossierPermission.client_file_id == invitation.client_file_id
+                ).first()
+                if not existing_perm:
+                    session.add(DossierPermission(
+                        user_id=user_id,
+                        client_file_id=invitation.client_file_id,
+                        permission_level=invitation.permission_level,
+                    ))
+
+            invitation.used_by_user_id = user_id
+            invitation.used_at = datetime.utcnow()
+            session.commit()
+
+            token_value = _create_user_token(session, user_id)
+            session.close()
+
+            frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback#token={token_value}&role=client",
+                status_code=302
+            )
+
+        finally:
+            session.close()
+
+    except Exception as e:
+        logger.error(f"LinkedIn OAuth invitation callback error: {e}", exc_info=True)
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+        return RedirectResponse(
+            url=f"{frontend_url}/join?error=oauth_failed",
             status_code=302
         )

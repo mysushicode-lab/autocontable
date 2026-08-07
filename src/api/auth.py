@@ -505,10 +505,11 @@ def join_from_invitation(body: dict):
 
         # Create token and return
         token_value = _create_user_token(session, user.id)
+        session.commit()
 
         return {
-            "message": "Compte créé et accès accordé",
-            "token": token_value,
+            "access_token": token_value,
+            "token_type": "bearer",
             "user": {
                 "id": user.id,
                 "username": username,

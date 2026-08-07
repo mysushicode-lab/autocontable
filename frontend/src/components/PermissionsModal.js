@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, UserPlus, Trash2, Mail } from 'lucide-react';
+import { X, UserPlus, Trash2, Mail, Copy, Check } from 'lucide-react';
 import { fetchDossierPermissions, grantPermission, revokePermission, fetchUsers } from '../api';
 import { INPUT_CLASS } from '../utils/formHelpers';
 import { usePlanGate } from '../hooks/usePlanGate';
@@ -13,6 +13,8 @@ const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose 
   const [inviteEmail, setInviteEmail] = useState(contactEmail || '');
   const [invitePermissionLevel, setInvitePermissionLevel] = useState('read_write');
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [invitationLink, setInvitationLink] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
   const { billing, canAccess } = usePlanGate();
   const hasAccess = billing ? canAccess('permissions') : false;
 
@@ -63,14 +65,21 @@ const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose 
       }).then(r => r.json());
     },
     onSuccess: (data) => {
-      setInviteEmail(contactEmail || '');
-      setInvitePermissionLevel('read_write');
-      setShowInviteForm(false);
-      // TODO: Show success + copy link to clipboard
-      console.log('Invitation créée:', data.join_url);
+      setInvitationLink(data.join_url);
     },
     onError: (err) => console.error('Erreur invitation:', err),
   });
+
+  const handleCopyLink = async () => {
+    if (!invitationLink) return;
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Erreur copie:', err);
+    }
+  };
 
   const handleGrant = (e) => {
     e.preventDefault();
@@ -181,46 +190,85 @@ const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose 
             </div>
 
             <div>
-              <button
-                onClick={() => setShowInviteForm(!showInviteForm)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 text-sm font-medium"
-              >
-                <Mail className="w-4 h-4" />
-                {showInviteForm ? 'Annuler invitation' : 'Inviter une PME'}
-              </button>
-
-              {showInviteForm && (
-                <form onSubmit={handleInvite} className="mt-3 p-4 bg-green-50 border border-green-200 rounded-md space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Email de la PME</label>
+              {invitationLink ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md space-y-3">
+                  <h3 className="text-sm font-semibold text-green-900">Lien d'invitation généré</h3>
+                  <div className="flex items-center gap-2">
                     <input
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      className={INPUT_CLASS}
-                      placeholder="pme@example.com"
-                      required
+                      type="text"
+                      value={invitationLink}
+                      readOnly
+                      className={`${INPUT_CLASS} flex-1`}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Niveau d'accès</label>
-                    <select
-                      value={invitePermissionLevel}
-                      onChange={(e) => setInvitePermissionLevel(e.target.value)}
-                      className={INPUT_CLASS}
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
                     >
-                      <option value="read_only">Lecture seule</option>
-                      <option value="read_write">Lecture/Écriture (recommandé)</option>
-                    </select>
+                      {copySuccess ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
+                  <p className="text-xs text-green-700">Valide pendant 7 jours. Partagez ce lien avec la PME.</p>
                   <button
-                    type="submit"
-                    disabled={!inviteEmail || inviteMutation.isLoading}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 text-sm font-medium disabled:opacity-50"
+                    type="button"
+                    onClick={() => {
+                      setInvitationLink(null);
+                      setInviteEmail(contactEmail || '');
+                      setInvitePermissionLevel('read_write');
+                    }}
+                    className="w-full px-4 py-2 border border-green-300 text-green-700 rounded-md hover:bg-green-50 text-sm font-medium"
                   >
-                    {inviteMutation.isLoading ? 'Envoi en cours...' : 'Générer lien d\'invitation'}
+                    Générer un autre lien
                   </button>
-                </form>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowInviteForm(!showInviteForm)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 text-sm font-medium w-full justify-center"
+                  >
+                    <Mail className="w-4 h-4" />
+                    {showInviteForm ? 'Annuler invitation' : 'Inviter une PME'}
+                  </button>
+
+                  {showInviteForm && (
+                    <form onSubmit={handleInvite} className="mt-3 p-4 bg-green-50 border border-green-200 rounded-md space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Email de la PME</label>
+                        <input
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          className={INPUT_CLASS}
+                          placeholder="pme@example.com"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Niveau d'accès</label>
+                        <select
+                          value={invitePermissionLevel}
+                          onChange={(e) => setInvitePermissionLevel(e.target.value)}
+                          className={INPUT_CLASS}
+                        >
+                          <option value="read_only">Lecture seule</option>
+                          <option value="read_write">Lecture/Écriture (recommandé)</option>
+                        </select>
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={!inviteEmail || inviteMutation.isLoading}
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 text-sm font-medium disabled:opacity-50"
+                      >
+                        {inviteMutation.isLoading ? 'Envoi en cours...' : 'Générer lien d\'invitation'}
+                      </button>
+                    </form>
+                  )}
+                </>
               )}
             </div>
 
