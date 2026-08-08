@@ -56,10 +56,19 @@ async def google_callback(request: Request):
             role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            return RedirectResponse(
-                url=f"{frontend_url}/oauth-callback#token={token_value}&role={role}",
+            response = RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role={role}",
                 status_code=302
             )
+            response.set_cookie(
+                'auth_token',
+                token_value,
+                httponly=True,
+                secure=os.getenv('ENV', 'development') == 'production',
+                samesite='Lax',
+                max_age=7*24*60*60
+            )
+            return response
         finally:
             session.close()
 
@@ -110,10 +119,19 @@ async def linkedin_callback(request: Request):
             role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            return RedirectResponse(
-                url=f"{frontend_url}/oauth-callback#token={token_value}&role={role}",
+            response = RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role={role}",
                 status_code=302
             )
+            response.set_cookie(
+                'auth_token',
+                token_value,
+                httponly=True,
+                secure=os.getenv('ENV', 'development') == 'production',
+                samesite='Lax',
+                max_age=7*24*60*60
+            )
+            return response
         finally:
             session.close()
 
@@ -207,10 +225,19 @@ async def google_callback_invitation(request: Request):
             session.close()
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            return RedirectResponse(
-                url=f"{frontend_url}/oauth-callback#token={token_value}&role=client",
+            response = RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role=client",
                 status_code=302
             )
+            response.set_cookie(
+                'auth_token',
+                token_value,
+                httponly=True,
+                secure=os.getenv('ENV', 'production') == 'production',
+                samesite='Lax',
+                max_age=7*24*60*60
+            )
+            return response
 
         finally:
             session.close()
@@ -299,10 +326,19 @@ async def linkedin_callback_invitation(request: Request):
             session.close()
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            return RedirectResponse(
-                url=f"{frontend_url}/oauth-callback#token={token_value}&role=client",
+            response = RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role=client",
                 status_code=302
             )
+            response.set_cookie(
+                'auth_token',
+                token_value,
+                httponly=True,
+                secure=os.getenv('ENV', 'production') == 'production',
+                samesite='Lax',
+                max_age=7*24*60*60
+            )
+            return response
 
         finally:
             session.close()

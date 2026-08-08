@@ -6,7 +6,7 @@ import secrets
 import logging
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException, Header, Depends
+from fastapi import HTTPException, Header, Depends, Request
 from passlib.context import CryptContext
 
 from src.storage.database import db
@@ -99,11 +99,18 @@ def _create_user_token(session, user_id: int) -> str:
     return token_value
 
 
-def get_current_user(authorization: str = Header(None)) -> dict:
-    """Validate Bearer token and return user info dict."""
-    if not authorization or not authorization.startswith("Bearer "):
+def get_current_user(authorization: str = Header(None), request: Request = None) -> dict:
+    """Validate Bearer token from cookie or Authorization header and return user info dict."""
+    token = None
+
+    if request and hasattr(request, 'cookies'):
+        token = request.cookies.get('auth_token')
+
+    if not token and authorization and authorization.startswith("Bearer "):
+        token = authorization[7:]
+
+    if not token:
         raise HTTPException(status_code=401, detail="Token manquant")
-    token = authorization[7:]
     session = db.get_session()
     try:
         user_token = session.query(UserToken).filter(UserToken.token == token).first()

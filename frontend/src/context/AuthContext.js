@@ -11,8 +11,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    if (storedToken) setToken(storedToken);
     const storedUser = localStorage.getItem('auth_user');
     if (storedUser) {
       try {
@@ -27,7 +25,6 @@ export const AuthProvider = ({ children }) => {
 
   const loginUser = useCallback(async (username, password) => {
     const data = await login(username, password);
-    localStorage.setItem('auth_token', data.token);
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
@@ -35,7 +32,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginFromData = useCallback((data) => {
-    localStorage.setItem('auth_token', data.token);
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
