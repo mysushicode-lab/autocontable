@@ -20,8 +20,7 @@ const Login = () => {
     mutationFn: ({ username, password }) => login(username, password),
     onSuccess: (data) => {
       // Redirect based on user role
-      const redirectPath = data.user.role === 'client' ? '/portal' : '/dashboard';
-      router.push(redirectPath);
+      router.push('/dashboard');
     },
     onError: (err) => setError(err?.response?.data?.detail || 'Identifiants invalides'),
   });

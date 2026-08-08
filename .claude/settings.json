@@ -138,13 +138,36 @@
       "Bash(python -m py_compile src/api/*.py)",
       "Bash(git commit -m 'feat: PME IMAP setup in /integrations menu *)",
       "Bash(git commit -m 'fix: hide IMAP config from PME settings *)",
-      "Bash(git commit -m 'feat: PME can only '\\\\''Quit'\\\\'' dossier, not edit/delete *)"
+      "Bash(git commit -m 'feat: PME can only '\\\\''Quit'\\\\'' dossier, not edit/delete *)",
+      "Bash(cat /c/Users/User/.claude/projects/c--Users-User-Documents-GitHub-autocontable/91637c5a-023f-45c9-932b-94f2259d18d3/tool-results/toolu_bdrk_018YLbs2HbngQfv1fh5xDcUm.json 2>/dev/null | jq -r '.[0].text' 2>/dev/null || echo \"Le rapport complet est en cours de traitement...\")",
+      "Read(//c/Users/User/.claude/projects/c--Users-User-Documents-GitHub-autocontable/91637c5a-023f-45c9-932b-94f2259d18d3/tool-results/**)",
+      "Bash(xargs grep -l \"SelectDossierModal\\\\|UploadChoiceModal\")",
+      "Bash(grep -E \"\\\\.\\(js|ts\\)$\")",
+      "Bash(xargs grep -l \"error\\\\|catch\\\\|try\")",
+      "Bash(cat /tmp/mobile_responsiveness_audit.txt)",
+      "Read(//c/tmp/**)",
+      "Bash(ls -la /tmp/*.txt 2>/dev/null | head -5 || echo \"File not found, creating summary\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/api/oauth.py'\\).read\\(\\)\\); print\\('oauth.py: OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('src/api/oauth_helpers.py'\\).read\\(\\)\\); print\\('oauth_helpers.py: OK'\\)\")",
+      "Bash(grep -rE \"^\\(import|from\\)\" /c/Users/User/Documents/GitHub/autocontable/src --include=\"*.py\" | grep -oE \"^[^:]+: *\\(from|import\\) +[^ ]+\" | cut -d' ' -f3- | sort | uniq > /tmp/imports.txt && head -50 /tmp/imports.txt)",
+      "Bash(grep -E \"PIL|tesseract|pdf2image|pdfplumber|PyPDF2|ofxparse|factur-x|stripe|authlib|slowapi\" /tmp/imports.txt | sort | uniq)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(python3 -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(xargs wc -l)",
+      "Bash(awk -F: '{total += $NF} END {print \"Total imports:\", total}')",
+      "Bash(python3 -m py_compile src/api/invoices/__init__.py src/api/invoices/crud.py src/api/invoices/upload.py src/api/invoices/download.py src/api/invoices/helpers.py)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('✓ main.py imports OK'\\)\")",
+      "Bash(python -m py_compile src/api/client_portal.py src/api/client_portal_helpers.py)",
+      "Bash(git checkout *)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\app\\(auth)\\create-twin",
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\app\\(auth)\\create-project",
-      "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\app\\(auth)\\dashboard\\[projectId]\\agents\\[agentId]\\deploy"
+      "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\app\\(auth)\\dashboard\\[projectId]\\agents\\[agentId]\\deploy",
+      "\\tmp",
+      "c:\\tmp"
     ]
   }
 }

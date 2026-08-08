@@ -13,7 +13,6 @@ import NotificationPanel from './layout/NotificationPanel';
 import UserMenu from './layout/UserMenu';
 
 const PAGE_NAMES = {
-  '/portal':         'Mon Espace',
   '/dashboard':      'Tableau de bord',
   '/invoices':       'Factures',
   '/reconciliation': 'Rapprochement',

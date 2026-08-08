@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 from src.api.database import startup_event
 from src.api.rate_limit import limiter
 from src.api.auth import router as auth_router, get_current_user
+from src.api.auth_account import router as auth_account_router
 from src.api.password import router as password_router
 from src.api.oauth import router as oauth_router
 from src.api.invoices import router as invoices_router
@@ -188,6 +189,7 @@ def trigger_email_fetch(since_days: int = 30, current_user: dict = Depends(get_c
 
 # Register routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(auth_account_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(password_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(oauth_router, prefix="/api", tags=["OAuth"])
 app.include_router(invoices_router, prefix="/api/invoices", tags=["Invoices"])

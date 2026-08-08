@@ -1,66 +1,18 @@
 """Client portal endpoints — read-only access for business owners."""
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from datetime import datetime
+import os
+import hashlib
+import secrets
 import logging
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from src.storage.database import db
 from src.storage.models import Invoice, ClientFile, User, UserRole, InvoiceStatus, ProcessedFileHash
 from src.api.auth import get_current_user, _hash_password
-import secrets
+from src.api.client_portal_helpers import get_client_file_id, check_write_permission
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def _get_client_file_id(current_user: dict, session):
-    """Get the client_file_id this client user is linked to.
-
-    Client users have a client_file_id stored in their user record (via a new field).
-    Accountants/admins can access any dossier via the activeClientFileId from frontend.
-    """
-    role = current_user.get("role")
-    if role == "client":
-        # Client users are restricted to their own dossier
-        user = session.query(User).get(current_user["id"])
-        if not user or not user.client_file_id:
-            raise HTTPException(403, "Aucun dossier associé à votre compte")
-        return user.client_file_id
-    return None  # Accountants use the activeClientFileId from frontend
-
-
-def _check_write_permission(current_user: dict, session) -> bool:
-    """Check if current user has write permission (not just read_only).
-
-    Returns True if user can write, raises 403 if read_only.
-    """
-    role = current_user.get("role")
-    user_id = current_user.get("id")
-
-    # Admins and accountants always have write access
-    if role in ("admin", "accountant"):
-        return True
-
-    # Clients must check DossierPermission
-    if role == "client":
-        user = session.query(User).get(user_id)
-        if not user or not user.client_file_id:
-            raise HTTPException(403, "Aucun dossier associé à votre compte")
-
-        from src.storage.models import DossierPermission
-        perm = session.query(DossierPermission).filter(
-            DossierPermission.user_id == user_id,
-            DossierPermission.client_file_id == user.client_file_id
-        ).first()
-
-        if not perm:
-            raise HTTPException(403, "Vous n'avez pas accès à ce dossier")
-
-        if perm.permission_level == "read_only":
-            raise HTTPException(403, "Vous avez accès en lecture seule. Contact l'administrateur pour modifier.")
-
-        return True
-
-    raise HTTPException(403, "Accès refusé")
 
 
 @router.get("/summary")
@@ -69,7 +21,7 @@ def get_client_summary(client_file_id: int = None, current_user: dict = Depends(
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
-        cfid = _get_client_file_id(current_user, session) or client_file_id
+        cfid = get_client_file_id(current_user, session) or client_file_id
         if not cfid:
             raise HTTPException(400, "Aucun dossier sélectionné")
 
@@ -150,7 +102,7 @@ def get_client_invoices(
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
-        cfid = _get_client_file_id(current_user, session) or client_file_id
+        cfid = get_client_file_id(current_user, session) or client_file_id
         if not cfid:
             raise HTTPException(400, "Aucun dossier sélectionné")
 
@@ -211,7 +163,7 @@ async def portal_upload_invoice(
     # Check write permission (blocks read_only users)
     session = db.get_session()
     try:
-        _check_write_permission(current_user, session)
+        check_write_permission(current_user, session)
     finally:
         session.close()
 
@@ -240,7 +192,6 @@ async def portal_upload_invoice(
         f.write(content)
 
     # Compute hash for dedup
-    import hashlib
     content_hash = hashlib.md5(content).hexdigest()
 
     session = db.get_session()

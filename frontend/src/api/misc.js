@@ -47,31 +47,6 @@ export const uploadProfilePhoto = async (userId, file) => {
   return response.data;
 };
 
-// ── Client Portal ─────────────────────────────────────────────────────────────
-export const fetchClientSummary = async (clientFileId) => {
-  const { data } = await api.get('/api/portal/summary', { params: { client_file_id: clientFileId } });
-  return data;
-};
-
-export const fetchClientInvoices = async (clientFileId, page = 1) => {
-  const { data } = await api.get('/api/portal/invoices', { params: { client_file_id: clientFileId, page } });
-  return data;
-};
-
-export const inviteClient = async (email, clientFileId, name) => {
-  const { data } = await api.post('/api/portal/invite', { email, client_file_id: clientFileId, name });
-  return data;
-};
-
-export const portalUploadInvoice = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const { data } = await api.post('/api/portal/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return data;
-};
-
 // ── Onboarding ────────────────────────────────────────────────────────────────
 export const getOnboardingStatus = async () => {
   const { data } = await api.get('/api/users/onboarding-status');

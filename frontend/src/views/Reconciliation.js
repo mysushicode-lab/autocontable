@@ -2,35 +2,27 @@
 
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNotifications, NOTIF_TYPES, NotificationHelpers } from '../context/NotificationContext';
+import { useNotifications } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
 import { useClientFile } from '../context/ClientFileContext';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   RefreshCw,
   CheckCircle,
   Unlink,
   Loader2,
+  Link,
 } from 'lucide-react';
 import {
-  createManualReconciliationLink,
   fetchReconciliationDetails,
   fetchReconciliationStatus,
   fetchTransactions,
-  importBankStatementFile,
-  rejectReconciliationMatch,
-  runAutomaticReconciliation,
-  deleteTransaction,
-  deleteTransactionsByMonth,
-  updateTransaction,
-  uploadInvoiceFile,
   viewInvoice,
   fetchPendingMatches,
-  batchValidateMatches,
 } from '../api';
 import { useAutoSelectRecentMonth } from '../hooks/useAutoSelectRecentMonth';
-import { matchAmount } from '../utils/searchHelpers';
-import { formatCurrency, formatDate } from '../utils/formatHelpers';
+import { useReconciliationActions } from '../hooks/useReconciliationActions';
+import { matchesSearch, invoiceSearch, transactionSearch } from '../utils/reconciliationFilters';
 import { generateMonthOptions } from '../utils/dateHelpers';
 import ConfirmationModal from '../components/ConfirmationModal';
 import ReconciliationHeader from '../components/Reconciliation/ReconciliationHeader';
@@ -42,45 +34,40 @@ import BankOnlyTab from '../components/Reconciliation/BankOnlyTab';
 import PendingReviewTab from '../components/Reconciliation/PendingReviewTab';
 import StatCard from '../components/Reconciliation/StatCard';
 import LinkModal from '../components/Reconciliation/LinkModal';
-import { Link } from 'lucide-react';
 import { usePlanGate } from '../hooks/usePlanGate';
-import UpgradeOverlay from '../components/ui/UpgradeOverlay';
 
 const Reconciliation = () => {
   const { canAccess, getRequiredPlan } = usePlanGate();
   const { selectedMonth, setSelectedMonth } = useFilters();
   const { activeClientFileId } = useClientFile();
   const [activeTab, setActiveTab] = useState('matches');
-  const [linkModal, setLinkModal] = useState(null); // { type: 'tx2inv'|'inv2tx', id, label }
+  const [linkModal, setLinkModal] = useState(null);
   const [linkSearch, setLinkSearch] = useState('');
   const [linkSelectedIds, setLinkSelectedIds] = useState(new Set());
-  const [linkMonthFilter, setLinkMonthFilter] = useState(''); // Month filter for link modal (YYYY-MM)
+  const [linkMonthFilter, setLinkMonthFilter] = useState('');
   const [showLinkMonthDropdown, setShowLinkMonthDropdown] = useState(false);
   const linkMonthButtonRef = useRef(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTransactionForInvoice, setSelectedTransactionForInvoice] = useState(null); // Track which transaction we're creating invoices for
+  const [selectedTransactionForInvoice, setSelectedTransactionForInvoice] = useState(null);
   const [selectedPendingIds, setSelectedPendingIds] = useState(new Set());
   const [isImporting, setIsImporting] = useState(false);
   const [isRunningReconciliation, setIsRunningReconciliation] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const periodButtonRef = useRef(null);
   const bankFileInputRef = useRef(null);
   const invoiceInputRef = useRef(null);
   const { add: addNotif } = useNotifications();
-  const queryClient = useQueryClient();
+
   const today = new Date();
   const currentPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  
-  // Use selectedMonth from FilterContext, default to current period if not set
-  // Check if selectedMonth is explicitly set (including empty string for "all periods")
   const globalPeriod = selectedMonth !== undefined ? selectedMonth : currentPeriod;
-  
   const periodMonths = generateMonthOptions(18);
-
   const periodOptions = [
     { value: '', label: 'Toutes périodes' },
     ...periodMonths,
   ];
+
   const filters = {
     ...(globalPeriod ? { month: parseInt(globalPeriod.split('-')[1]), year: parseInt(globalPeriod.split('-')[0]) } : {}),
     ...(activeClientFileId != null ? { client_file_id: activeClientFileId } : {}),
@@ -89,6 +76,7 @@ const Reconciliation = () => {
   const periodLabel = periodOptions.find(o => o.value === globalPeriod)?.label || 'Toutes périodes';
   const periodDisplay = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
 
+  // --- Queries ---
   const { data: statsData } = useQuery({
     queryKey: ['reconciliation-status', filters],
     queryFn: () => fetchReconciliationStatus(filters),
@@ -101,131 +89,19 @@ const Reconciliation = () => {
     queryKey: ['pending-matches'],
     queryFn: fetchPendingMatches,
   });
-  
-  // Auto-set month filter to most recent invoice date on initial load
-  useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
-
-  const refreshAll = () => {
-    queryClient.invalidateQueries(['reconciliation-status']);
-    queryClient.invalidateQueries(['reconciliation-details']);
-    queryClient.invalidateQueries(['invoices']);
-    queryClient.invalidateQueries(['transactions']);
-    queryClient.invalidateQueries(['all-transactions']);
-    queryClient.invalidateQueries(['dashboard-reconciliation-status']);
-    queryClient.invalidateQueries(['dashboard-reconciliation-details']);
-    queryClient.invalidateQueries(['dashboard-invoices']);
-    queryClient.invalidateQueries(['dashboard-report']);
-    queryClient.invalidateQueries(['pending-matches']);
-  };
-
-  const importMutation = useMutation({
-    mutationFn: importBankStatementFile,
-    onMutate: () => {
-      setIsImporting(true);
-    },
-    onSuccess: (result) => {
-      refreshAll();
-      setActiveTab('transactions');
-      const notif = NotificationHelpers.bankImported(result.imported_count);
-      addNotif(notif.type, notif.title, notif.message);
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur import bancaire', error?.response?.data?.detail || 'Impossible d\'importer le relevé.');
-    },
-    onSettled: () => {
-      setIsImporting(false);
-    },
-  });
-
-  const runMutation = useMutation({
-    mutationFn: () => runAutomaticReconciliation(filters),
-    onMutate: () => {
-      setIsRunningReconciliation(true);
-    },
-    onSuccess: (result) => {
-      refreshAll();
-      const n = result.matches_created || 0;
-      const total = result.total_invoices || n;
-      if (n > 0) {
-        const notif = NotificationHelpers.reconciliationComplete(n, total);
-        addNotif(notif.type, notif.title, notif.message);
-      } else {
-        addNotif(NOTIF_TYPES.INFO, 'Rapprochement terminé', 'Aucune nouvelle correspondance trouvée.');
-      }
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur rapprochement', error?.response?.data?.detail || 'Analyse automatique échouée.');
-    },
-    onSettled: () => {
-      setIsRunningReconciliation(false);
-    },
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: rejectReconciliationMatch,
-    onSuccess: () => { refreshAll(); addNotif(NOTIF_TYPES.WARNING, 'Correspondance rejetée', 'Le rapprochement a été rejeté.'); },
-  });
-
-  const manualLinkMutation = useMutation({
-    mutationFn: createManualReconciliationLink,
-    onSuccess: () => {
-      refreshAll();
-      addNotif(NOTIF_TYPES.SUCCESS, 'Lien manuel créé', 'La facture a été liée manuellement à l\'opération bancaire.');
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur lien manuel', error?.response?.data?.detail || 'Impossible de créer le lien.');
-    },
-  });
-
-  const deleteTransactionMutation = useMutation({
-    mutationFn: deleteTransaction,
-    onSuccess: () => {
-      refreshAll();
-      addNotif(NOTIF_TYPES.SUCCESS, 'Transaction supprimée', 'La transaction a été supprimée avec succès.');
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', error?.response?.data?.detail || 'Impossible de supprimer la transaction.');
-    },
-  });
-
-  const updateTransactionMutation = useMutation({
-    mutationFn: updateTransaction,
-    onSuccess: () => {
-      refreshAll();
-      addNotif(NOTIF_TYPES.SUCCESS, 'Transaction modifiée', 'Le montant a été mis à jour.');
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur modification', error?.response?.data?.detail || 'Impossible de modifier la transaction.');
-    },
-  });
-
-  const batchValidateMutation = useMutation({
-    mutationFn: ({ matchIds, action }) => batchValidateMatches(matchIds, action),
-    onSuccess: (result, { action }) => {
-      refreshAll();
-      setSelectedPendingIds(new Set());
-      const count = result.updated;
-      if (action === 'confirm') {
-        addNotif(NOTIF_TYPES.SUCCESS, 'Correspondances validées', `${count} correspondance${count > 1 ? 's' : ''} validée${count > 1 ? 's' : ''}.`);
-      } else {
-        addNotif(NOTIF_TYPES.WARNING, 'Correspondances rejetées', `${count} correspondance${count > 1 ? 's' : ''} rejetée${count > 1 ? 's' : ''}.`);
-      }
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur validation', error?.response?.data?.detail || 'Impossible de valider les correspondances.');
-    },
-  });
-
   const { data: transactionsData } = useQuery({
     queryKey: ['all-transactions', filters],
     queryFn: () => fetchTransactions(filters),
   });
-  const allTransactions = transactionsData?.transactions || [];
 
+  useAutoSelectRecentMonth(selectedMonth, setSelectedMonth);
+
+  const allTransactions = transactionsData?.transactions || [];
   const matches = detailsData?.matches || [];
   const unmatchedInvoices = detailsData?.unmatched_invoices || [];
   const bankOnly = detailsData?.bank_only || [];
   const pendingMatches = pendingData?.pending_matches || [];
+
   const stats = {
     totalMatched: statsData?.matched_invoices ?? matches.length,
     autoMatched: statsData?.autoMatched ?? 0,
@@ -234,152 +110,54 @@ const Reconciliation = () => {
     successRate: statsData?.success_rate ?? 0,
   };
 
-  // Filter helper functions
-  const matchesSearch = (term, item) => {
-    if (!term) return true;
-    const lowerTerm = term.toLowerCase();
-    return (
-      matchAmount(item.transaction?.amount, term) ||
-      item.transaction?.description?.toLowerCase().includes(lowerTerm) ||
-      matchAmount(item.invoice?.amount, term) ||
-      item.invoice?.supplier?.toLowerCase().includes(lowerTerm)
-    );
-  };
+  // --- Actions hook ---
+  const {
+    importMutation,
+    runMutation,
+    rejectMutation,
+    deleteTransactionMutation,
+    updateTransactionMutation,
+    batchValidateMutation,
+    handleBankImportClick,
+    handleBankFileSelected,
+    handleCreateInvoiceClick,
+    handleInvoiceFileSelected,
+    openLinkFromTransaction,
+    openLinkFromInvoice,
+    handleTabChange,
+    handleDeleteAllTransactions,
+    confirmDeleteAllTransactions,
+    submitManualLink,
+  } = useReconciliationActions({
+    addNotif,
+    filters,
+    globalPeriod,
+    periodOptions,
+    selectedMonth,
+    activeClientFileId,
+    setIsImporting,
+    setIsRunningReconciliation,
+    setActiveTab,
+    setSelectedPendingIds,
+    setShowPeriodDropdown,
+    setShowDeleteAllModal,
+    setLinkModal,
+    setLinkSearch,
+    setLinkSelectedIds,
+    setLinkMonthFilter,
+    setSelectedTransactionForInvoice,
+    bankFileInputRef,
+    invoiceInputRef,
+    selectedTransactionForInvoice,
+    linkModal,
+    linkSelectedIds,
+  });
 
-  const invoiceSearch = (term, item) => {
-    if (!term) return true;
-    const lowerTerm = term.toLowerCase();
-    return (
-      matchAmount(item.invoice?.amount, term) ||
-      item.invoice?.supplier?.toLowerCase().includes(lowerTerm) ||
-      item.invoice?.number?.toLowerCase().includes(lowerTerm)
-    );
-  };
-
-  const transactionSearch = (term, item) => {
-    if (!term) return true;
-    const lowerTerm = term.toLowerCase();
-    return (
-      matchAmount(item.amount, term) ||
-      item.description?.toLowerCase().includes(lowerTerm)
-    );
-  };
-
-  // Filtered data
+  // --- Filtered data ---
   const filteredMatches = matches.filter(m => matchesSearch(searchTerm, m));
   const filteredUnmatchedInvoices = unmatchedInvoices.filter(i => invoiceSearch(searchTerm, i));
   const filteredBankOnly = bankOnly.filter(t => transactionSearch(searchTerm, t));
   const filteredTransactions = allTransactions.filter(t => transactionSearch(searchTerm, t));
-
-  const handleBankImportClick = () => {
-    bankFileInputRef.current?.click();
-  };
-
-  const handleBankFileSelected = async (event) => {
-    const selectedFile = event.target.files?.[0];
-    if (!selectedFile) {
-      return;
-    }
-    await importMutation.mutateAsync(selectedFile);
-    event.target.value = '';
-  };
-
-  const handleCreateInvoiceClick = (tx) => {
-    setSelectedTransactionForInvoice(tx);
-    invoiceInputRef.current?.click();
-  };
-
-  const handleInvoiceFileSelected = async (event) => {
-    const selectedFiles = event.target.files;
-    if (!selectedFiles || selectedFiles.length === 0 || !selectedTransactionForInvoice) {
-      return;
-    }
-    
-    setIsImporting(true);
-    
-    // Limit to 10 files
-    const filesToUpload = Array.from(selectedFiles).slice(0, 10);
-    const txId = selectedTransactionForInvoice.db_id || selectedTransactionForInvoice.id;
-    
-    // Upload each file and auto-link to the transaction
-    try {
-      for (const file of filesToUpload) {
-        const result = await uploadInvoiceFile(file, activeClientFileId);
-        const invoiceId = result.invoice?.id;
-        if (invoiceId) {
-          await manualLinkMutation.mutateAsync({
-            invoice_id: Number(invoiceId),
-            transaction_id: Number(txId)
-          });
-        }
-      }
-      refreshAll();
-      addNotif(NOTIF_TYPES.SUCCESS, 'Factures importées', `${filesToUpload.length} facture${filesToUpload.length > 1 ? 's' : ''} importée${filesToUpload.length > 1 ? 's' : ''} et rapprochée${filesToUpload.length > 1 ? 's' : ''} avec succès.`);
-    } catch (error) {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur import factures', error?.response?.data?.detail || 'Impossible d\'importer les factures.');
-    } finally {
-      setIsImporting(false);
-      event.target.value = '';
-    }
-  };
-
-  const openLinkFromTransaction = (tx) => {
-    const txDbId = tx.db_id || tx.id;
-    const amount = tx.amount != null ? `${formatCurrency(Math.abs(tx.amount))} (${tx.amount < 0 ? 'Débit' : 'Crédit'})` : '';
-    const date = formatDate(tx.date);
-    const label = [tx.description, amount, date].filter(Boolean).join(' · ');
-    setLinkSearch('');
-    setLinkSelectedIds(new Set());
-    setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
-    setLinkModal({ type: 'tx2inv', id: txDbId, label });
-  };
-
-  const openLinkFromInvoice = (invoiceId, invoiceLabel) => {
-    setLinkSearch('');
-    setLinkSelectedIds(new Set());
-    setLinkMonthFilter(selectedMonth || ''); // Auto-set to current page month filter
-    setLinkModal({ type: 'inv2tx', id: invoiceId, label: invoiceLabel });
-  };
-
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
-    setShowPeriodDropdown(false); // Close period dropdown when changing tabs
-  };
-
-  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
-
-  const handleDeleteAllTransactions = async () => {
-    if (!globalPeriod) {
-      addNotif(NOTIF_TYPES.WARNING, 'Période requise', 'Veuillez sélectionner une période pour supprimer les transactions.');
-      return;
-    }
-    setShowDeleteAllModal(true);
-  };
-
-  const confirmDeleteAllTransactions = async () => {
-    setShowDeleteAllModal(false);
-    const [year, month] = globalPeriod.split('-').map(Number);
-    try {
-      const result = await deleteTransactionsByMonth(year, month);
-      refreshAll();
-      addNotif(NOTIF_TYPES.SUCCESS, 'Transactions supprimées', `${result.deleted_count} transaction(s) supprimée(s).`);
-    } catch (error) {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', error?.response?.data?.detail || 'Impossible de supprimer les transactions.');
-    }
-  };
-
-  const submitManualLink = async () => {
-    if (linkSelectedIds.size === 0) return;
-    
-    // Link all selected items
-    for (const selectedId of linkSelectedIds) {
-      const payload = linkModal.type === 'tx2inv'
-        ? { invoice_id: Number(selectedId), transaction_id: Number(linkModal.id) }
-        : { invoice_id: Number(linkModal.id), transaction_id: Number(selectedId) };
-      await manualLinkMutation.mutateAsync(payload);
-    }
-    setLinkModal(null);
-  };
 
   return (
     <div className={`relative space-y-6 ${isImporting || isRunningReconciliation ? 'blur-sm pointer-events-none' : ''}`}>
@@ -432,7 +210,6 @@ const Reconciliation = () => {
         {activeTab === 'matches' && (
           <MatchesTab filteredMatches={filteredMatches} rejectMutation={rejectMutation} viewInvoice={viewInvoice} />
         )}
-
         {activeTab === 'unmatched' && (
           <UnmatchedInvoicesTab
             filteredUnmatchedInvoices={filteredUnmatchedInvoices}
@@ -440,7 +217,6 @@ const Reconciliation = () => {
             handleBankImportClick={handleBankImportClick}
           />
         )}
-
         {activeTab === 'transactions' && (
           <TransactionsTab
             filteredTransactions={filteredTransactions}
@@ -449,7 +225,6 @@ const Reconciliation = () => {
             onDeleteAll={handleDeleteAllTransactions}
           />
         )}
-
         {activeTab === 'bankonly' && (
           <BankOnlyTab
             filteredBankOnly={filteredBankOnly}

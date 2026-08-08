@@ -20,7 +20,6 @@ export default function robots() {
           '/audit/',
           '/integrations/',
           '/portfolio/',
-          '/portal/',
           '/depot/',
         ],
       },

@@ -1,14 +1,10 @@
 'use client';
 
 import React, { useRef, useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { useNotifications, NOTIF_TYPES, NotificationHelpers } from '../context/NotificationContext';
+import { useNotifications } from '../context/NotificationContext';
 import { useFilters } from '../context/FilterContext';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
-import { fetchInvoices, getExportUrl, uploadInvoiceFile, deleteInvoice, updateInvoice } from '../api';
-import { formatCurrency } from '../utils/formatHelpers';
-import { downloadAuthenticatedFile } from '../utils/downloadHelpers';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchInvoices, fetchClientFilesSummary } from '../api';
 import { INVOICE_STATUS } from '../constants/statusConfig';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useClientFile } from '../context/ClientFileContext';
@@ -21,7 +17,9 @@ import UploadChoiceModal from '../components/UploadChoiceModal';
 import SelectDossierModal from '../components/SelectDossierModal';
 import NoDossierBanner from '../components/NoDossierBanner';
 import { useColumnVisibility } from '../components/ColumnSettings';
-import { fetchClientFilesSummary } from '../api';
+import InvoiceImportOverlay from '../components/invoices/InvoiceImportOverlay';
+import { useInvoiceUpload, resolveClientFileId } from '../components/invoices/InvoiceUploadHandler';
+import { useInvoiceDelete, useInvoiceUpdate, handleExportInvoices, prepareEditForm, prepareSaveData } from '../components/invoices/InvoiceActions';
 
 // Map INVOICE_STATUS to the shape InvoiceTable expects (color = colorClass)
 const statusConfig = Object.fromEntries(
@@ -115,111 +113,36 @@ const Invoices = () => {
     queryClient.invalidateQueries(['dashboard-report']);
   };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => deleteInvoice(id),
-    onSuccess: () => {
-      invalidateInvoiceQueries();
-      const notif = NotificationHelpers.invoiceDeleted(deleteConfirm);
-      addNotif(notif.type, notif.title, notif.message);
-      setDeleteConfirm(null);
-    },
-    onError: () => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur suppression', 'Impossible de supprimer la facture.');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => updateInvoice(id, data),
-    onSuccess: (result) => {
-      invalidateInvoiceQueries();
-      const notif = NotificationHelpers.invoiceUpdated(editingInvoice);
-      addNotif(notif.type, notif.title, notif.message);
-      setEditingInvoice(null);
-    },
-    onError: (error) => {
-      let errorMessage = 'Impossible de modifier la facture.';
-      try {
-        const detail = error?.response?.data?.detail;
-        if (detail) {
-          if (typeof detail === 'string') {
-            errorMessage = detail;
-          } else if (typeof detail === 'object') {
-            errorMessage = JSON.stringify(detail);
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing error message:', e);
-      }
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur', errorMessage);
-    },
-  });
-
   const handleEditOpen = (invoice) => {
     setEditingInvoice(invoice);
-    setEditForm({
-      invoice_number: invoice.invoice_number || '',
-      supplier_name: invoice.supplier || '',
-      amount: invoice.amount || '',
-      amount_ht: invoice.amount_ht || '',
-      amount_tax: invoice.amount_tax || '',
-      date: invoice.date ? invoice.date.slice(0, 10) : '',
-      due_date: invoice.due_date ? invoice.due_date.slice(0, 10) : '',
-      category: invoice.category || '',
-      reference_number: invoice.reference_number || '',
-      work_order_reference: invoice.work_order_reference || '',
-      purchase_order: invoice.purchase_order || '',
-      payment_method: invoice.payment_method || '',
-      status: invoice.status || 'pending',
-    });
+    setEditForm(prepareEditForm(invoice));
   };
 
   const handleEditSave = () => {
-    // Convert empty strings to null for numeric fields to avoid validation errors
-    const dataToSend = {
-      ...editForm,
-      amount: editForm.amount || null,
-      amount_ht: editForm.amount_ht || null,
-      amount_tax: editForm.amount_tax || null,
-    };
+    const dataToSend = prepareSaveData(editForm);
     updateMutation.mutate({ id: editingInvoice.id, data: dataToSend });
   };
 
-  const uploadMutation = useMutation({
-    mutationFn: ({ file, clientFileId, mode }) => uploadInvoiceFile(file, clientFileId),
-    onMutate: () => {
-      setIsImporting(true);
-    },
-    onSuccess: (result, variables) => {
-      invalidateInvoiceQueries();
-      const inv = result.invoice;
-      if (variables.mode === 'manual') {
-        // Open edit panel immediately for manual entry
-        handleEditOpen(inv);
-      } else {
-        const notif = NotificationHelpers.invoiceImported(inv);
-        addNotif(notif.type, notif.title, notif.message);
-      }
-    },
-    onError: (error) => {
-      addNotif(NOTIF_TYPES.ERROR, 'Erreur import facture', error?.response?.data?.detail || 'Impossible d\'importer la facture.');
-    },
-    onSettled: () => {
-      setIsImporting(false);
-    },
-  });
+  const deleteMutation = useInvoiceDelete({ addNotif, invalidateQueries: invalidateInvoiceQueries });
+  const updateMutation = useInvoiceUpdate({ addNotif, invalidateQueries: invalidateInvoiceQueries });
+
+  const {
+    isImporting,
+    showUploadChoice,
+    setShowUploadChoice,
+    uploadMode,
+    setUploadMode,
+    showSelectDossier,
+    setShowSelectDossier,
+    pendingUploadMode,
+    setPendingUploadMode,
+    uploadClientFileId,
+    setUploadClientFileId,
+    uploadMutation,
+  } = useInvoiceUpload({ addNotif, invalidateQueries: invalidateInvoiceQueries, onEditOpen: handleEditOpen });
 
   const handleExport = async () => {
-    const today = new Date();
-    const year = parsedMonth.year || today.getFullYear();
-    const month = parsedMonth.month || today.getMonth() + 1;
-    try {
-      await downloadAuthenticatedFile(
-        getExportUrl('/api/reports/export/invoices', parsedMonth),
-        `invoices_${year}_${month}.csv`
-      );
-    } catch (error) {
-      console.error('Error exporting invoices:', error);
-    }
+    await handleExportInvoices(parsedMonth);
   };
 
   const hasDossier = clientFiles.length > 0;
@@ -229,20 +152,20 @@ const Invoices = () => {
     setShowUploadChoice(true);
   };
 
-  const resolveClientFileId = (mode) => {
-    // If a dossier is already active, use it directly
-    if (activeClientFileId != null) return activeClientFileId;
-    // If only one dossier exists, auto-assign it
-    if (clientFiles.length === 1) return clientFiles[0].id;
+  const handleResolveClientFileId = (mode) => {
+    const cfId = resolveClientFileId(activeClientFileId, clientFiles);
+    if (cfId !== null) {
+      return cfId;
+    }
     // Otherwise ask user to pick
     setPendingUploadMode(mode);
     setShowSelectDossier(true);
-    return null; // will be handled after selection
+    return null;
   };
 
   const handleChooseAI = () => {
     setShowUploadChoice(false);
-    const cfId = resolveClientFileId('ai');
+    const cfId = handleResolveClientFileId('ai');
     if (cfId !== null) {
       setUploadClientFileId(cfId);
       setUploadMode('ai');
@@ -252,7 +175,7 @@ const Invoices = () => {
 
   const handleChooseManual = () => {
     setShowUploadChoice(false);
-    const cfId = resolveClientFileId('manual');
+    const cfId = handleResolveClientFileId('manual');
     if (cfId !== null) {
       setUploadClientFileId(cfId);
       setUploadMode('manual');
@@ -395,16 +318,7 @@ const Invoices = () => {
         isLoading={updateMutation.isLoading}
       />
 
-      {/* Loading Overlay - rendered at document body level */}
-      {isImporting && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md p-8 flex flex-col items-center gap-4 shadow-xl">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-            <p className="text-gray-700 font-medium">Import en cours...</p>
-          </div>
-        </div>,
-        document.body
-      )}
+      <InvoiceImportOverlay isImporting={isImporting} />
     </div>
   );
 };
