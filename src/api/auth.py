@@ -2,7 +2,7 @@
 import os
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 
 import src.config  # noqa: F401
 
@@ -37,7 +37,7 @@ def get_me(current_user: dict = Depends(get_current_user)):
 
 @router.post("/register")
 @limiter.limit("5/hour")
-def register(request: Request, body: RegisterRequest):
+def register(request: Request, body: RegisterRequest, background_tasks: BackgroundTasks):
     """Public registration -- creates a new organization and admin account.
 
     Rate-limited to 5 requests/hour per IP to prevent mass account creation.
@@ -74,6 +74,18 @@ def register(request: Request, body: RegisterRequest):
         create_default_settings(session, org_id, company_name=body.name)
         token_value = _create_user_token(session, user_id)
         session.commit()
+
+        # Sync user to GetResponse (background task)
+        from src.api.getresponse_sync import sync_user_to_getresponse
+        background_tasks.add_task(
+            sync_user_to_getresponse,
+            email=body.email,
+            name=body.name,
+            org_id=org_id,
+            oauth_provider=None,
+            plan_type="free"
+        )
+
         return {
             "token": token_value,
             "user": {
@@ -204,7 +216,7 @@ def change_email(request: ChangeEmailRequest, current_user: dict = Depends(get_c
 
 
 @router.post("/join-from-invitation")
-def join_from_invitation(body: dict):
+def join_from_invitation(body: dict, background_tasks: BackgroundTasks):
     """PME creates account and joins organization via invitation token.
 
     body: {"token": "abc...", "username": "pme", "password": "...", "name": "PME Name"}
@@ -262,6 +274,17 @@ def join_from_invitation(body: dict):
         # Create token and return
         token_value = _create_user_token(session, user.id)
         session.commit()
+
+        # Sync PME to GetResponse (background task)
+        from src.api.getresponse_sync import sync_user_to_getresponse
+        background_tasks.add_task(
+            sync_user_to_getresponse,
+            email=invitation.invited_email,
+            name=name,
+            org_id=invitation.organization_id,
+            oauth_provider=None,
+            plan_type="free"
+        )
 
         return {
             "access_token": token_value,

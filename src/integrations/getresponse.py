@@ -30,7 +30,10 @@ class GetResponseClient:
         try:
             resp = requests.request(method, url, headers=self.headers, timeout=10, **kwargs)
             resp.raise_for_status()
-            return resp.json() if resp.text else {}
+            try:
+                return resp.json() if resp.text else {}
+            except ValueError:
+                return {"status": "accepted"}
         except requests.exceptions.RequestException as e:
             logger.error(f"GetResponse API error: {e}")
             raise
@@ -75,7 +78,15 @@ class GetResponseClient:
         }
 
         if tags:
-            payload["tags"] = [{"name": tag} for tag in tags]
+            # Need tag IDs, not names. Fetch them first
+            existing_tags = self._request("GET", "/tags?limit=100")
+            tag_list = existing_tags if isinstance(existing_tags, list) else existing_tags.get('tags', [])
+            tag_map = {t['name']: t['tagId'] for t in tag_list}
+            payload["tags"] = [
+                {"tagId": tag_map.get(tag)}
+                for tag in tags
+                if tag in tag_map
+            ]
 
         if custom_fields:
             payload["customFieldValues"] = [
