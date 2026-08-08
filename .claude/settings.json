@@ -160,7 +160,13 @@
       "Bash(python -m py_compile src/api/client_portal.py src/api/client_portal_helpers.py)",
       "Bash(git checkout *)",
       "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK'\\)\")",
-      "Bash(python3)"
+      "Bash(python3)",
+      "WebFetch(domain:developer.getresponse.com)",
+      "WebFetch(domain:www.getresponse.com)",
+      "Bash(bash /tmp/test_getresponse.sh)",
+      "WebFetch(domain:apidocs.getresponse.com)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK - GetResponse integration loaded'\\)\")",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK - All endpoints loaded'\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",
