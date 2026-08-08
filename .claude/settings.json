@@ -167,7 +167,8 @@
       "WebFetch(domain:apidocs.getresponse.com)",
       "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK - GetResponse integration loaded'\\)\")",
       "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK - All endpoints loaded'\\)\")",
-      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK - All webhooks integrated'\\)\")"
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.'\\); from src.api.main import app; print\\('OK - All webhooks integrated'\\)\")",
+      "Bash(git commit -m 'docs: add GetResponse email sequences setup guide *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",
