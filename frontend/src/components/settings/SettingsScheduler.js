@@ -48,9 +48,9 @@ export const SettingsScheduler = ({ schedulerForm, setSchedulerForm, updateMutat
             </div>
           ))}
           <div className="flex justify-end pt-2">
-            <button type="submit" disabled={updateMutation.isLoading}
+            <button type="submit" disabled={updateMutation.isPending}
               className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
-              {updateMutation.isLoading
+              {updateMutation.isPending
                 ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Sauvegarde...</>
                 : <><Save className="w-3.5 h-3.5" />Sauvegarder</>}
             </button>

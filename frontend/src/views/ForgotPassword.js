@@ -70,10 +70,10 @@ const ForgotPassword = () => {
 
                 <button
                   type="submit"
-                  disabled={mutation.isLoading}
+                  disabled={mutation.isPending}
                   className="w-full py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium text-sm disabled:opacity-50"
                 >
-                  {mutation.isLoading ? 'Envoi en cours…' : 'Envoyer le lien'}
+                  {mutation.isPending ? 'Envoi en cours…' : 'Envoyer le lien'}
                 </button>
               </form>
             </>

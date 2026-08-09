@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -139,7 +141,7 @@ const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose 
                         </span>
                         <button
                           onClick={() => revokeMutation.mutate(perm.user_id)}
-                          disabled={revokeMutation.isLoading}
+                          disabled={revokeMutation.isPending}
                           className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -180,11 +182,11 @@ const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose 
                 </div>
                 <button
                   type="submit"
-                  disabled={!selectedUserId || grantMutation.isLoading}
+                  disabled={!selectedUserId || grantMutation.isPending}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                 >
                   <UserPlus className="w-4 h-4" />
-                  {grantMutation.isLoading ? 'Ajout...' : 'Ajouter'}
+                  {grantMutation.isPending ? 'Ajout...' : 'Ajouter'}
                 </button>
               </form>
             </div>
@@ -261,10 +263,10 @@ const PermissionsModal = ({ clientFileId, clientFileName, contactEmail, onClose 
                       </div>
                       <button
                         type="submit"
-                        disabled={!inviteEmail || inviteMutation.isLoading}
+                        disabled={!inviteEmail || inviteMutation.isPending}
                         className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 text-sm font-medium disabled:opacity-50"
                       >
-                        {inviteMutation.isLoading ? 'Envoi en cours...' : 'Générer lien d\'invitation'}
+                        {inviteMutation.isPending ? 'Envoi en cours...' : 'Générer lien d\'invitation'}
                       </button>
                     </form>
                   )}

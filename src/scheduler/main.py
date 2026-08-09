@@ -22,6 +22,7 @@ from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
 from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash, BankTransaction
 from src.reconciliation import run_auto_reconciliation
+from src.utils.quota import can_process_invoice, increment_invoice_count
 import calendar
 
 # Default global cadence (seconds) when an org doesn't override via settings
@@ -204,6 +205,12 @@ class InvoiceScheduler:
             )
             logger.info(f"Org {organization_id}: found {len(emails)} invoice emails")
 
+            # Get org for quota check
+            org = session.query(Organization).filter(Organization.id == organization_id).first()
+            if not org:
+                logger.warning(f"Org {organization_id}: not found in database")
+                return
+
             invoice_processor = InvoiceProcessor()
             supplier_classifier = SupplierClassifier(session, org_id=organization_id)
             category_classifier = CategoryClassifier()
@@ -221,6 +228,12 @@ class InvoiceScheduler:
                         logger.info(f"Org {organization_id}: skipping already-processed {filename}")
                         continue
 
+                    # Check quota before processing
+                    can_process, error_msg = can_process_invoice(org, session)
+                    if not can_process:
+                        logger.warning(f"Org {organization_id}: {error_msg} - skipping remaining invoices")
+                        break  # Stop processing for this org
+
                     email_metadata = {
                         'email_from': mail['from'],
                         'email_subject': mail['subject'],
@@ -229,6 +242,10 @@ class InvoiceScheduler:
                     invoice_data = invoice_processor.process_invoice(
                         attachment_path, email_metadata=email_metadata,
                     )
+
+                    # Increment quota counter ONLY if AI was actually used (not Factur-X/OCR)
+                    if invoice_data.get('ai_used') is True:
+                        increment_invoice_count(org, session)
                     invoice_data.update({
                         'email_subject': mail['subject'],
                         'email_from': mail['from'],

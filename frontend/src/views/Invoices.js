@@ -59,12 +59,6 @@ const Invoices = () => {
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [showUploadChoice, setShowUploadChoice] = useState(false);
-  const [uploadMode, setUploadMode] = useState(null); // 'ai' | 'manual'
-  const [showSelectDossier, setShowSelectDossier] = useState(false);
-  const [pendingUploadMode, setPendingUploadMode] = useState(null);
-  const [uploadClientFileId, setUploadClientFileId] = useState(null);
 
   const uploadInputRef = useRef(null);
   const manualUploadInputRef = useRef(null);
@@ -306,7 +300,7 @@ const Invoices = () => {
         confirmLabel="Supprimer"
         onConfirm={() => deleteMutation.mutate(deleteConfirm.id)}
         onCancel={() => setDeleteConfirm(null)}
-        loading={deleteMutation.isLoading}
+        loading={deleteMutation.isPending}
       />
 
       <InvoiceEditModal
@@ -315,7 +309,7 @@ const Invoices = () => {
         setEditForm={setEditForm}
         onClose={() => setEditingInvoice(null)}
         onSave={handleEditSave}
-        isLoading={updateMutation.isLoading}
+        isLoading={updateMutation.isPending}
       />
 
       <InvoiceImportOverlay isImporting={isImporting} />

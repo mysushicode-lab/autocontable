@@ -55,9 +55,9 @@ class Organization(Base):
     trial_end_date = Column(DateTime, nullable=True)
     is_trial_active = Column(Boolean, default=True)
     stripe_customer_id = Column(String(255), nullable=True)  # Stripe customer ID for billing
-    # TODO: Migration needed for these columns
-    # invoices_processed_this_month = Column(Integer, default=0)  # Compteur mensuel de factures IA
-    # monthly_quota_reset_date = Column(DateTime, nullable=True)  # Date de réinitialisation (1er du mois)
+    stripe_subscription_id = Column(String(255), nullable=True)  # Stripe subscription ID (pour upgrades/cancels)
+    invoices_processed_this_month = Column(Integer, default=0)  # Compteur mensuel de factures IA
+    monthly_quota_reset_date = Column(DateTime, nullable=True)  # Date de réinitialisation (1er du mois)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     users = relationship("User", back_populates="organization")
@@ -278,3 +278,41 @@ class AuditLog(Base):
     details = Column(Text, nullable=True)
     ip_address = Column(String(45), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ReferralStatus(enum.Enum):
+    PENDING = "pending"
+    CONVERTED = "converted"
+    PAID = "paid"
+
+
+class Affiliate(Base):
+    __tablename__ = 'affiliates'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, unique=True)
+    code = Column(String(30), unique=True, nullable=False, index=True)
+    commission_rate = Column(Float, default=0.20)
+    is_active = Column(Boolean, default=True)
+    total_earned = Column(Numeric(12, 2), default=0)
+    total_paid = Column(Numeric(12, 2), default=0)
+    stripe_account_id = Column(String(100), nullable=True)
+    stripe_onboarding_complete = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    referrals = relationship("Referral", back_populates="affiliate")
+
+
+class Referral(Base):
+    __tablename__ = 'referrals'
+
+    id = Column(Integer, primary_key=True)
+    affiliate_id = Column(Integer, ForeignKey('affiliates.id'), nullable=False, index=True)
+    referred_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    referred_org_id = Column(Integer, ForeignKey('organizations.id'), nullable=False)
+    status = Column(Enum(ReferralStatus), default=ReferralStatus.PENDING)
+    commission_amount = Column(Numeric(12, 2), default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    converted_at = Column(DateTime, nullable=True)
+
+    affiliate = relationship("Affiliate", back_populates="referrals")

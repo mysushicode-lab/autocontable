@@ -127,10 +127,10 @@ const ResetPassword = () => {
 
               <button
                 type="submit"
-                disabled={mutation.isLoading}
+                disabled={mutation.isPending}
                 className="w-full py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium text-sm disabled:opacity-50 mt-2"
               >
-                {mutation.isLoading ? 'Réinitialisation en cours...' : 'Réinitialiser le mot de passe'}
+                {mutation.isPending ? 'Réinitialisation en cours...' : 'Réinitialiser le mot de passe'}
               </button>
             </form>
           </div>

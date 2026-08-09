@@ -16,6 +16,7 @@ from src.reconciliation import run_auto_reconciliation
 from src.api.audit import log_action
 from src.api.webhooks import fire_webhook
 from src.utils.paths import INVOICE_UPLOAD_DIR
+from src.utils.quota import can_process_invoice, increment_invoice_count
 
 router = APIRouter()
 
@@ -41,6 +42,15 @@ async def upload_invoice(
     session = db.get_session()
     org_id = current_user["organization_id"]
     try:
+        # Vérifier le quota avant le traitement IA
+        from src.storage.models import Organization
+        org = session.query(Organization).filter(Organization.id == org_id).first()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation non trouvée")
+
+        can_process, error_msg = can_process_invoice(org, session)
+        if not can_process:
+            raise HTTPException(status_code=403, detail=error_msg)
         already_done = session.query(ProcessedFileHash).filter(
             ProcessedFileHash.content_hash == content_hash,
             ProcessedFileHash.organization_id == org_id
@@ -67,6 +77,11 @@ async def upload_invoice(
 
         processor = InvoiceProcessor()
         extracted_data = processor.process_invoice(saved_path)
+
+        # Incrémenter le compteur UNIQUEMENT si l'IA a été utilisée (pas Factur-X/OCR)
+        if extracted_data.get('ai_used') is True:
+            increment_invoice_count(org, session)
+
         invoice = create_or_update_invoice(session, saved_path, extracted_data, org_id)
         if client_file_id is not None:
             invoice.client_file_id = client_file_id

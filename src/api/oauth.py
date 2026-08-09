@@ -34,6 +34,9 @@ async def google_callback(request: Request):
     """Handle Google OAuth callback"""
     _ensure_oauth_registered()
     try:
+        logger.info(f"Google callback received: query={request.url.query}")
+        logger.info(f"Google callback cookies: {request.cookies}")
+        logger.info(f"Google callback session: {dict(request.session)}")
         token = await oauth.google.authorize_access_token(request)
 
         user_info = token.get('userinfo')
@@ -56,24 +59,15 @@ async def google_callback(request: Request):
             role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            response = RedirectResponse(
-                url=f"{frontend_url}/oauth-callback?success=true&role={role}",
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role={role}&token={token_value}",
                 status_code=302
             )
-            response.set_cookie(
-                'auth_token',
-                token_value,
-                httponly=True,
-                secure=os.getenv('ENV', 'development') == 'production',
-                samesite='Lax',
-                max_age=7*24*60*60
-            )
-            return response
         finally:
             session.close()
 
     except Exception as e:
-        logger.error(f"Google OAuth callback error: {e}", exc_info=True)
+        logger.error(f"Google OAuth callback FAILED: {type(e).__name__}: {str(e)}", exc_info=True)
         frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
         return RedirectResponse(
             url=f"{frontend_url}/login?error=oauth_failed",
@@ -119,19 +113,10 @@ async def linkedin_callback(request: Request):
             role = 'client' if user_data['role'] == UserRole.CLIENT else 'admin'
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            response = RedirectResponse(
-                url=f"{frontend_url}/oauth-callback?success=true&role={role}",
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role={role}&token={token_value}",
                 status_code=302
             )
-            response.set_cookie(
-                'auth_token',
-                token_value,
-                httponly=True,
-                secure=os.getenv('ENV', 'development') == 'production',
-                samesite='Lax',
-                max_age=7*24*60*60
-            )
-            return response
         finally:
             session.close()
 
@@ -222,22 +207,13 @@ async def google_callback_invitation(request: Request):
             session.commit()
 
             token_value = _create_user_token(session, user_id)
-            session.close()
+            session.commit()
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            response = RedirectResponse(
-                url=f"{frontend_url}/oauth-callback?success=true&role=client",
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role=client&token={token_value}",
                 status_code=302
             )
-            response.set_cookie(
-                'auth_token',
-                token_value,
-                httponly=True,
-                secure=os.getenv('ENV', 'production') == 'production',
-                samesite='Lax',
-                max_age=7*24*60*60
-            )
-            return response
 
         finally:
             session.close()
@@ -323,22 +299,13 @@ async def linkedin_callback_invitation(request: Request):
             session.commit()
 
             token_value = _create_user_token(session, user_id)
-            session.close()
+            session.commit()
 
             frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-            response = RedirectResponse(
-                url=f"{frontend_url}/oauth-callback?success=true&role=client",
+            return RedirectResponse(
+                url=f"{frontend_url}/oauth-callback?success=true&role=client&token={token_value}",
                 status_code=302
             )
-            response.set_cookie(
-                'auth_token',
-                token_value,
-                httponly=True,
-                secure=os.getenv('ENV', 'production') == 'production',
-                samesite='Lax',
-                max_age=7*24*60*60
-            )
-            return response
 
         finally:
             session.close()

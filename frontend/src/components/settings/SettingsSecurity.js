@@ -68,10 +68,10 @@ export const SettingsSecurity = ({ changePasswordMutation, setSaveStatus }) => {
           <div className="flex justify-end pt-1">
             <button
               type="submit"
-              disabled={changePasswordMutation.isLoading}
+              disabled={changePasswordMutation.isPending}
               className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
             >
-              {changePasswordMutation.isLoading ? 'Mise à jour...' : 'Mettre à jour'}
+              {changePasswordMutation.isPending ? 'Mise à jour...' : 'Mettre à jour'}
             </button>
           </div>
         </form>

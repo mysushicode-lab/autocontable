@@ -24,6 +24,7 @@ def _ensure_oauth_registered():
 
     google_id = os.getenv('GOOGLE_CLIENT_ID')
     google_secret = os.getenv('GOOGLE_CLIENT_SECRET')
+    google_redirect = os.getenv('GOOGLE_REDIRECT_URI')
     if google_id and google_secret:
         oauth.register(
             name='google',
@@ -31,13 +32,15 @@ def _ensure_oauth_registered():
             client_secret=google_secret,
             server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
             client_kwargs={'scope': 'openid email profile'},
+            redirect_uri=google_redirect,
         )
-        logger.info(f"Google OAuth registered (client_id: {google_id[:20]}...)")
+        logger.info(f"Google OAuth registered (client_id: {google_id[:20]}..., redirect: {google_redirect})")
     else:
         logger.warning("Google OAuth NOT configured: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET missing")
 
     linkedin_id = os.getenv('LINKEDIN_CLIENT_ID')
     linkedin_secret = os.getenv('LINKEDIN_CLIENT_SECRET')
+    linkedin_redirect = os.getenv('LINKEDIN_REDIRECT_URI')
     if linkedin_id and linkedin_secret:
         oauth.register(
             name='linkedin',
@@ -49,8 +52,9 @@ def _ensure_oauth_registered():
             access_token_params=None,
             client_kwargs={'scope': 'openid email profile'},
             server_metadata_url='https://www.linkedin.com/oauth/.well-known/openid-configuration',
+            redirect_uri=linkedin_redirect,
         )
-        logger.info("LinkedIn OAuth registered")
+        logger.info(f"LinkedIn OAuth registered (redirect: {linkedin_redirect})")
     else:
         logger.warning("LinkedIn OAuth NOT configured: LINKEDIN_CLIENT_ID or LINKEDIN_CLIENT_SECRET missing")
 

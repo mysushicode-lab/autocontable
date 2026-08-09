@@ -2,66 +2,67 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Check, Loader2, Zap } from 'lucide-react';
 import { fetchPlanStatus, createStripeCheckoutSession, verifyStripeSession } from '../../api';
 
 const PLANS = [
   {
+    id: 'free',
+    name: 'Free',
+    monthlyPrice: '0 €',
+    annualPrice: '0 €',
+    tagline: 'Découvrez FactPilot',
+    features: [
+      '1 dossier client',
+      '80 factures IA / mois',
+      'Ingestion email',
+      'Réconciliation manuelle',
+      'Export CSV',
+    ],
+  },
+  {
     id: 'starter',
     name: 'Starter',
-    monthlyPrice: '29 €',
-    annualPrice: '23 €',
-    tagline: '1 dossier client',
+    monthlyPrice: '49 €',
+    annualPrice: '39 €',
+    tagline: 'Pour indépendants',
     features: [
-      '1 dossier client inclus',
-      'Ingestion email illimitée',
-      'Réconciliation bancaire',
-      'Export CSV',
+      '5 dossiers clients',
+      '400 factures IA / mois',
+      'Réconciliation IA automatique',
+      'Intégration email illimitée',
+      'Support email',
     ],
   },
   {
     id: 'pro',
     name: 'Pro',
-    monthlyPrice: '79 €',
-    annualPrice: '63 €',
-    tagline: '5 dossiers clients',
+    monthlyPrice: '149 €',
+    annualPrice: '119 €',
+    tagline: 'Pour cabinets',
     features: [
-      '5 dossiers clients inclus',
+      'Dossiers illimités',
+      '1 500 factures IA / mois',
       'Tout dans Starter',
+      'Multi-utilisateurs (3 max)',
       'Intégration WhatsApp',
-      'Rapports avancés',
       'Support prioritaire',
     ],
     highlighted: true,
-  },
-  {
-    id: 'cabinet',
-    name: 'Cabinet',
-    monthlyPrice: '199 €',
-    annualPrice: '159 €',
-    tagline: 'Dossiers illimités',
-    features: [
-      'Dossiers clients illimités',
-      'Tout dans Pro',
-      'Permissions multi-utilisateurs',
-      'Audit trail complet',
-      'API dédiée',
-    ],
   },
   {
     id: 'reseau',
     name: 'Réseau',
     monthlyPrice: 'Sur devis',
     annualPrice: 'Sur devis',
-    tagline: 'Dossiers & factures illimités',
+    tagline: 'Pour réseaux & groupes',
     features: [
-      'Tout Cabinet, plus :',
-      'Dossiers illimités',
-      'Gestion avancée des permissions',
-      'Accès API complet',
-      'Webhooks & notifications',
-      'Support dédié & onboarding',
-      'SLA garanti',
+      'Tout Pro, plus :',
+      'Factures IA illimitées',
+      'Utilisateurs illimités',
+      'API & webhooks dédiés',
+      'Permissions avancées',
+      'Support dédié & SLA',
     ],
   },
 ];
@@ -127,7 +128,7 @@ export const SettingsPlan = () => {
             <p className="text-xs text-gray-500">Votre abonnement a été activé avec succès.</p>
           </div>
           <button onClick={() => router.push('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-500 transition-colors">
+            className="px-4 py-2 bg-[#181818] text-white rounded-full text-xs font-medium hover:opacity-80 transition-opacity">
             Aller au Dashboard
           </button>
         </div>
@@ -135,54 +136,76 @@ export const SettingsPlan = () => {
     );
   }
 
-  const isTrial = planStatus?.plan_type === 'trial' && planStatus?.is_trial_active;
-  const isExpired = planStatus?.is_trial_expired;
-  const daysRemaining = planStatus?.days_remaining || 0;
-  const currentPlan = planStatus?.plan_type === 'paid' ? (planStatus?.plan || 'pro') : 'starter';
+  const currentPlan = planStatus?.plan_type === 'paid' ? (planStatus?.plan || 'pro') : 'free';
+  const { quota, used, remaining } = planStatus || {};
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">Plan</h2>
-        <p className="text-sm text-gray-500">Votre abonnement et vos limites d'utilisation</p>
-      </div>
-
-      {/* Trial notice */}
-      {isTrial && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium">
-          <Clock className="w-4 h-4 shrink-0" />
-          Il vous reste <strong>{daysRemaining}</strong> jour{daysRemaining > 1 ? 's' : ''} d'essai
+    <div className="space-y-8">
+      {/* Quota Status Card */}
+      {quota !== undefined && quota !== null && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Consommation mensuelle</h3>
+              <p className="text-xs text-gray-600">Factures traitées par l'IA ce mois-ci</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900">{used} <span className="text-lg text-gray-400">/ {quota}</span></p>
+              <p className="text-xs text-gray-600 mt-1">{remaining} restantes</p>
+            </div>
+          </div>
+          <div className="mt-4 bg-white/60 rounded-full h-2 overflow-hidden">
+            <div
+              className={`h-full transition-all ${
+                (used / quota) > 0.9 ? 'bg-red-500' : (used / quota) > 0.7 ? 'bg-orange-500' : 'bg-blue-500'
+              }`}
+              style={{ width: `${Math.min((used / quota) * 100, 100)}%` }}
+            />
+          </div>
+          {remaining === 0 && (
+            <p className="mt-3 text-xs font-medium text-red-600">
+              Quota atteint. Passez à un plan supérieur pour continuer à traiter des factures.
+            </p>
+          )}
         </div>
       )}
-      {isExpired && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0" />Votre essai gratuit a expiré
+
+      {quota === null && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Factures illimitées</h3>
+              <p className="text-xs text-gray-600">Votre plan inclut un traitement IA sans limite</p>
+            </div>
+          </div>
         </div>
       )}
-
       {/* Toggle Mensuel / Annuel */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1">
+        <div className="inline-flex items-center gap-3 bg-white rounded-full p-1 border border-[#6c6f761f]">
           <button
             type="button"
             onClick={() => setAnnual(false)}
-            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${!annual ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${!annual ? 'bg-[#181818] text-white' : 'text-[#6b7280] hover:text-[#181818]'}`}
           >
             Mensuel
           </button>
           <button
             type="button"
             onClick={() => setAnnual(true)}
-            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${annual ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${annual ? 'bg-[#181818] text-white' : 'text-[#6b7280] hover:text-[#181818]'}`}
           >
             Annuel
-            <span className="ml-1.5 text-xs text-blue-400 font-semibold">-20%</span>
+            <span className="ml-1.5 text-xs text-[#466cf3] font-semibold">-20%</span>
           </button>
         </div>
       </div>
 
       {/* Plans Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {PLANS.map((plan) => {
           const price = annual ? plan.annualPrice : plan.monthlyPrice;
           const isNumeric = price !== 'Sur devis';
@@ -194,57 +217,57 @@ export const SettingsPlan = () => {
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-2xl p-6 transition-all ${
+              className={`relative overflow-hidden rounded-2xl p-8 flex flex-col gap-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ${
                 plan.highlighted
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-200'
+                  ? 'bg-[#181818] text-white'
+                  : 'bg-white border border-[#6c6f761f]'
               }`}
             >
               {isCurrent && (
-                <span className={`absolute -top-2.5 left-4 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${
-                  plan.highlighted ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'
+                <span className={`absolute top-4 right-4 px-2.5 py-1 text-xs font-semibold rounded-full ${
+                  plan.highlighted ? 'text-[#181818] bg-white' : 'text-white bg-[#181818]'
                 }`}>
-                  Plan actuel
+                  Actuel
                 </span>
               )}
               {plan.highlighted && !isCurrent && (
-                <span className="absolute -top-2.5 left-4 text-[10px] font-semibold uppercase tracking-wider bg-white text-blue-600 px-2 py-0.5 rounded">
+                <span className="absolute top-4 right-4 px-2.5 py-1 text-xs font-semibold text-[#181818] bg-white rounded-full">
                   Populaire
                 </span>
               )}
 
-              <div className="mb-4">
-                <p className={`text-sm font-medium mb-1 ${plan.highlighted ? 'text-white/70' : 'text-gray-500'}`}>
+              <div>
+                <p className={`text-sm font-medium mb-4 ${plan.highlighted ? 'text-white/60' : 'text-[#6b7280]'}`}>
                   {plan.name}
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-3xl font-semibold tracking-tight ${plan.highlighted ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`text-4xl font-semibold tracking-tight ${plan.highlighted ? 'text-white' : 'text-[#181818]'}`}>
                     {price}
                   </span>
                   {isNumeric && (
-                    <span className={`text-sm ${plan.highlighted ? 'text-white/50' : 'text-gray-400'}`}>/ mois</span>
+                    <span className={`text-sm ${plan.highlighted ? 'text-white/50' : 'text-[#6b7280]'}`}>/ mois</span>
                   )}
                 </div>
                 {savings && (
-                  <p className={`mt-1 text-xs font-medium ${plan.highlighted ? 'text-blue-200' : 'text-blue-600'}`}>{savings}</p>
+                  <p className="mt-1.5 text-xs font-medium text-[#466cf3]">{savings}</p>
                 )}
-                <p className={`mt-1 text-xs ${plan.highlighted ? 'text-white/60' : 'text-gray-400'}`}>
+                <p className={`mt-2 text-sm font-medium ${plan.highlighted ? 'text-white/60' : 'text-[#6b7280]'}`}>
                   {plan.tagline}
                 </p>
               </div>
 
-              <ul className="flex flex-col gap-2 flex-1 mb-6">
+              <ul className="flex flex-col gap-3 flex-1">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.highlighted ? 'text-white/80' : 'text-blue-600'}`} strokeWidth={2.5} />
-                    <span className={`text-sm ${plan.highlighted ? 'text-white/80' : 'text-gray-600'}`}>{feature}</span>
+                  <li key={feature} className="flex items-start gap-2.5">
+                    <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.highlighted ? 'text-white/70' : 'text-[#181818]'}`} strokeWidth={2.5} />
+                    <span className={`text-sm ${plan.highlighted ? 'text-white/80' : 'text-[#46484d]'}`}>{feature}</span>
                   </li>
                 ))}
               </ul>
 
               {isCurrent ? (
-                <span className={`w-full text-center text-sm py-2.5 rounded-full font-medium ${
-                  plan.highlighted ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-400'
+                <span className={`inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm font-semibold ${
+                  plan.highlighted ? 'bg-white/20 text-white/60' : 'bg-gray-100 text-gray-400'
                 }`}>
                   Plan actuel
                 </span>
@@ -252,10 +275,10 @@ export const SettingsPlan = () => {
                 <button
                   onClick={() => handleChoosePlan(plan.id)}
                   disabled={loadingCheckout === plan.id}
-                  className={`w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-full font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 ${
+                  className={`inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 py-3 text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 ${
                     plan.highlighted
-                      ? 'bg-white text-blue-600'
-                      : 'bg-blue-600 text-white'
+                      ? 'bg-white text-[#181818]'
+                      : 'bg-[#181818] text-white'
                   }`}
                 >
                   {loadingCheckout === plan.id && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -267,7 +290,7 @@ export const SettingsPlan = () => {
         })}
       </div>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-[#6b7280]">
         Sans engagement · Annulation à tout moment · Données hébergées en France · Conforme RGPD
       </p>
     </div>

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Zap, Menu, ChevronRight, X, Clock, Gift, BookOpen, HelpCircle } from 'lucide-react';
+import { Bell, Zap, Menu, ChevronRight, X, Gift, HelpCircle } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useClientFile } from '../context/ClientFileContext';
@@ -75,7 +75,7 @@ const Layout = ({ children }) => {
         </button>
 
         <Link href="/dashboard">
-          <img src="/automatchfact_blanc.png" alt="FactPilot" className="h-5 w-auto" />
+          <img src="/factpilot-logo.svg" alt="FactPilot" className="h-5 w-auto" />
         </Link>
 
         <div className="hidden lg:flex items-center gap-2">
@@ -96,16 +96,12 @@ const Layout = ({ children }) => {
         <div className="flex-1" />
 
         <div className="flex items-center gap-0.5">
-          {[
-            { Icon: Clock, label: 'Historique' },
-            { Icon: Gift, label: 'Nouveautés' },
-            { Icon: BookOpen, label: 'Documentation' },
-            { Icon: HelpCircle, label: 'Aide' },
-          ].map(({ Icon, label }) => (
-            <button key={label} aria-label={label} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
-              <Icon style={{ width: 15, height: 15 }} />
-            </button>
-          ))}
+          <Link href="/affiliation" aria-label="Affiliation" className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            <Gift style={{ width: 15, height: 15 }} />
+          </Link>
+          <button aria-label="Aide" className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            <HelpCircle style={{ width: 15, height: 15 }} />
+          </button>
 
           <span className="w-px h-4 bg-gray-200 mx-1" />
 

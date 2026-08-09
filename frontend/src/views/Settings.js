@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut, Lock, Shield, Webhook, MessageSquare } from 'lucide-react';
+import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut, Lock, Shield, MessageSquare } from 'lucide-react';
 import { fetchSettings, fetchUsers, testImap, deleteAccount } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useSettingsMutations } from '../hooks/useSettingsMutations';
@@ -14,20 +14,18 @@ import { SettingsScheduler } from '../components/settings/SettingsScheduler';
 import { SettingsCollaborations } from '../components/settings/SettingsCollaborations';
 import { SettingsBilling } from '../components/settings/SettingsBilling';
 import { SettingsPlan } from '../components/settings/SettingsPlan';
-import { SettingsWebhooks } from '../components/settings/SettingsWebhooks';
 import { SettingsWhatsApp } from '../components/settings/SettingsWhatsApp';
 
 const ALL_SECTIONS = [
-  { id: 'profil',         label: 'Profil',              icon: UserCircle,   adminOnly: false, clientHidden: false },
-  { id: 'security',       label: 'Sécurité',             icon: Lock,         adminOnly: false, clientHidden: false },
-  { id: 'privacy',        label: 'Confidentialité',      icon: Shield,       adminOnly: false, clientHidden: false },
-  { id: 'email',          label: 'Configuration Email',  icon: Mail,         adminOnly: true,  clientHidden: true  },
-  { id: 'whatsapp',       label: 'WhatsApp',             icon: MessageSquare, adminOnly: true,  clientHidden: true  },
-  { id: 'scheduler',      label: 'Planificateur',        icon: Clock,        adminOnly: true,  clientHidden: true  },
-  { id: 'collaborations', label: 'Collaborations',       icon: Users,        adminOnly: true,  clientHidden: true  },
-  { id: 'webhooks',       label: 'Webhooks',             icon: Webhook,      adminOnly: true,  clientHidden: true  },
-  { id: 'billing',        label: 'Facturation',          icon: CreditCard,   adminOnly: true,  clientHidden: true  },
-  { id: 'plan',           label: 'Plan',                 icon: Zap,          adminOnly: true,  clientHidden: true  },
+  { id: 'profil',         label: 'Profil',         icon: UserCircle,    adminOnly: false, clientHidden: false },
+  { id: 'security',       label: 'Sécurité',       icon: Lock,          adminOnly: false, clientHidden: false },
+  { id: 'privacy',        label: 'Confidentialité', icon: Shield,       adminOnly: false, clientHidden: false },
+  { id: 'email',          label: 'Email',          icon: Mail,          adminOnly: true,  clientHidden: true  },
+  { id: 'whatsapp',       label: 'WhatsApp',       icon: MessageSquare, adminOnly: true,  clientHidden: true  },
+  { id: 'scheduler',      label: 'Planificateur',  icon: Clock,         adminOnly: true,  clientHidden: true  },
+  { id: 'collaborations', label: 'Équipe',         icon: Users,         adminOnly: true,  clientHidden: true  },
+  { id: 'billing',        label: 'Facturation',    icon: CreditCard,    adminOnly: true,  clientHidden: true  },
+  { id: 'plan',           label: 'Plan',           icon: Zap,           adminOnly: true,  clientHidden: true  },
 ];
 
 const Settings = () => {
@@ -37,14 +35,26 @@ const Settings = () => {
   const [emailForm, setEmailForm] = useState({});
   const [schedulerForm, setSchedulerForm] = useState({});
   const [imapTestResult, setImapTestResult] = useState(null);
+  const [indicatorStyle, setIndicatorStyle] = useState({});
+  const tabsRef = useRef(null);
 
-  // Filter sections based on user role
   const isAdmin = user?.role === 'admin';
   const isClient = user?.role === 'client';
   const SECTIONS = ALL_SECTIONS.filter(section => {
-    if (isClient && section.clientHidden) return false;  // Hide for PME
+    if (isClient && section.clientHidden) return false;
     return !section.adminOnly || isAdmin;
   });
+
+  useEffect(() => {
+    if (!tabsRef.current) return;
+    const activeTab = tabsRef.current.querySelector(`[data-tab="${activeSection}"]`);
+    if (activeTab) {
+      setIndicatorStyle({
+        left: activeTab.offsetLeft,
+        width: activeTab.offsetWidth,
+      });
+    }
+  }, [activeSection, SECTIONS.length]);
 
   const { data: settingsData, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -59,7 +69,6 @@ const Settings = () => {
 
   const mutations = useSettingsMutations();
 
-  // Initialize forms from settings
   React.useEffect(() => {
     if (settings.length > 0) {
       const settingsMap = Object.fromEntries(settings.map(s => [s.key, s.value]));
@@ -149,12 +158,6 @@ const Settings = () => {
             setSaveStatus={setSaveStatus}
           />
         );
-      case 'webhooks':
-        return (
-          <SettingsWebhooks
-            setSaveStatus={setSaveStatus}
-          />
-        );
       case 'billing':
         return <SettingsBilling />;
       case 'plan':
@@ -165,11 +168,9 @@ const Settings = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Header outside cards */}
+    <div className="w-full">
       <div className="mb-6">
         <h1 className="text-lg font-semibold text-gray-900">Paramètres</h1>
-        <p className="text-xs text-gray-500 mt-0.5">Gérez vos préférences et la sécurité de votre compte</p>
       </div>
 
       {saveStatus && (
@@ -180,69 +181,40 @@ const Settings = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sidebar card */}
-        <nav className="lg:col-span-1">
-          <div className="bg-white rounded-lg p-3 border border-gray-200 space-y-3">
-            {/* Main sections */}
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400 px-2 mb-1">Compte</p>
-              <ul className="space-y-0.5">
-                {SECTIONS.filter(s => ['profil', 'security', 'privacy', 'email', 'scheduler', 'collaborations'].includes(s.id)).map((section) => (
-                  <li key={section.id}>
-                    <button
-                      onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-2.5 px-2 py-1.5 text-xs rounded-md transition-colors ${
-                        activeSection === section.id
-                          ? 'bg-gray-100 text-gray-900 font-medium'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <section.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                      {section.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {SECTIONS.some(s => ['billing', 'plan'].includes(s.id)) && (
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-400 px-2 mb-1">Abonnement</p>
-                <ul className="space-y-0.5">
-                  {SECTIONS.filter(s => ['billing', 'plan'].includes(s.id)).map((section) => (
-                    <li key={section.id}>
-                      <button
-                        onClick={() => setActiveSection(section.id)}
-                        className={`w-full flex items-center gap-2.5 px-2 py-1.5 text-xs rounded-md transition-colors ${
-                          activeSection === section.id
-                            ? 'bg-gray-100 text-gray-900 font-medium'
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <section.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                        {section.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div className="border-t border-gray-100 pt-2">
-              <button
-                onClick={logout}
-                className="w-full flex items-center gap-2.5 px-2 py-1.5 text-xs rounded-md font-medium transition-colors text-red-500 hover:bg-red-50"
-              >
-                <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
-                Déconnexion
-              </button>
-            </div>
-          </div>
-        </nav>
-
-        {/* Content */}
-        <div className="lg:col-span-2">
-          {renderContent()}
+      <div className="relative mb-6" ref={tabsRef}>
+        <div className="flex overflow-x-auto scrollbar-hide gap-0">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              data-tab={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs whitespace-nowrap transition-colors relative ${
+                activeSection === section.id
+                  ? 'text-blue-600 font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <section.icon className="w-3.5 h-3.5" />
+              {section.label}
+            </button>
+          ))}
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 px-3 py-2.5 text-xs whitespace-nowrap text-red-400 hover:text-red-600 ml-auto"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Déconnexion
+          </button>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200" />
+        <div
+          className="absolute bottom-0 h-0.5 bg-blue-600 rounded-full transition-all duration-200"
+          style={indicatorStyle}
+        />
+      </div>
+
+      <div className={activeSection === 'plan' ? '' : 'max-w-2xl mx-auto'}>
+        {renderContent()}
       </div>
     </div>
   );

@@ -67,17 +67,19 @@ async function proxyRequest(request, params, method) {
       }
     }
 
+    const isOAuthRoute = path.startsWith('auth/google') || path.startsWith('auth/linkedin');
+
     const response = await fetch(backendUrl, {
       method,
       headers,
       body,
-      redirect: 'manual',
+      redirect: isOAuthRoute ? 'manual' : 'follow',
     });
 
     const setCookies = extractSetCookies(response);
 
-    // Handle redirects (OAuth flows)
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
+    // Handle OAuth redirects (to Google/LinkedIn consent screens)
+    if (isOAuthRoute && [301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location');
       const redirectResponse = NextResponse.redirect(location, response.status);
       for (const cookie of setCookies) {

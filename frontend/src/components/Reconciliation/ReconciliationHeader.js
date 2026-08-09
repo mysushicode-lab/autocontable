@@ -57,7 +57,7 @@ const ReconciliationHeader = ({
             className="px-2 py-2 sm:px-3 bg-white border border-gray-200 rounded-md  flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <CreditCard className="w-4 h-4" />
-            <span className="hidden sm:inline">{importMutation.isLoading ? 'Import...' : 'Import bancaire'}</span>
+            <span className="hidden sm:inline">{importMutation.isPending ? 'Import...' : 'Import bancaire'}</span>
           </button>
           <input
             ref={bankFileInputRef}
@@ -72,7 +72,7 @@ const ReconciliationHeader = ({
             className="px-2 py-2 sm:px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Play className="w-4 h-4" />
-            <span className="hidden sm:inline">{runMutation.isLoading ? 'Analyse...' : 'Lancer le rapprochement'}</span>
+            <span className="hidden sm:inline">{runMutation.isPending ? 'Analyse...' : 'Lancer le rapprochement'}</span>
           </button>
         </div>
       </div>

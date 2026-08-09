@@ -34,7 +34,7 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
       <header className={`sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-black/5 transition-transform duration-500 ease-in-out ${visible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
           <Link href="/" className="shrink-0">
-            <img src="/automatchfact.png" alt="FactPilot" className="h-6 w-auto" />
+            <img src="/factpilot-logo.svg" alt="FactPilot" className="h-6 w-auto" />
           </Link>
 
           {/* Desktop nav */}
@@ -89,7 +89,7 @@ export default function LandingHeader({ isAuthenticated, onLogout }) {
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
-            <img src="/automatchfact.png" alt="FactPilot" className="h-6 w-auto" />
+            <img src="/factpilot-logo.svg" alt="FactPilot" className="h-6 w-auto" />
             <button
               type="button"
               onClick={closeMobile}

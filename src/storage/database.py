@@ -95,6 +95,22 @@ def run_migrations():
                 session.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
                 session.commit()
                 print("Added file_hash column to bank_transactions table")
+
+            # Check if quota columns exist
+            result = session.execute(text("PRAGMA table_info(organizations)"))
+            org_columns = [row[1] for row in result.fetchall()]
+            if 'invoices_processed_this_month' not in org_columns:
+                session.execute(text("ALTER TABLE organizations ADD COLUMN invoices_processed_this_month INTEGER DEFAULT 0"))
+                session.commit()
+                print("Added invoices_processed_this_month column to organizations table")
+            if 'monthly_quota_reset_date' not in org_columns:
+                session.execute(text("ALTER TABLE organizations ADD COLUMN monthly_quota_reset_date DATETIME"))
+                session.commit()
+                print("Added monthly_quota_reset_date column to organizations table")
+            if 'stripe_subscription_id' not in org_columns:
+                session.execute(text("ALTER TABLE organizations ADD COLUMN stripe_subscription_id VARCHAR(255)"))
+                session.commit()
+                print("Added stripe_subscription_id column to organizations table")
         else:
             # PostgreSQL: check columns via information_schema
             result = session.execute(text("""
@@ -105,9 +121,37 @@ def run_migrations():
                 session.execute(text("ALTER TABLE bank_transactions ADD COLUMN file_hash VARCHAR(64)"))
                 session.commit()
                 print("Added file_hash column to bank_transactions table")
+
+            # Check if quota columns exist in organizations
+            result = session.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'organizations' AND column_name = 'invoices_processed_this_month'
+            """))
+            if not result.fetchone():
+                session.execute(text("ALTER TABLE organizations ADD COLUMN invoices_processed_this_month INTEGER DEFAULT 0"))
+                session.commit()
+                print("Added invoices_processed_this_month column to organizations table")
+
+            result = session.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'organizations' AND column_name = 'monthly_quota_reset_date'
+            """))
+            if not result.fetchone():
+                session.execute(text("ALTER TABLE organizations ADD COLUMN monthly_quota_reset_date TIMESTAMP"))
+                session.commit()
+                print("Added monthly_quota_reset_date column to organizations table")
+
+            result = session.execute(text("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'organizations' AND column_name = 'stripe_subscription_id'
+            """))
+            if not result.fetchone():
+                session.execute(text("ALTER TABLE organizations ADD COLUMN stripe_subscription_id VARCHAR(255)"))
+                session.commit()
+                print("Added stripe_subscription_id column to organizations table")
     except Exception as e:
         session.rollback()
-        print(f"Error adding file_hash column: {e}")
+        print(f"Error during migrations: {e}")
     finally:
         session.close()
 

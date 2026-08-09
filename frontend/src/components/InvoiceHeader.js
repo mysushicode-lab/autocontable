@@ -31,7 +31,7 @@ const InvoiceHeader = ({ onExport, onUploadClick, uploadMutation, uploadInputRef
           className="px-2 py-2 sm:px-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <FileText className="w-4 h-4" />
-          <span className="hidden sm:inline">{uploadMutation.isLoading ? 'Import...' : 'Nouvelle Facture'}</span>
+          <span className="hidden sm:inline">{uploadMutation.isPending ? 'Import...' : 'Nouvelle Facture'}</span>
         </button>
         <input
           ref={uploadInputRef}

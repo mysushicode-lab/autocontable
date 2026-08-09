@@ -74,6 +74,7 @@ class RegisterRequest(BaseModel):
     password: str
     name: str
     email: str
+    ref: str | None = None
 
     @field_validator('password')
     @classmethod

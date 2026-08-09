@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -155,14 +157,14 @@ const PcgEditorModal = ({ clientFileId, clientFileName, onClose }) => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={() => updateMutation.mutate()}
-                disabled={updateMutation.isLoading}
+                disabled={updateMutation.isPending}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm font-medium disabled:opacity-50"
               >
-                {updateMutation.isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+                {updateMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
               </button>
               <button
                 onClick={() => resetMutation.mutate()}
-                disabled={resetMutation.isLoading}
+                disabled={resetMutation.isPending}
                 className="px-4 py-2 border text-gray-700 rounded-md  text-sm font-medium flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />

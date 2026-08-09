@@ -72,6 +72,10 @@ def register(request: Request, body: RegisterRequest, background_tasks: Backgrou
         session.flush()
         user_id = user.id
         create_default_settings(session, org_id, company_name=body.name)
+        # Track affiliate referral if ref code provided
+        if body.ref:
+            from src.api.affiliates import track_referral
+            track_referral(session, body.ref, user_id, org_id)
         token_value = _create_user_token(session, user_id)
         session.commit()
 

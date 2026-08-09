@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { MessageSquare, CheckCircle, XCircle, Loader2, Save } from 'lucide-react';
 import { INPUT_CLASS } from '../../utils/formHelpers';
 import HelpTooltip from '../ui/HelpTooltip';
 
@@ -60,21 +60,18 @@ export const SettingsWhatsApp = ({
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-green-600" />
-          Configuration WhatsApp
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Configurez l'intégration WhatsApp Business pour les notifications automatiques
-        </p>
-      </div>
+    <div className="bg-white rounded-md p-6 border border-gray-200">
+      <h2 className="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
+        <MessageSquare className="w-4 h-4 text-green-600" />
+        Configuration WhatsApp
+      </h2>
+      <p className="text-xs text-gray-500 mb-5">
+        Configurez l'intégration WhatsApp Business pour les notifications automatiques
+      </p>
 
-      <div className="space-y-6">
-        {/* Enable WhatsApp */}
+      <div className="space-y-4">
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1.5">
             Activer WhatsApp
             <HelpTooltip text="Activez l'envoi de notifications via WhatsApp Business API" />
           </label>
@@ -86,7 +83,7 @@ export const SettingsWhatsApp = ({
                 value="true"
                 checked={form.whatsapp_enabled === 'true'}
                 onChange={(e) => setForm({ ...form, whatsapp_enabled: e.target.value })}
-                className="w-4 h-4 text-blue-600"
+                className="w-3.5 h-3.5 text-blue-600"
               />
               <span className="text-sm text-gray-700">Activé</span>
             </label>
@@ -97,16 +94,15 @@ export const SettingsWhatsApp = ({
                 value="false"
                 checked={form.whatsapp_enabled === 'false'}
                 onChange={(e) => setForm({ ...form, whatsapp_enabled: e.target.value })}
-                className="w-4 h-4 text-blue-600"
+                className="w-3.5 h-3.5 text-blue-600"
               />
               <span className="text-sm text-gray-700">Désactivé</span>
             </label>
           </div>
         </div>
 
-        {/* Phone Number */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1.5">
             Numéro WhatsApp Business
             <HelpTooltip text="Votre numéro WhatsApp Business au format international (+33...)" />
           </label>
@@ -119,9 +115,8 @@ export const SettingsWhatsApp = ({
           />
         </div>
 
-        {/* Business Account ID */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1.5">
             Business Account ID
             <HelpTooltip text="ID de votre compte WhatsApp Business depuis Meta Business Suite" />
           </label>
@@ -134,9 +129,8 @@ export const SettingsWhatsApp = ({
           />
         </div>
 
-        {/* API Key */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1.5">
             API Key (Token)
             <HelpTooltip text="Clé API générée depuis Meta for Developers" />
           </label>
@@ -149,50 +143,26 @@ export const SettingsWhatsApp = ({
           />
         </div>
 
-        {/* Test Connection */}
-        {form.whatsapp_enabled === 'true' && form.whatsapp_api_key && (
-          <div className="border-t border-gray-200 pt-4">
-            <button
-              onClick={handleTest}
-              disabled={testing}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              {testing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Test en cours...
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-4 h-4" />
-                  Tester la connexion
-                </>
-              )}
-            </button>
-
-            {testResult === 'success' && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle className="w-4 h-4" />
-                <span>Connexion WhatsApp réussie !</span>
-              </div>
-            )}
-            {testResult === 'error' && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-red-600">
-                <XCircle className="w-4 h-4" />
-                <span>Échec de la connexion. Vérifiez vos identifiants.</span>
-              </div>
-            )}
+        {testResult === 'success' && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-md text-xs border bg-green-50 text-green-600 border-green-200">
+            <CheckCircle className="w-3.5 h-3.5 shrink-0" /> Connexion réussie
+          </div>
+        )}
+        {testResult === 'error' && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-md text-xs border bg-red-50 text-red-500 border-red-200">
+            <XCircle className="w-3.5 h-3.5 shrink-0" /> Échec de connexion. Vérifiez vos identifiants.
           </div>
         )}
 
-        {/* Save Button */}
-        <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+        <div className="flex justify-end pt-2">
           <button
             onClick={handleSave}
-            disabled={updateMutation.isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={updateMutation.isPending}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
           >
-            {updateMutation.isLoading ? 'Enregistrement...' : 'Enregistrer'}
+            {updateMutation.isPending
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Enregistrement...</>
+              : <><Save className="w-3.5 h-3.5" />Sauvegarder</>}
           </button>
         </div>
       </div>

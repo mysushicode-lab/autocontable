@@ -210,7 +210,7 @@ const Portfolio = () => {
         confirmLabel="Supprimer définitivement"
         onConfirm={() => { archiveMutation.mutate(archiveConfirm.id); setArchiveConfirm(null); }}
         onCancel={() => setArchiveConfirm(null)}
-        loading={archiveMutation.isLoading}
+        loading={archiveMutation.isPending}
       />
 
       <ConfirmationModal
@@ -220,7 +220,7 @@ const Portfolio = () => {
         confirmLabel="Quitter définitivement"
         onConfirm={() => { quitMutation.mutate(quitConfirm.id); setQuitConfirm(null); }}
         onCancel={() => setQuitConfirm(null)}
-        loading={quitMutation.isLoading}
+        loading={quitMutation.isPending}
         isDangerous={true}
       />
 
@@ -233,7 +233,7 @@ const Portfolio = () => {
         setSiretValidation={setSiretValidation}
         onSubmit={handleSubmit}
         onClose={closeFormModal}
-        isSubmitting={createMutation.isLoading || updateMutation.isLoading}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
       />
 
       {/* Permissions Modal */}

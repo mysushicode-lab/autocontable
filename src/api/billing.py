@@ -6,25 +6,26 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.storage.database import db
 from src.storage.models import ClientFile, Organization
 from src.api.auth import get_current_user
+from src.utils.quota import get_quota_status
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 PRICING_TIERS = [
     {
-        "name": "starter", "price": 29.00, "max_dossiers": 1, "max_invoices_per_month": 50, "label": "Starter",
+        "name": "free", "price": 0.00, "max_dossiers": 1, "max_invoices_per_month": 80, "label": "Free",
+        "stripe_price_id": None,
+        "features": ["upload_manual", "extraction_ia", "export_fec"],
+    },
+    {
+        "name": "starter", "price": 49.00, "max_dossiers": 5, "max_invoices_per_month": 400, "label": "Starter",
         "stripe_price_id": os.getenv("STRIPE_PRICE_STARTER", ""),
         "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation"],
     },
     {
-        "name": "pro", "price": 79.00, "max_dossiers": 5, "max_invoices_per_month": 200, "label": "Pro",
+        "name": "pro", "price": 149.00, "max_dossiers": None, "max_invoices_per_month": 1500, "label": "Pro",
         "stripe_price_id": os.getenv("STRIPE_PRICE_PRO", ""),
-        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics"],
-    },
-    {
-        "name": "cabinet", "price": 199.00, "max_dossiers": None, "max_invoices_per_month": 1000, "label": "Cabinet",
-        "stripe_price_id": os.getenv("STRIPE_PRICE_CABINET", ""),
-        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics", "permissions", "audit_log", "api_access", "auto_push"],
+        "features": ["upload_manual", "extraction_ia", "export_fec", "reconciliation", "whatsapp", "analytics", "permissions", "audit_log"],
     },
     {
         "name": "reseau", "price": None, "max_dossiers": None, "max_invoices_per_month": None, "label": "Réseau",
@@ -110,10 +111,9 @@ def get_billing_usage(current_user: dict = Depends(get_current_user)):
 
         result = calculate_monthly_cost(active_dossiers, plan_name)
 
-        # Add invoice quota usage (TODO: add migration for these columns)
-        result["invoices_processed_this_month"] = getattr(org, "invoices_processed_this_month", 0) or 0
-        quota_reset_date = getattr(org, "monthly_quota_reset_date", None)
-        result["quota_reset_date"] = quota_reset_date.isoformat() if quota_reset_date else None
+        # Add invoice quota usage
+        quota_info = get_quota_status(org, session)
+        result.update(quota_info)
 
         return result
     finally:

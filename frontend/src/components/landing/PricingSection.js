@@ -5,29 +5,46 @@ import { sectionBadge, sectionHeading } from '../../views/landing/_styles';
 
 const PLANS = [
   {
-    name: 'Starter',
-    monthlyPrice: '29 €',
-    annualPrice: '23 €',
-    tagline: '1 dossier client',
+    name: 'Free',
+    monthlyPrice: '0 €',
+    annualPrice: '0 €',
+    tagline: 'Découvrez FactPilot',
     features: [
-      '1 dossier client inclus',
-      'Ingestion email illimitée',
-      'Réconciliation bancaire',
+      '1 dossier client',
+      '80 factures IA / mois',
+      'Ingestion email',
+      'Réconciliation manuelle',
       'Export CSV',
+    ],
+    ctaLabel: 'Commencer gratuitement',
+    ctaTo: '/signup',
+  },
+  {
+    name: 'Starter',
+    monthlyPrice: '49 €',
+    annualPrice: '39 €',
+    tagline: 'Pour indépendants',
+    features: [
+      '5 dossiers clients',
+      '400 factures IA / mois',
+      'Réconciliation IA automatique',
+      'Intégration email illimitée',
+      'Support email',
     ],
     ctaLabel: 'Démarrer l\'essai gratuit',
     ctaTo: '/signup',
   },
   {
     name: 'Pro',
-    monthlyPrice: '79 €',
-    annualPrice: '63 €',
-    tagline: '5 dossiers clients',
+    monthlyPrice: '149 €',
+    annualPrice: '119 €',
+    tagline: 'Pour cabinets',
     features: [
-      '5 dossiers clients inclus',
+      'Dossiers illimités',
+      '1 500 factures IA / mois',
       'Tout dans Starter',
+      'Multi-utilisateurs (3 max)',
       'Intégration WhatsApp',
-      'Rapports avancés',
       'Support prioritaire',
     ],
     ctaLabel: 'Démarrer l\'essai gratuit',
@@ -35,33 +52,17 @@ const PLANS = [
     highlighted: true,
   },
   {
-    name: 'Cabinet',
-    monthlyPrice: '199 €',
-    annualPrice: '159 €',
-    tagline: 'Dossiers illimités',
-    features: [
-      'Dossiers clients illimités',
-      'Tout dans Pro',
-      'Permissions multi-utilisateurs',
-      'Audit trail complet',
-      'API dédiée',
-    ],
-    ctaLabel: 'Démarrer l\'essai gratuit',
-    ctaTo: '/signup',
-  },
-  {
     name: 'Réseau',
     monthlyPrice: 'Sur devis',
     annualPrice: 'Sur devis',
-    tagline: 'Dossiers & factures illimités',
+    tagline: 'Pour réseaux & groupes',
     features: [
-      'Tout Cabinet, plus :',
-      'Dossiers illimités',
-      'Gestion avancée des permissions',
-      'Accès API complet',
-      'Webhooks & notifications',
-      'Support dédié & onboarding',
-      'SLA garanti',
+      'Tout Pro, plus :',
+      'Factures IA illimitées',
+      'Utilisateurs illimités',
+      'API & webhooks dédiés',
+      'Permissions avancées',
+      'Support dédié & SLA',
     ],
     ctaLabel: 'Nous contacter',
     ctaTo: '/signup',
@@ -159,7 +160,7 @@ export default function PricingSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-lg sm:max-w-none mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-lg md:max-w-none mx-auto">
           {PLANS.map((plan) => {
             const price = annual ? plan.annualPrice : plan.monthlyPrice;
             const isNumeric = price !== 'Sur devis';

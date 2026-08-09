@@ -53,14 +53,14 @@ const PendingReviewTab = ({ pendingMatches, selectedPendingIds, setSelectedPendi
           <div className="flex-1" />
           <button
             onClick={handleReject}
-            disabled={selectedPendingIds.size === 0 || batchValidateMutation.isLoading}
+            disabled={selectedPendingIds.size === 0 || batchValidateMutation.isPending}
             className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Rejeter la sélection ({selectedPendingIds.size})
           </button>
           <button
             onClick={handleValidate}
-            disabled={selectedPendingIds.size === 0 || batchValidateMutation.isLoading}
+            disabled={selectedPendingIds.size === 0 || batchValidateMutation.isPending}
             className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Valider la sélection ({selectedPendingIds.size})

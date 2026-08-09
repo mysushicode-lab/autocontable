@@ -10,6 +10,8 @@ conflict with the `stripe` package import.
 """
 import os
 import logging
+from datetime import datetime
+from decimal import Decimal
 
 import src.config  # noqa: F401
 import stripe
@@ -17,7 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from src.api.auth import get_current_user
 from src.storage.database import db
-from src.storage.models import Organization
+from src.storage.models import Organization, Affiliate, Referral, ReferralStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -67,6 +69,8 @@ async def stripe_webhook(request: Request):
             handle_subscription_active(data, session)
         elif event_type == 'customer.subscription.deleted':
             handle_subscription_deleted(data, session)
+        elif event_type == 'invoice.paid':
+            handle_invoice_paid(data, session)
 
         session.commit()
         return {"status": "success"}
@@ -82,15 +86,21 @@ def handle_checkout_completed(session_data, session):
     """Handle checkout.session.completed event."""
     org_id = session_data.get('metadata', {}).get('organization_id')
     customer_id = session_data.get('customer')
+    subscription_id = session_data.get('subscription')  # ID de l'abonnement créé
+
     if org_id and customer_id:
         org = session.query(Organization).filter(Organization.id == int(org_id)).first()
         if org:
             org.stripe_customer_id = customer_id
+            if subscription_id:
+                org.stripe_subscription_id = subscription_id  # ✅ Sauvegarder subscription_id
 
 
 def handle_subscription_active(subscription, session):
     """Handle customer.subscription.created/updated event."""
     org_id = subscription.get('metadata', {}).get('organization_id')
+    subscription_id = subscription.get('id')
+
     if not org_id:
         # Fall back to looking up by customer id
         customer_id = subscription.get('customer')
@@ -109,11 +119,15 @@ def handle_subscription_active(subscription, session):
             plan = subscription.get('metadata', {}).get('plan_type', 'pro')
             org.plan_type = plan
             org.is_trial_active = False
+            if subscription_id:
+                org.stripe_subscription_id = subscription_id  # ✅ Sauvegarder subscription_id
 
 
 def handle_subscription_deleted(subscription, session):
     """Handle customer.subscription.deleted event."""
+    subscription_id = subscription.get('id')
     org_id = subscription.get('metadata', {}).get('organization_id')
+
     if not org_id:
         customer_id = subscription.get('customer')
         org = session.query(Organization).filter(
@@ -123,8 +137,68 @@ def handle_subscription_deleted(subscription, session):
         org = session.query(Organization).filter(Organization.id == int(org_id)).first()
 
     if org:
-        org.plan_type = 'starter'
+        org.plan_type = 'free'  # ✅ Retour à Free (pas Starter)
         org.is_trial_active = False
+        if org.stripe_subscription_id == subscription_id:
+            org.stripe_subscription_id = None  # ✅ Clear subscription_id
+
+
+def handle_invoice_paid(invoice_data, session):
+    """Handle invoice.paid — transfer affiliate commission via Stripe Connect."""
+    customer_id = invoice_data.get('customer')
+    amount_paid = invoice_data.get('amount_paid', 0)
+    if not customer_id or amount_paid <= 0:
+        return
+
+    org = session.query(Organization).filter(
+        Organization.stripe_customer_id == customer_id
+    ).first()
+    if not org:
+        return
+
+    referral = session.query(Referral).filter(
+        Referral.referred_org_id == org.id,
+        Referral.status.in_([ReferralStatus.CONVERTED, ReferralStatus.PENDING]),
+    ).first()
+    if not referral:
+        return
+
+    affiliate = session.query(Affiliate).filter(
+        Affiliate.id == referral.affiliate_id,
+        Affiliate.is_active == True,
+        Affiliate.stripe_onboarding_complete == True,
+    ).first()
+    if not affiliate or not affiliate.stripe_account_id:
+        return
+
+    payment_amount = Decimal(amount_paid) / Decimal(100)
+    commission = int(payment_amount * Decimal(str(affiliate.commission_rate)) * 100)
+    if commission <= 0:
+        return
+
+    try:
+        stripe.Transfer.create(
+            amount=commission,
+            currency="eur",
+            destination=affiliate.stripe_account_id,
+            description=f"Commission affiliation - Org {org.id}",
+            metadata={
+                "affiliate_id": str(affiliate.id),
+                "referral_id": str(referral.id),
+                "org_id": str(org.id),
+            },
+        )
+        if referral.status == ReferralStatus.PENDING:
+            referral.status = ReferralStatus.CONVERTED
+            referral.converted_at = datetime.utcnow()
+            referral.commission_amount = payment_amount * Decimal(str(affiliate.commission_rate))
+            affiliate.total_earned = (affiliate.total_earned or 0) + referral.commission_amount
+
+        affiliate.total_paid = (affiliate.total_paid or 0) + Decimal(commission) / Decimal(100)
+        referral.status = ReferralStatus.PAID
+        logger.info(f"Transferred {commission} cents to affiliate {affiliate.id}")
+    except stripe.error.StripeError as e:
+        logger.error(f"Affiliate transfer failed: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -205,16 +279,17 @@ async def create_checkout_session(
     request: CreateCheckoutSessionRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Create a Stripe Checkout Session for plan upgrade.
+    """Create/Modify Stripe subscription (upgrade/downgrade sans double facturation).
 
-    Reference: https://docs.stripe.com/api/checkout/sessions/create
+    - Si pas d'abonnement actif → Checkout classique
+    - Si abonnement actif → Modification avec proration
     """
     if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe n'est pas configuré (STRIPE_SECRET_KEY manquant)")
 
     PRICE_MAP = {
-        "pro": os.getenv("STRIPE_PRICE_PRO", ""),
-        "cabinet": os.getenv("STRIPE_PRICE_CABINET", ""),
+        "starter": os.getenv("STRIPE_PRICE_STARTER_MONTHLY", ""),
+        "pro": os.getenv("STRIPE_PRICE_PRO_MONTHLY", ""),
         "reseau": os.getenv("STRIPE_PRICE_RESEAU", ""),
     }
     price_id = PRICE_MAP.get(request.plan_type, "")
@@ -248,12 +323,47 @@ async def create_checkout_session(
 
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+        # CAS 1 : Abonnement actif → Modifier (pas de double facturation)
+        if org.stripe_subscription_id:
+            try:
+                subscription = stripe.Subscription.retrieve(org.stripe_subscription_id)
+
+                # Modifier l'abonnement existant
+                updated_subscription = stripe.Subscription.modify(
+                    org.stripe_subscription_id,
+                    items=[{
+                        'id': subscription['items']['data'][0].id,
+                        'price': price_id,
+                    }],
+                    proration_behavior='always_invoice',  # Facture prorata automatique
+                    metadata={
+                        'organization_id': str(org.id),
+                        'plan_type': request.plan_type,
+                    }
+                )
+
+                # Update DB immédiatement
+                org.plan_type = request.plan_type
+                db_session.commit()
+
+                return {
+                    "success": True,
+                    "message": "Abonnement modifié avec succès (proration appliquée)",
+                    "subscription_id": updated_subscription.id
+                }
+
+            except stripe.error.InvalidRequestError:
+                # Subscription invalide/annulé → passer au Checkout
+                org.stripe_subscription_id = None
+                db_session.commit()
+
+        # CAS 2 : Pas d'abonnement actif → Checkout classique
         checkout_session = stripe.checkout.Session.create(
             customer=customer_id,
             mode='subscription',
             line_items=[{'price': price_id, 'quantity': 1}],
-            success_url=f'{frontend_url}/settings/Plan?session_id={{CHECKOUT_SESSION_ID}}',
-            cancel_url=f'{frontend_url}/settings/Plan',
+            success_url=f'{frontend_url}/settings?tab=plan&session_id={{CHECKOUT_SESSION_ID}}',
+            cancel_url=f'{frontend_url}/settings?tab=plan',
             metadata={
                 'organization_id': str(org.id),
                 'plan_type': request.plan_type,

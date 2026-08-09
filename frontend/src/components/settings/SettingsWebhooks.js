@@ -118,20 +118,20 @@ export const SettingsWebhooks = ({ setSaveStatus }) => {
         <div className="flex space-x-4">
           <button
             type="submit"
-            disabled={updateMutation.isLoading}
+            disabled={updateMutation.isPending}
             className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
           >
-            {updateMutation.isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+            {updateMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
           </button>
 
           <button
             type="button"
             onClick={handleTest}
-            disabled={!url || testMutation.isLoading}
+            disabled={!url || testMutation.isPending}
             className="px-6 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg  transition disabled:opacity-50 flex items-center"
           >
             <Send className="h-4 w-4 mr-2" />
-            {testMutation.isLoading ? 'Envoi...' : 'Tester'}
+            {testMutation.isPending ? 'Envoi...' : 'Tester'}
           </button>
         </div>
 

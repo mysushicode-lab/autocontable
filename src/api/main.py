@@ -45,6 +45,7 @@ from src.api.webhooks import router as webhooks_router
 from src.api.billing import router as billing_router
 from src.api.whatsapp import router as whatsapp_router
 from src.api.getresponse_sync import router as getresponse_router
+from src.api.affiliates import router as affiliates_router
 
 
 @asynccontextmanager
@@ -213,6 +214,7 @@ app.include_router(webhooks_router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
 app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["WhatsApp"])
 app.include_router(getresponse_router, prefix="/api/getresponse", tags=["GetResponse"])
+app.include_router(affiliates_router, prefix="/api/affiliates", tags=["Affiliates"])
 
 
 if __name__ == "__main__":

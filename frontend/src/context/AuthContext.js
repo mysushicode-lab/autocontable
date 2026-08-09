@@ -11,13 +11,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const storedToken = localStorage.getItem('auth_token');
     const storedUser = localStorage.getItem('auth_user');
+    if (storedToken) setToken(storedToken);
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (e) {
         console.error('Invalid auth_user in localStorage, clearing:', e);
         localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_token');
       }
     }
     setLoading(false);
@@ -25,6 +28,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginUser = useCallback(async (username, password) => {
     const data = await login(username, password);
+    localStorage.setItem('auth_token', data.token);
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
@@ -32,6 +36,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginFromData = useCallback((data) => {
+    localStorage.setItem('auth_token', data.token);
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
@@ -58,6 +63,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('auth_user');
     setToken(null);
     setUser(null);
+    window.location.href = '/login';
   }, []);
 
   const value = useMemo(() => ({

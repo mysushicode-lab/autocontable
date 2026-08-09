@@ -1,11 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { INPUT_CLASS } from '../../utils/formHelpers';
 
 export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Chargement...</p></div>}>
+      <JoinPageContent />
+    </Suspense>
+  );
+}
+
+function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -63,8 +71,8 @@ export default function JoinPage() {
         return;
       }
 
-      // Store token and redirect to dashboard
       localStorage.setItem('auth_token', data.access_token);
+      localStorage.setItem('auth_user', JSON.stringify(data.user));
       router.push('/dashboard');
     } catch (err) {
       setTokenError(err.message || 'Erreur serveur');

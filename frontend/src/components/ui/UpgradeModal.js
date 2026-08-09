@@ -49,7 +49,7 @@ const UpgradeModal = ({
         {/* Header avec icônes */}
         <div className="flex items-center gap-2 mb-8">
           <div className="w-12 h-12 rounded bg-black flex items-center justify-center">
-            <img alt="Autocontable" className="w-8 h-8 object-contain" src="/logo.png" />
+            <img alt="Autocontable" className="w-8 h-8 object-contain" src="/factpilot-logo.svg" />
           </div>
           <div className="flex gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-gray-800"></div>

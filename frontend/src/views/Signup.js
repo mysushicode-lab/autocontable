@@ -73,7 +73,7 @@ const Signup = () => {
         <div className="bg-white rounded-md border border-gray-200 p-8 shadow-sm">
             <div className="text-center mb-8">
               <img 
-                src="/automatchfact.png" 
+                src="/factpilot-logo.svg" 
                 alt="FactPilot logo" 
                 className="h-10 w-auto mx-auto"
               />
@@ -223,10 +223,10 @@ const Signup = () => {
 
               <button
                 type="submit"
-                disabled={mutation.isLoading}
+                disabled={mutation.isPending}
                 className="w-full py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium text-sm disabled:opacity-50 mt-2"
               >
-                {mutation.isLoading ? 'Création en cours...' : 'Créer un compte'}
+                {mutation.isPending ? 'Création en cours...' : 'Créer un compte'}
               </button>
             </form>
 
