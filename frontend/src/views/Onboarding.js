@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Building, FolderPlus, Mail, Plug, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClientFile, fetchAvailableIntegrations } from '../api';
 import { usePlanGate } from '../hooks/usePlanGate';
@@ -101,8 +102,42 @@ export default function Onboarding() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-      <div className="w-full max-w-2xl h-[600px] sm:h-[640px] bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header top */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <img src="/factpilot-logo.svg" alt="FactPilot" className="h-8" />
+              <span className="text-xl font-semibold text-gray-900">FactPilot</span>
+            </div>
+            <button
+              onClick={(e) => {
+                console.log('BOUTON PASSER CLICKED');
+                e.preventDefault();
+                e.stopPropagation();
+                // Clear onboarding state
+                try {
+                  localStorage.removeItem('onboardingState');
+                  console.log('localStorage cleared');
+                } catch (err) {
+                  console.error('Failed to clear localStorage:', err);
+                }
+                // Force redirect
+                console.log('Redirecting to /dashboard...');
+                window.location.href = '/dashboard';
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer bg-transparent border-0"
+              type="button"
+            >
+              Passer
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex items-center justify-center p-2 sm:p-4 pt-8">
+        <div className="w-full max-w-2xl h-[600px] sm:h-[640px] bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden flex flex-col">
         {/* Progress bar */}
         <div className="bg-gray-50 px-4 sm:px-6 py-3 border-b border-gray-200 shrink-0">
           <div className="flex items-center justify-between mb-2 relative">
@@ -187,6 +222,7 @@ export default function Onboarding() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -7,43 +7,43 @@ export const NAV_LINKS = [
 
 export const FEATURES = [
   {
-    title: 'Les factures arrivent déjà classées',
-    description: "Vos clients envoient un PDF ou une photo. FactPilot extrait automatiquement : montant HT/TTC, TVA, date, fournisseur. Classification intelligente par secteur. Zéro saisie manuelle, zéro erreur.",
-    image: '/facture-preview.png',
+    title: 'Portefeuille clients : gérez tous vos dossiers',
+    description: "Chaque client = 1 dossier. Plan comptable personnalisé. Règles de rapprochement sur mesure. Vue consolidée de tous vos dossiers. Impayés détectés automatiquement. Validation batch.",
+    image: '/portfolio.png',
   },
   {
-    title: 'Rapprochement bancaire en 30 secondes',
-    description: "Importez les relevés de n'importe quelle banque française. Chaque facture se rapproche toute seule avec la transaction. Les impayés remontent immédiatement. Audit trail complet.",
-    image: '/rapprochement-preview.png',
+    title: 'Rapprochement automatique : dossiers prêts en 30 sec',
+    description: "Importez relevé. Chaque facture trouve sa transaction. Impayés remontés en temps réel. Traçabilité complète pour audit fiscal. Export FEC conforme réforme 2026 en 2 clics.",
+    image: '/reconciliation.png',
   },
   {
-    title: 'Dossier client prêt instantanément',
-    description: "Export FEC normé, grand livre, journal. Tout est tracé, catégorisé, rapproché. Vos clients reçoivent un dossier audité. Conforme réforme 2026.",
-    image: '/portfolio-preview.png',
+    title: 'Connecteur comptable : poussez vers votre logiciel',
+    description: "Sage, Cegid, ACD, Quadratus. Poussez vos écritures directement depuis FactPilot. Configuration en 5 min. Export FEC normé ou API native. Synchronisation bidirectionnelle.",
+    image: '/connecteur.png',
   },
 ];
 
 export const TOOLS = [
   {
-    title: 'Ingestion email ou WhatsApp',
-    description: "Vos clients envoient des factures par email ou WhatsApp. FactPilot les récupère automatiquement, les traite et les ajoute au dossier. Zéro manipulation manuelle.",
-    image: '/export-contable.png',
+    title: 'Import manuel ou automatique : vous choisissez',
+    description: "Upload direct : glissez-déposez vos PDF/photos. Automatique : connectez votre boîte email (Gmail, Outlook, IMAP) — les factures arrivent seules. Vos clients PME connectent leur propre boîte depuis leur espace. Extraction instantanée dans tous les cas.",
+    image: '/import.png',
   },
   {
-    title: 'Extraction IA multiformat',
-    description: "PDF, photo, scan flou ou manuscrit — FactPilot extrait numéro, date, montant HT/TTC, TVA, fournisseur en 30 secondes. 95%+ de précision même sur documents dégradés.",
-    image: '/scheduler-automatique.png',
+    title: "Éditez et validez chaque facture importée",
+    description: "Extraction IA automatique (PDF, scans, photos). Vous vérifiez et corrigez en 30 sec. Plan comptable personnalisé par dossier. Catégorisation automatique. Validation en 1 clic.",
+    image: '/edition.png',
   },
   {
-    title: 'Rapprochement et audit trail',
-    description: "Chaque facture rapprochée automatique avec le relevé bancaire. Impayés, anomalies détectées immédiatement. Export audit-ready avec traçabilité complète.",
-    image: '/analytics.png',
+    title: 'Rapports comptables',
+    description: "Grand livre, journal, balance, FEC normé. Export Excel/PDF en 1 clic. Tableau de bord par fournisseur, catégorie, période. Audit trail complet pour contrôle fiscal.",
+    image: '/Rapports Comptables.png',
   },
 ];
 
 export const STATS = [
-  { value: '120h+',    label: 'Économisées par mois', icon: 'clock' },
-  { value: '+200',     label: 'PME et cabinets équipés', icon: 'users' },
-  { value: '95%+',     label: 'De rapprochement correct', icon: 'target' },
-  { value: 'Sept. 2026', label: 'Conforme avant la deadline', icon: 'zap' },
+  { value: '120h+',    label: 'Gagnées par cabinet/mois', icon: 'clock' },
+  { value: '+200',     label: 'Cabinets actifs', icon: 'users' },
+  { value: '95%+',     label: 'Précision extraction', icon: 'target' },
+  { value: 'Sept. 2026', label: 'Conforme avant échéance', icon: 'zap' },
 ];

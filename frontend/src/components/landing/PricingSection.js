@@ -8,46 +8,46 @@ const PLANS = [
     name: 'Free',
     monthlyPrice: '0 €',
     annualPrice: '0 €',
-    tagline: 'Découvrez FactPilot',
+    tagline: 'Testez avant de souscrire',
     features: [
       '1 dossier client',
-      '80 factures IA / mois',
-      'Ingestion email',
-      'Réconciliation manuelle',
-      'Export CSV',
+      '80 factures traitées / mois',
+      'Email & extraction IA',
+      'Rapprochement manuel',
+      'Export CSV basique',
     ],
-    ctaLabel: 'Commencer gratuitement',
+    ctaLabel: 'Tester gratuitement',
     ctaTo: '/signup',
   },
   {
     name: 'Starter',
     monthlyPrice: '49 €',
     annualPrice: '39 €',
-    tagline: 'Pour indépendants',
+    tagline: 'Comptables indépendants',
     features: [
       '5 dossiers clients',
-      '400 factures IA / mois',
-      'Réconciliation IA automatique',
-      'Intégration email illimitée',
-      'Support email',
+      '400 factures traitées / mois',
+      'Rapprochement IA auto',
+      'Email illimité',
+      'Support standard',
     ],
-    ctaLabel: 'Démarrer l\'essai gratuit',
+    ctaLabel: 'Essai 14 jours offert',
     ctaTo: '/signup',
   },
   {
     name: 'Pro',
     monthlyPrice: '149 €',
     annualPrice: '119 €',
-    tagline: 'Pour cabinets',
+    tagline: 'Cabinets & équipes',
     features: [
       'Dossiers illimités',
-      '1 500 factures IA / mois',
-      'Tout dans Starter',
-      'Multi-utilisateurs (3 max)',
-      'Intégration WhatsApp',
+      '1 500 factures / mois',
+      'Tout Starter +',
+      '3 utilisateurs inclus',
+      'WhatsApp & webhooks',
       'Support prioritaire',
     ],
-    ctaLabel: 'Démarrer l\'essai gratuit',
+    ctaLabel: 'Essai 14 jours offert',
     ctaTo: '/signup',
     highlighted: true,
   },
@@ -55,14 +55,14 @@ const PLANS = [
     name: 'Réseau',
     monthlyPrice: 'Sur devis',
     annualPrice: 'Sur devis',
-    tagline: 'Pour réseaux & groupes',
+    tagline: 'Réseaux comptables',
     features: [
-      'Tout Pro, plus :',
-      'Factures IA illimitées',
+      'Tout Pro +',
+      'Factures illimitées',
       'Utilisateurs illimités',
       'API & webhooks dédiés',
-      'Permissions avancées',
-      'Support dédié & SLA',
+      'Permissions granulaires',
+      'SLA garanti & CSM dédié',
     ],
     ctaLabel: 'Nous contacter',
     ctaTo: '/signup',
@@ -136,9 +136,9 @@ export default function PricingSection() {
 
         <div className="text-center mb-12 lg:mb-16">
           <span className={sectionBadge}>Tarifs</span>
-          <h2 className={`${sectionHeading} mt-0`}>Tarification simple et transparente</h2>
+          <h2 className={`${sectionHeading} mt-0`}>Un tarif pour chaque cabinet, pas de surprise</h2>
           <p className="mt-3 text-sm text-[#6b7280]">
-            Tarification simple. Sans engagement.
+            Tarif fixe. Résiliation en 2 clics. Aucun frais caché.
           </p>
 
           <div className="mt-6 inline-flex items-center gap-3 bg-white rounded-full p-1 border border-[#6c6f761f]">
@@ -186,7 +186,7 @@ export default function PricingSection() {
 
         <div className="flex flex-col items-center mt-6 gap-3">
           <p className="text-xs text-[#6b7280]">
-            Sans engagement · Annulation à tout moment · Données hébergées en France · Conforme RGPD
+            Sans engagement · Résiliation 2 clics · Hébergé France · RGPD certifié
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
             <div className="flex -space-x-2 shrink-0">
@@ -194,7 +194,7 @@ export default function PricingSection() {
                 <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-[#f7f7f5] object-cover" />
               ))}
             </div>
-            <p className="text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>
+            <p className="text-xs text-[#6b7280]">Aucune CB · Opérationnel en 60 minutes</p>
           </div>
         </div>
       </div>

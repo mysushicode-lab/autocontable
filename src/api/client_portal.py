@@ -102,14 +102,27 @@ def get_client_invoices(
     session = db.get_session()
     try:
         org_id = current_user["organization_id"]
-        cfid = get_client_file_id(current_user, session) or client_file_id
-        if not cfid:
-            raise HTTPException(400, "Aucun dossier sélectionné")
+        user_role = current_user.get("role")
 
-        query = session.query(Invoice).filter(
-            Invoice.organization_id == org_id,
-            Invoice.client_file_id == cfid
-        ).order_by(Invoice.date.desc())
+        # Si admin : toutes les factures de l'org
+        # Si client : uniquement son dossier
+        if user_role == "admin":
+            query = session.query(Invoice).filter(
+                Invoice.organization_id == org_id
+            )
+            # Filtre optionnel par dossier
+            if client_file_id:
+                query = query.filter(Invoice.client_file_id == client_file_id)
+        else:
+            cfid = get_client_file_id(current_user, session) or client_file_id
+            if not cfid:
+                raise HTTPException(400, "Aucun dossier sélectionné")
+            query = session.query(Invoice).filter(
+                Invoice.organization_id == org_id,
+                Invoice.client_file_id == cfid
+            )
+
+        query = query.order_by(Invoice.date.desc())
 
         total = query.count()
         invoices = query.offset((page - 1) * per_page).limit(per_page).all()

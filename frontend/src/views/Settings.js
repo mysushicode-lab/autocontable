@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import { Mail, Clock, Users, CreditCard, Zap, UserCircle, LogOut, Lock, Shield, MessageSquare } from 'lucide-react';
 import { fetchSettings, fetchUsers, testImap, deleteAccount } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -30,7 +31,9 @@ const ALL_SECTIONS = [
 
 const Settings = () => {
   const { user, logout } = useAuth();
-  const [activeSection, setActiveSection] = useState('profil');
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeSection, setActiveSection] = useState(tabFromUrl || 'profil');
   const [saveStatus, setSaveStatus] = useState(null);
   const [emailForm, setEmailForm] = useState({});
   const [schedulerForm, setSchedulerForm] = useState({});
@@ -44,6 +47,13 @@ const Settings = () => {
     if (isClient && section.clientHidden) return false;
     return !section.adminOnly || isAdmin;
   });
+
+  // Read URL parameter only on initial mount
+  useEffect(() => {
+    if (tabFromUrl && SECTIONS.find(s => s.id === tabFromUrl)) {
+      setActiveSection(tabFromUrl);
+    }
+  }, []); // Empty deps = run only once on mount
 
   useEffect(() => {
     if (!tabsRef.current) return;

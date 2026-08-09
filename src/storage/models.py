@@ -27,6 +27,7 @@ class ClientFile(Base):
     scheduler_email = Column(String(200), nullable=True)  # email surveillé par le scheduler pour import auto
     contact_phone = Column(String(30), nullable=True)    # mobile WhatsApp du client
     notes = Column(Text, nullable=True)
+    color = Column(String(7), nullable=True, default='#3b82f6')  # Couleur hex pour différenciation visuelle
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

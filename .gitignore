@@ -70,3 +70,20 @@ debug_invoices.py
 
 # Node modules
 node_modules/
+# Seed scripts
+seed_mysushi*
+SEED_MYSUSHI_README.md
+test_checkout.py
+
+# Temporary/backup images
+frontend/public/*.old.png
+frontend/public/.png
+frontend/public/Imap-configuration.old.png
+# Seed scripts
+seed_mysushi*
+SEED_MYSUSHI_README.md
+test_checkout.py
+
+# Temporary/backup images
+frontend/public/*.old.png
+frontend/public/.png

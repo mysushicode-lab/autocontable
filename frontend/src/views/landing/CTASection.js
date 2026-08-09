@@ -6,10 +6,10 @@ export default function CTASection() {
     <section className="bg-[#181818]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-24 lg:py-32 text-center flex flex-col items-center gap-8">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-white tracking-tight leading-tight">
-          Prêt à arrêter la saisie manuelle ?
+          Prêt à récupérer 120h par mois ?
         </h2>
         <p className="text-sm text-white/60 max-w-md">
-          Commencez votre essai gratuit en 2 minutes. Pas de carte bancaire requise.
+          Démarrez en 2 minutes. Aucune CB. Première facture traitée en 60 secondes.
         </p>
         <div className="flex items-center gap-3 flex-wrap justify-center">
           <Link href="/signup" className={btnPrimaryInverted}>
@@ -22,7 +22,7 @@ export default function CTASection() {
             Se connecter
           </Link>
         </div>
-        <p className="text-xs text-white/50">Sans carte bancaire · Opérationnel en moins d'une heure</p>
+        <p className="text-xs text-white/50">Aucune CB · Opérationnel en 60 minutes</p>
       </div>
     </section>
   );

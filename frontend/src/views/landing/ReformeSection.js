@@ -6,19 +6,19 @@ const STEPS = [
   {
     date: '1er sept. 2026',
     title: 'Réception Factur-X obligatoire',
-    desc: 'Toutes les entreprises, tous les secteurs. Vous devez lire Factur-X natif. FactPilot le fait en arrière-plan.',
+    desc: 'Toutes entreprises, tous secteurs. Lecture Factur-X obligatoire. FactPilot le traite automatiquement.',
     ready: true,
   },
   {
     date: '1er sept. 2026',
-    title: 'Émission FEC normé',
-    desc: 'Grandes entreprises & ETI : export FEC conforme ou pénalité. Structure, numérotation, audit trail vérifiées.',
+    title: 'Export FEC normé obligatoire',
+    desc: 'Grandes entreprises & ETI : FEC conforme ou pénalité. Structure, numérotation, audit trail vérifiés.',
     ready: true,
   },
   {
     date: '1er sept. 2027',
-    title: 'Émission obligatoire (PME+TPE)',
-    desc: 'PME, TPE, micro. FactPilot = migration transparente. Zéro manuel, zéro reprise. Vous êtes en règle.',
+    title: 'Obligation PME & TPE',
+    desc: 'PME, TPE, micro-entreprises. Migration transparente avec FactPilot. Zéro reprise manuelle.',
     ready: true,
   },
 ];
@@ -31,10 +31,10 @@ export default function ReformeSection() {
           <div className="text-center mb-12">
             <span className={sectionBadge}>Réforme obligatoire 2026</span>
             <h2 className={sectionHeading}>
-              FEC + Factur-X : l'horizon légal approche
+              Septembre 2026 = obligation légale. Êtes-vous prêt ?
             </h2>
             <p className={`${sectionSubtext} mt-4 max-w-2xl mx-auto`}>
-              Septembre 2026 = deadline. FEC normé obligatoire, Factur-X avant ETI, puis PME et TPE. FactPilot automatise 100% du flux. Vous arrivez à la date butoir sans crise.
+              FEC normé + Factur-X = obligation. Pénalités si non-conforme. FactPilot automatise tout — vous arrivez à l'échéance sans stress.
             </p>
           </div>
 
@@ -64,22 +64,22 @@ export default function ReformeSection() {
               <div className="flex items-start gap-3">
                 <FileCheck className="w-5 h-5 text-[#181818] mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#181818]">Réception conforme</p>
-                  <p className="text-xs text-[#6b7280] mt-1">Import et lecture automatique de vos factures PDF, Factur-X et e-mails.</p>
+                  <p className="text-sm font-semibold text-[#181818]">Factur-X traité automatiquement</p>
+                  <p className="text-xs text-[#6b7280] mt-1">PDF, Factur-X, email, WhatsApp. Tout extrait, tout classé.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-[#181818] mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#181818]">Archivage sécurisé</p>
-                  <p className="text-xs text-[#6b7280] mt-1">Stockage conforme avec horodatage et traçabilité complète.</p>
+                  <p className="text-sm font-semibold text-[#181818]">Archivage certifié</p>
+                  <p className="text-xs text-[#6b7280] mt-1">Stockage RGPD avec horodatage et traçabilité immuable.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CalendarClock className="w-5 h-5 text-[#181818] mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#181818]">Prêt avant l'échéance</p>
-                  <p className="text-xs text-[#6b7280] mt-1">Commencez maintenant, soyez opérationnel bien avant septembre 2026.</p>
+                  <p className="text-sm font-semibold text-[#181818]">Prêt en 60 minutes</p>
+                  <p className="text-xs text-[#6b7280] mt-1">Démarrez aujourd'hui. Conformité garantie septembre 2026.</p>
                 </div>
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function ReformeSection() {
 
           <div className="text-center">
             <Link href="/signup" className={btnPrimary}>
-              Se préparer à la réforme
+              Devenir conforme maintenant
               <ArrowRight className="w-3.5 h-3.5 ml-2" />
             </Link>
           </div>

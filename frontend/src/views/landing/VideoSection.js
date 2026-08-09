@@ -39,10 +39,10 @@ export default function VideoSection() {
             {/* Text block */}
             <div className="flex flex-col gap-3 p-8 lg:p-12 lg:w-[55%] shrink-0 justify-center border-b lg:border-b-0 lg:border-r border-[#6c6f7635]">
               <h2 className="text-[#181818] text-lg md:text-xl lg:text-2xl font-semibold leading-tight">
-                Voyez FactPilot<br />en action
+                Voyez une facture<br />traitée en 2 minutes
               </h2>
               <p className="text-[#6b7280] text-xs md:text-sm leading-relaxed mt-3 max-w-sm">
-                De la réception d'une facture par email à l'écriture comptable dans Sage — en 2 minutes. Pas de saisie, pas d'erreur, pas de stress.
+                Boîte mail connectée → extraction HT/TVA → rapprochement bancaire → export FEC. Automatique. Zéro saisie.
               </p>
             </div>
 

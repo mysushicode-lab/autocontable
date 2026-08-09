@@ -3,13 +3,13 @@ import { sectionBadge, sectionHeading, sectionSubtext } from './_styles';
 import { NOISE_SVG_FINE, NOISE_SVG } from './_constants';
 
 const TOP_FEATURES = [
-  { title: 'Classification Intelligente', description: "Catégorisation automatique adaptée au secteur de vos clients : frais généraux, fournitures, sous-traitance, équipement, énergie, assurances, services, et plus encore.", image: '/modification-facture.png' },
-  { title: 'Réconciliation Bancaire', description: "Importez les relevés de n'importe quelle banque française. Le matching intelligent associe les factures aux paiements en fonction du montant, de la date et de la référence fournisseur.", image: '/nouvelle-facture.png' },
+  { title: 'Réception automatique par email/IMAP', description: "Gmail, Outlook, tout IMAP. Vos clients PME connectent leur boîte depuis leur espace — leurs factures fournisseurs arrivent directement chez vous. Extraction HT/TVA instantanée. Zéro relance, zéro transfert.", image: '/facture-email.png' },
+  { title: 'Extraction IA sur documents dégradés', description: "PDF, scans dégradés, photos floues, factures manuscrites. Extraction HT/TTC/TVA/date en 2 sec. 95%+ précision. Factur-X natif.", image: '/extraction-instantané.png' },
 ];
 
 const BOTTOM_FEATURES = [
-  { title: 'Suivi par Dossier Client', description: "Suivez chaque dépense par dossier client et référence de commande. Voyez l'historique complet des coûts. Analysez les marges par client ou par catégorie de dépenses.", image: '/rapprochement-manuelle.png' },
-  { title: 'Rapports Mensuels', description: "Le tableau de bord montre les totaux par catégorie, fournisseur et période. Zoomez sur n'importe quelle dépense. Exportez des données propres pour votre comptable en un clic.", image: '/reference.png' },
+  { title: 'Rapprochement bancaire automatique', description: "Importez relevé. Chaque facture trouve sa transaction. Impayés remontés instantanément. Export FEC conforme 2026 en 2 clics. Traçabilité totale pour l'audit.", image: '/reconciliation.png' },
+  { title: 'Export FEC normé prêt pour audit', description: "FEC normé, grand livre, journal. Tout rapproché, tout tracé. Export conforme réforme 2026 sans retouche. Audit trail complet pour contrôle fiscal.", image: '/audit-trail.png' },
 ];
 
 function GridMarker({ type = 'cross', className }) {
@@ -73,10 +73,10 @@ export default function CoreFeaturesSection() {
         <div className="absolute top-0 bottom-0 right-4 sm:right-6 w-px bg-[#6c6f7635] z-20" />
 
         <div className="text-center mb-10 lg:mb-16">
-          <span className={sectionBadge}>Fonctionnalités détaillées</span>
-          <h2 className={sectionHeading}>Conçu pour les cabinets comptables. Pas de comptabilité générique.</h2>
+          <span className={sectionBadge}>Fonctionnalités métier</span>
+          <h2 className={sectionHeading}>Conçu pour cabinets et PME — pas un ERP générique</h2>
           <p className={`mt-3 max-w-md mx-auto ${sectionSubtext}`}>
-            FactPilot automatise tout le cycle de vie des factures avec des fonctionnalités adaptées à l'activité de vos clients.
+            Cycle complet : réception boîte mail, extraction HT/TVA, rapprochement bancaire, export FEC. Adapté aux cabinets comptables et à leurs clients PME.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default function CoreFeaturesSection() {
             <div className="absolute inset-0 opacity-[0.12] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
             <blockquote className="relative z-10">
               <p className="text-base sm:text-xl lg:text-2xl font-normal text-white leading-snug max-w-2xl">
-                "J'ai gagné 20 heures par mois. Je peux enfin me concentrer sur mes clients."
+                "120h gagnées. Mes clients PME connectent leur boîte — je récupère automatiquement leurs factures fournisseurs. Zéro relance."
               </p>
             </blockquote>
             <div className="relative z-10 flex items-center gap-3">

@@ -20,19 +20,19 @@ export default function HeroSection() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-[#181818] leading-[1.05] tracking-tight mb-4 lg:mb-6">
-              Gagnez 120h par mois.<br />Vos dossiers clients prêts instantanément.
+              Gagnez 120h/mois.<br />Factures récupérées, classées, rapprochées.
             </h1>
             <p className="text-sm sm:text-base text-[#6b7280] mb-8 lg:mb-10 max-w-md">
-              Vos clients envoient les factures. FactPilot extrait, classe, rapproche. Audit-ready. Zéro retouche. Conforme réforme 2026.
+              Vos clients connectent leur boîte depuis leur espace. Leurs factures fournisseurs arrivent automatiquement. Extraction HT/TVA/date instantanée. Dossiers conformes 2026 prêts en 2 clics.
             </p>
 
             {/* CTAs */}
             <div className="flex items-center gap-4 flex-wrap">
               <Link href="/signup" className={btnPrimary}>
-                Essai gratuit 14 jours
+                Démarrer gratuitement
               </Link>
               <a href="#features" className={btnGhost}>
-                Lire le guide réforme 2026
+                Êtes-vous prêt pour 2026 ?
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
@@ -42,7 +42,7 @@ export default function HeroSection() {
                   <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white object-cover" />
                 ))}
               </div>
-              <p className="text-xs text-[#6b7280]">Sans carte bancaire · Opérationnel en moins d'une heure</p>
+              <p className="text-xs text-[#6b7280]">Aucune CB · Opérationnel en 60 minutes</p>
             </div>
 
           </div>

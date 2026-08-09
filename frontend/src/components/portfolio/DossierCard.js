@@ -14,7 +14,7 @@ const STATUS_CONFIG = {
 
 const DossierCard = ({ file, isClient, onOpen, onEdit, onDelete, onQuit, onPermissions }) => {
   const cfg = STATUS_CONFIG[file.status] || STATUS_CONFIG.empty;
-  const hex = '#3b82f6';
+  const hex = file.color || '#3b82f6';
 
   return (
     <div

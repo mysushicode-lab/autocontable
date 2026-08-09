@@ -15,27 +15,27 @@ function getConfig() {
       {
         kind: 'industry',
         pathTemplate: '/comptabilite/[slug_key]',
-        titleTemplate: 'Comptabilité automatisée pour [slug_key_label]',
+        titleTemplate: 'Comptabilité [slug_key_label] : Économisez 20h/mois de saisie',
         descTemplate:
-          'Autocontable automatise les factures et le rapprochement bancaire pour les [slug_key_label]. Extraction IA, export FEC, conforme 2026.',
+          'Automatisez votre comptabilité [slug_key_label] avec l\'IA. Extraction factures instantanée, rapprochement en 30s, FEC conforme 2026. Essai gratuit sans CB.',
         rows: rows.filter((r) => r.kind === 'industry'),
         indexable: true,
       },
       {
         kind: 'use-case',
         pathTemplate: '/cas-usage/[slug_key]',
-        titleTemplate: '[slug_key_label] — Autocontable',
+        titleTemplate: '[slug_key_label] : Automatisé en 60 Minutes | FactPilot',
         descTemplate:
-          '[slug_key_label] automatisé avec Autocontable. Gagnez du temps, réduisez les erreurs.',
+          'Transformez votre [slug_key_label]. Moins d\'erreurs, zéro ressaisie, conformité garantie. Découvrez comment FactPilot divise par 4 votre temps comptable.',
         rows: rows.filter((r) => r.kind === 'use-case'),
         indexable: true,
       },
       {
         kind: 'comparison',
         pathTemplate: '/compare/autocontable-vs-[slug_key]',
-        titleTemplate: 'Autocontable vs [slug_key_label] : Fonctionnalités, Tarifs & Avis',
+        titleTemplate: 'FactPilot vs [slug_key_label] : Prix, IA & Conformité 2026',
         descTemplate:
-          'Comparaison détaillée Autocontable vs [slug_key_label]. Découvrez les différences en fonctionnalités, tarifs et support.',
+          'Comparez FactPilot et [slug_key_label] : extraction IA, rapidité, tarifs transparents, conformité réforme. Tableau comparatif complet et retours clients vérifiés.',
         rows: rows.filter((r) => r.kind === 'comparison'),
         indexable: true,
       },

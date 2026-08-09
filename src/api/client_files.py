@@ -24,6 +24,7 @@ class ClientFileCreate(BaseModel):
     scheduler_email: Optional[str] = None
     phone: Optional[str] = None  # Accept 'phone' from frontend
     notes: Optional[str] = None
+    color: Optional[str] = '#3b82f6'
 
 
 class ClientFileUpdate(BaseModel):
@@ -34,6 +35,7 @@ class ClientFileUpdate(BaseModel):
     scheduler_email: Optional[str] = None
     phone: Optional[str] = None  # Accept 'phone' from frontend
     notes: Optional[str] = None
+    color: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -47,6 +49,7 @@ def _serialize(cf: ClientFile) -> dict:
         "scheduler_email": cf.scheduler_email,
         "contact_phone": cf.contact_phone,
         "notes": cf.notes,
+        "color": cf.color,
         "is_active": cf.is_active,
         "created_at": cf.created_at.isoformat() if cf.created_at else None,
     }
@@ -126,6 +129,7 @@ def create_client_file(payload: ClientFileCreate, current_user: dict = Depends(g
             scheduler_email=payload.scheduler_email,
             contact_phone=payload.phone,  # Map 'phone' to 'contact_phone'
             notes=payload.notes,
+            color=payload.color,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )

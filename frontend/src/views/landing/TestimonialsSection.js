@@ -3,21 +3,21 @@ import { NOISE_SVG } from './_constants';
 
 const TESTIMONIALS = [
   {
-    quote: "On traitait 80 dossiers clients. Chacun prenait 3-4 heures de retouche. FactPilot nous libère 120h par mois. Dossiers prêts instantanément, audités.",
+    quote: "Mes clients PME connectent leur boîte. Leurs factures fournisseurs arrivent automatiquement. Je gagne 120h/mois. Zéro relance.",
     name: "Pierre M.",
-    role: "Cabinet comptable, 5 collaborateurs",
+    role: "Cabinet comptable, 80 dossiers",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&h=600&fit=crop&crop=face",
     color: '#466cf3',
   },
   {
-    quote: "Avant : retrouver une facture prenait 20 min. Maintenant les données arrivent propres, classe auto, rapprochement fait. J'ai enfin du temps pour l'audit.",
+    quote: "Extraction HT/TVA instantanée. Rapprochement auto. Export FEC conforme 2026 en 2 clics. Je passe enfin du temps à auditer, pas à ressaisir.",
     name: "Valérie D.",
     role: "Collaboratrice comptable",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&h=600&fit=crop&crop=face",
     color: '#f59e0b',
   },
   {
-    quote: "Les erreurs de saisie ont disparu. Pas de facture oubliée. On envoie les exports directement aux clients. Zéro reclamation.",
+    quote: "Zéro erreur de saisie. Zéro facture oubliée. Dossiers exportés conformes 2026 sans retouche. Zéro réclamation client.",
     name: "Marc T.",
     role: "Gérant, petit cabinet",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop&crop=face",
@@ -26,10 +26,10 @@ const TESTIMONIALS = [
 ];
 
 const STATS = [
-  { end: 2,    prefix: '',  suffix: 'M+', label: 'Documents numérisés' },
-  { end: 120,  prefix: '',  suffix: 'h',  label: 'Économisées par cabinet / mois' },
-  { end: 4.9,  prefix: '',  suffix: '/5', label: 'Note moyenne clients', decimals: 1 },
-  { end: 300,  prefix: '+', suffix: '',   label: 'Banques connectées' },
+  { end: 2,    prefix: '',  suffix: 'M+', label: 'Factures traitées' },
+  { end: 120,  prefix: '',  suffix: 'h',  label: 'Gagnées / cabinet / mois' },
+  { end: 4.9,  prefix: '',  suffix: '/5', label: 'Note cabinets comptables', decimals: 1 },
+  { end: 300,  prefix: '+', suffix: '',   label: 'Banques compatibles' },
 ];
 
 function Counter({ end, prefix, suffix, decimals = 0, duration = 1800 }) {
@@ -85,7 +85,7 @@ export default function TestimonialsSection() {
             Témoignages
           </span>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-            Ce que disent les cabinets qui ont branché FactPilot
+            Pourquoi les cabinets passent à FactPilot
           </h2>
         </div>
 

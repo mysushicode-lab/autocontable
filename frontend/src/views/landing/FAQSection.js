@@ -3,12 +3,13 @@ import { Plus, Minus } from 'lucide-react';
 import { sectionBadge, sectionHeading } from './_styles';
 
 const FAQS = [
-  { q: "Suis-je prêt pour la réforme FEC 2026 ?", a: "Non, et ce n'est pas votre faute. La réforme impose FEC normé + Factur-X dès janvier 2026. FactPilot génère automatiquement les deux, audit trail complet, conforme aux normes comptables. Vous êtes prêt en 14 jours." },
-  { q: "Je dois vraiment changer de logiciel comptable ?", a: "Non. FactPilot se greffe sur Sage, Cegid, ACD, Quadratus (ou n'importe quel logiciel). API native ou export FEC au format attendu. Zéro rupture. Votre plan comptable, vos workflows, vos habitudes — inchangés." },
-  { q: "Les factures PDF/scans complexes, ça marche ?", a: "Oui. L'IA extrait factures, CGU, références bancaires même sur scans flous ou factures manuscrites. Factur-X natif aussi. Le scheduler récupère depuis vos emails. Vous validez en 30 secondes par facture vs 5 minutes avant." },
-  { q: "Comment je sais que mes données restent confidentielles ?", a: "Hébergement Europe. Chiffrement transit + repos. RGPD certifié. Audit trail immuable sur chaque écriture. Les contrôleurs voient exactement qui a saisi, modifié, approuvé quoi et quand. Zéro risque de requalification." },
-  { q: "Je gère 50 clients — ça scale ?", a: "Conçu pour ça. 50+ dossiers dans une même interface. Chaque client a son plan comptable, ses règles de rapprochement, ses références bancaires. Vous validez le tout en batch. Zéro recrutement." },
-  { q: "Combien ça coûte pour rester conforme ?", a: "39€/mois (5 dossiers + 200 factures), 149€/mois (30 dossiers illimitées), ou sur devis pour réseaux. Pas de frais cachés. Essai 14 jours complet sans CB. Résilier en 2 clics. C'est moins cher que 2h de saisie manuelle/mois." },
+  { q: "Serai-je conforme à la réforme 2026 ?", a: "Oui. FEC normé + Factur-X générés automatiquement. Audit trail complet. Prêt en 60 minutes, conforme septembre 2026." },
+  { q: "Dois-je abandonner Sage/Cegid/Quadratus ?", a: "Non. FactPilot se greffe sur votre logiciel existant : API native ou export FEC. Zéro migration. Votre plan comptable, vos workflows — intacts. Vous ajoutez l'automatisation, c'est tout." },
+  { q: "Comment les factures arrivent dans FactPilot ?", a: "Cabinet : connectez votre boîte (IMAP). PME : vos clients connectent leur propre boîte depuis leur espace. Leurs factures fournisseurs arrivent automatiquement chez vous. Extraction HT/TVA instantanée. Zéro relance." },
+  { q: "L'IA lit vraiment les scans flous et manuscrits ?", a: "Oui. PDF, scans dégradés, photos floues, factures manuscrites. Extraction HT/TTC/TVA/date en 2 sec. 95%+ précision. Factur-X natif. WhatsApp intégré." },
+  { q: "Mes données clients restent-elles confidentielles ?", a: "Hébergement Europe. Chiffrement transit + repos. RGPD certifié. Audit trail immuable — contrôleurs voient qui a saisi, modifié, validé quoi et quand. Zéro risque de requalification." },
+  { q: "Je gère 50 dossiers — l'outil suit-il ?", a: "Conçu pour cabinets. 50+ dossiers, interface unique. Chaque dossier : plan comptable dédié, règles de rapprochement sur mesure. Validation batch. Gagnez 120h/mois." },
+  { q: "Quel est le coût pour rester conforme ?", a: "39€/mois (5 dossiers, 200 factures) ou 149€/mois (30 dossiers illimités). Essai 14 jours sans CB. Moins cher qu'1h de saisie manuelle." },
 ];
 
 export default function FAQSection() {
@@ -20,7 +21,7 @@ export default function FAQSection() {
 
         <div className="text-center mb-16">
           <span className={sectionBadge}>FAQ</span>
-          <h2 className={sectionHeading}>Les vraies questions avant de se lancer</h2>
+          <h2 className={sectionHeading}>Les questions qu'on nous pose avant de signer</h2>
         </div>
 
         <div className="divide-y divide-[#6c6f7635]">

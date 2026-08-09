@@ -7,7 +7,18 @@ import HelpTooltip from '../ui/HelpTooltip';
 import { INPUT_CLASS } from '../../utils/formHelpers';
 import { validateSiret } from '../../utils/siretValidation';
 
-const EMPTY_FORM = { name: '', siret: '', activity: '', contact_email: '', scheduler_email: '', phone: '', notes: '' };
+const EMPTY_FORM = { name: '', siret: '', activity: '', contact_email: '', scheduler_email: '', phone: '', notes: '', color: '#3b82f6' };
+
+const PRESET_COLORS = [
+  '#3b82f6', // blue
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#f59e0b', // amber
+  '#10b981', // emerald
+  '#06b6d4', // cyan
+  '#f43f5e', // rose
+  '#6366f1', // indigo
+];
 
 const DossierFormModal = ({
   show,
@@ -135,6 +146,34 @@ const DossierFormModal = ({
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+              Couleur du dossier
+              <HelpTooltip text="Couleur pour différencier visuellement les dossiers" />
+            </label>
+            <div className="mt-2 flex items-center gap-2">
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, color }))}
+                  className={`w-8 h-8 rounded-md transition-all hover:scale-110 ${
+                    form.color === color ? 'ring-2 ring-offset-2 ring-gray-900' : ''
+                  }`}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+              <input
+                type="color"
+                value={form.color || '#3b82f6'}
+                onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                className="w-8 h-8 rounded-md cursor-pointer border border-gray-300"
+                title="Couleur personnalisée"
+              />
+            </div>
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <button

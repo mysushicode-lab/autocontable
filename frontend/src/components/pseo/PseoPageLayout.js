@@ -13,34 +13,34 @@ export default function PseoPageLayout({ page }) {
 
         <div className="prose prose-gray max-w-none mb-16">
           <h2 className="text-2xl font-medium text-[#181818]">
-            Pourquoi choisir FactPilot ?
+            Transformez vos process comptables
           </h2>
           <ul className="space-y-3 mt-4">
             <li className="flex items-start gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#466cf3] mt-2 shrink-0" />
-              <span className="text-[#46484d]">Extraction IA de factures — PDF, photo, scan flou</span>
+              <span className="text-[#46484d]">Éliminez la saisie manuelle — l'IA extrait vos factures en 2 secondes</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#466cf3] mt-2 shrink-0" />
-              <span className="text-[#46484d]">Rapprochement bancaire automatique en 30 secondes</span>
+              <span className="text-[#46484d]">Finalisez votre rapprochement bancaire avant votre première pause café</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#466cf3] mt-2 shrink-0" />
-              <span className="text-[#46484d]">Export FEC normé, conforme réforme 2026</span>
+              <span className="text-[#46484d]">Soyez serein face à la réforme 2026 — exports FEC garantis conformes</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-[#466cf3] mt-2 shrink-0" />
-              <span className="text-[#46484d]">Audit trail complet et traçabilité</span>
+              <span className="text-[#46484d]">Répondez aux contrôles fiscaux sans stress grâce à la traçabilité totale</span>
             </li>
           </ul>
         </div>
 
         <div className="bg-[#f7f7f5] rounded-2xl p-8 mb-16">
           <h2 className="text-xl font-medium text-[#181818] mb-4">
-            Essayez gratuitement
+            Testez sans engagement
           </h2>
           <p className="text-sm text-[#6b7280] mb-6">
-            14 jours d'essai gratuit. Sans carte bancaire. Opérationnel en moins d'une heure.
+            Essai gratuit 14 jours · Aucune carte requise · Prêt en 60 minutes
           </p>
           <Link
             href="/signup"
