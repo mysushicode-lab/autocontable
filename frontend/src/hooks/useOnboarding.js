@@ -159,7 +159,7 @@ export function useOnboardingActions(state, hasIntegrationAccess, selectClientFi
       if (state.currentStep === 1) {
         state.setCurrentStep(2);
       } else if (state.currentStep === 2) {
-        if (hasStep2Data()) {
+        if (hasStep2Data() && !state.createdClientFileId) {
           const result = await createClientFile({
             name: state.clientName,
             siret: state.siret.trim() || null,
