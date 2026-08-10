@@ -116,6 +116,12 @@ def _get_or_create_user_from_oauth(email: str, name: str, provider: str, profile
         )
         session.add(user)
         session.flush()
+
+        # Lifecycle: trigger trial welcome + nurture (only for new org, not invitations)
+        if not organization_id:
+            from src.scheduler.lifecycle_engine import on_account_created
+            on_account_created(session, user_id=user.id, organization_id=org_id, email=email)
+
         session.commit()
         return {
             'id': user.id,

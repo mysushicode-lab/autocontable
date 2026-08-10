@@ -77,6 +77,11 @@ def register(request: Request, body: RegisterRequest, background_tasks: Backgrou
             from src.api.affiliates import track_referral
             track_referral(session, body.ref, user_id, org_id)
         token_value = _create_user_token(session, user_id)
+
+        # Lifecycle: trigger trial welcome + nurture sequence
+        from src.scheduler.lifecycle_engine import on_account_created
+        on_account_created(session, user_id=user_id, organization_id=org_id, email=body.email)
+
         session.commit()
 
         # Sync user to GetResponse (background task)

@@ -317,3 +317,52 @@ class Referral(Base):
     converted_at = Column(DateTime, nullable=True)
 
     affiliate = relationship("Affiliate", back_populates="referrals")
+
+
+class LifecycleStage(enum.Enum):
+    QUIZ_LEAD = "quiz_lead"
+    TRIAL_DAY0 = "trial_day0"
+    TRIAL_ACTIVE = "trial_active"
+    TRIAL_ENDING = "trial_ending"
+    TRIAL_EXPIRED = "trial_expired"
+    PAYING = "paying"
+    CHURNED = "churned"
+
+
+class QuizContact(Base):
+    __tablename__ = 'quiz_contacts'
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    getresponse_id = Column(String(100), nullable=True)
+    state = Column(String(50), default='quiz_pending')
+    lifecycle_stage = Column(Enum(LifecycleStage), default=LifecycleStage.QUIZ_LEAD)
+    first_name = Column(String(100), nullable=True)
+    client_count = Column(Integer, nullable=True)
+    time_lost_week = Column(Integer, nullable=True)
+    time_lost_month = Column(Integer, nullable=True)
+    time_lost_year = Column(Integer, nullable=True)
+    quiz_completed_at = Column(DateTime, nullable=True)
+    account_created_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    email_jobs = relationship("EmailJob", back_populates="quiz_contact")
+
+
+class EmailJob(Base):
+    __tablename__ = 'email_jobs'
+
+    id = Column(Integer, primary_key=True)
+    quiz_contact_id = Column(Integer, ForeignKey('quiz_contacts.id'), nullable=True, index=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
+    lifecycle_stage = Column(Enum(LifecycleStage), nullable=True)
+    email_type = Column(String(50), nullable=False)
+    scheduled_for = Column(DateTime, nullable=False, index=True)
+    sent_at = Column(DateTime, nullable=True)
+    status = Column(String(20), default='pending')  # pending, sent, cancelled, failed
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    quiz_contact = relationship("QuizContact", back_populates="email_jobs")

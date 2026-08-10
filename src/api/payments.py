@@ -120,7 +120,11 @@ def handle_subscription_active(subscription, session):
             org.plan_type = plan
             org.is_trial_active = False
             if subscription_id:
-                org.stripe_subscription_id = subscription_id  # ✅ Sauvegarder subscription_id
+                org.stripe_subscription_id = subscription_id
+
+            # Lifecycle: payment confirmed → paying sequence
+            from src.scheduler.lifecycle_engine import on_payment_confirmed
+            on_payment_confirmed(session, organization_id=org.id)
 
 
 def handle_subscription_deleted(subscription, session):
@@ -137,10 +141,14 @@ def handle_subscription_deleted(subscription, session):
         org = session.query(Organization).filter(Organization.id == int(org_id)).first()
 
     if org:
-        org.plan_type = 'free'  # ✅ Retour à Free (pas Starter)
+        org.plan_type = 'free'
         org.is_trial_active = False
         if org.stripe_subscription_id == subscription_id:
-            org.stripe_subscription_id = None  # ✅ Clear subscription_id
+            org.stripe_subscription_id = None
+
+        # Lifecycle: subscription cancelled → churned sequence
+        from src.scheduler.lifecycle_engine import on_subscription_cancelled
+        on_subscription_cancelled(session, organization_id=org.id)
 
 
 def handle_invoice_paid(invoice_data, session):

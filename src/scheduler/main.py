@@ -16,6 +16,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 import src.config  # noqa: F401
 
 from src.email_ingestion import IMAPClient
+from src.scheduler.email_sender import process_pending_emails
+from src.scheduler.lifecycle_engine import check_trial_lifecycle
 from src.storage.models import Settings, Organization, ClientFile
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
@@ -422,6 +424,30 @@ class InvoiceScheduler:
             trigger=IntervalTrigger(hours=12),
             id='auto_push_entries',
             name='Auto-push accounting entries',
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=3600,
+        )
+
+        # Email sender job (check every minute for pending emails)
+        logger.info("Scheduling email sender job (1m interval)")
+        self.scheduler.add_job(
+            process_pending_emails,
+            trigger=IntervalTrigger(minutes=1),
+            id='email_sender',
+            name='Send pending lifecycle emails',
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=60,
+        )
+
+        # Trial lifecycle checker (every hour: detect trial_ending + trial_expired)
+        logger.info("Scheduling trial lifecycle checker (1h interval)")
+        self.scheduler.add_job(
+            check_trial_lifecycle,
+            trigger=IntervalTrigger(hours=1),
+            id='trial_lifecycle',
+            name='Check trial expiry and trigger emails',
             replace_existing=True,
             max_instances=1,
             misfire_grace_time=3600,
