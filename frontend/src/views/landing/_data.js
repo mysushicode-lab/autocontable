@@ -7,36 +7,36 @@ export const NAV_LINKS = [
 
 export const FEATURES = [
   {
-    title: 'Portefeuille clients : gérez tous vos dossiers',
-    description: "Chaque client = 1 dossier. Plan comptable personnalisé. Règles de rapprochement sur mesure. Vue consolidée de tous vos dossiers. Impayés détectés automatiquement. Validation batch.",
+    title: "Un portefeuille clair, chaque client à sa place",
+    description: "Chaque dossier vit dans son propre espace avec son plan comptable et ses règles de rapprochement. Vous voyez d'un coup d'œil ce qui avance, ce qui bloque, et ce qui nécessite votre attention — sans jamais basculer entre des onglets.",
     image: '/portfolio.png',
   },
   {
-    title: 'Rapprochement automatique : dossiers prêts en 30 sec',
-    description: "Importez relevé. Chaque facture trouve sa transaction. Impayés remontés en temps réel. Traçabilité complète pour audit fiscal. Export FEC conforme réforme 2026 en 2 clics.",
+    title: "Le rapprochement se fait tout seul",
+    description: "Importez un relevé et regardez l'IA associer chaque ligne à la bonne facture en quelques secondes. Les impayés remontent immédiatement, et l'export FEC conforme 2026 est prêt avant même que vous y pensiez.",
     image: '/reconciliation.png',
   },
   {
-    title: 'Connecteur comptable : poussez vers votre logiciel',
-    description: "Sage, Cegid, ACD, Quadratus. Poussez vos écritures directement depuis FactPilot. Configuration en 5 min. Export FEC normé ou API native. Synchronisation bidirectionnelle.",
+    title: "Vos écritures poussées dans votre logiciel existant",
+    description: "Sage, Cegid, ACD, Quadratus — FactPilot s'adapte à votre outil, pas l'inverse. Configurez la passerelle une fois, et vos écritures coulent naturellement vers votre logiciel comptable sans double saisie.",
     image: '/connecteur.png',
   },
 ];
 
 export const TOOLS = [
   {
-    title: 'Import manuel ou automatique : vous choisissez',
-    description: "Upload direct : glissez-déposez vos PDF/photos. Automatique : connectez votre boîte email (Gmail, Outlook, IMAP) — les factures arrivent seules. Vos clients PME connectent leur propre boîte depuis leur espace. Extraction instantanée dans tous les cas.",
+    title: "Les factures viennent à vous, pas l'inverse",
+    description: "Glissez vos PDF si vous préférez faire les choses à la main, ou connectez une boîte mail et laissez les factures affluer d'elles-mêmes. Vos clients PME font de même depuis leur espace — plus besoin de les relancer, tout arrive sans friction.",
     image: '/import.png',
   },
   {
-    title: "Éditez et validez chaque facture importée",
-    description: "Extraction IA automatique (PDF, scans, photos). Vous vérifiez et corrigez en 30 sec. Plan comptable personnalisé par dossier. Catégorisation automatique. Validation en 1 clic.",
+    title: "Vérifiez en trente secondes ce que l'IA a compris",
+    description: "L'intelligence artificielle lit chaque document — PDF propre, scan froissé ou photo prise à la va-vite — et en extrait les données essentielles. À vous de valider d'un regard et de corriger si besoin, jamais de ressaisir.",
     image: '/edition.png',
   },
   {
-    title: 'Rapports comptables',
-    description: "Grand livre, journal, balance, FEC normé. Export Excel/PDF en 1 clic. Tableau de bord par fournisseur, catégorie, période. Audit trail complet pour contrôle fiscal.",
+    title: "Des rapports qui se génèrent, pas qui se construisent",
+    description: "Grand livre, journal, balance, FEC normé — tout est là, prêt à être exporté en un clic. Le tableau de bord vous montre qui vous doit quoi, par fournisseur, par période, avec un historique d'audit complet pour dormir tranquille.",
     image: '/Rapports Comptables.png',
   },
 ];

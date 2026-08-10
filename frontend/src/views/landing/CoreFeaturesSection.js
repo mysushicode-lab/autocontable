@@ -3,13 +3,13 @@ import { sectionBadge, sectionHeading, sectionSubtext } from './_styles';
 import { NOISE_SVG_FINE, NOISE_SVG } from './_constants';
 
 const TOP_FEATURES = [
-  { title: 'Réception automatique par email/IMAP', description: "Gmail, Outlook, tout IMAP. Vos clients PME connectent leur boîte depuis leur espace — leurs factures fournisseurs arrivent directement chez vous. Extraction HT/TVA instantanée. Zéro relance, zéro transfert.", image: '/facture-email.png' },
-  { title: 'Extraction IA sur documents dégradés', description: "PDF, scans dégradés, photos floues, factures manuscrites. Extraction HT/TTC/TVA/date en 2 sec. 95%+ précision. Factur-X natif.", image: '/extraction-instantané.png' },
+  { title: 'Les factures arrivent sans que vous les demandiez', description: "Vos clients PME connectent leur propre boîte mail depuis leur espace. À partir de là, chaque facture fournisseur atterrit chez vous automatiquement — extraite, lue, classée. Plus jamais un email de relance à envoyer.", image: '/facture-email.png' },
+  { title: 'Même un scan froissé ne lui résiste pas', description: "PDF nets, scans dégradés, photos prises à la hâte sur un coin de bureau — l'IA déchiffre tout en deux secondes avec une précision de plus de 95%. Le format Factur-X est géré nativement.", image: '/extraction-instantané.png' },
 ];
 
 const BOTTOM_FEATURES = [
-  { title: 'Rapprochement bancaire automatique', description: "Importez relevé. Chaque facture trouve sa transaction. Impayés remontés instantanément. Export FEC conforme 2026 en 2 clics. Traçabilité totale pour l'audit.", image: '/reconciliation.png' },
-  { title: 'Export FEC normé prêt pour audit', description: "FEC normé, grand livre, journal. Tout rapproché, tout tracé. Export conforme réforme 2026 sans retouche. Audit trail complet pour contrôle fiscal.", image: '/audit-trail.png' },
+  { title: 'Chaque facture retrouve sa transaction bancaire', description: "Importez votre relevé et observez : en quelques secondes, chaque ligne trouve son match. Les impayés remontent d'eux-mêmes, et la traçabilité est totale — prête pour n'importe quel contrôle.", image: '/reconciliation.png' },
+  { title: 'Un export FEC conforme, sans retouche', description: "Grand livre, journal, FEC normé — tout est rapproché, tout est tracé. Le jour de l'audit, vous exportez un fichier propre et complet. Pas de nettoyage de dernière minute, pas de sueur froide.", image: '/audit-trail.png' },
 ];
 
 function GridMarker({ type = 'cross', className }) {
@@ -74,9 +74,9 @@ export default function CoreFeaturesSection() {
 
         <div className="text-center mb-10 lg:mb-16">
           <span className={sectionBadge}>Fonctionnalités métier</span>
-          <h2 className={sectionHeading}>Conçu pour cabinets et PME — pas un ERP générique</h2>
+          <h2 className={sectionHeading}>Construit pour la réalité des cabinets, pas pour une démo</h2>
           <p className={`mt-3 max-w-md mx-auto ${sectionSubtext}`}>
-            Cycle complet : réception boîte mail, extraction HT/TVA, rapprochement bancaire, export FEC. Adapté aux cabinets comptables et à leurs clients PME.
+            De la boîte mail de votre client jusqu'au FEC prêt pour l'administration fiscale, chaque étape du cycle comptable est couverte — sans jamais quitter un seul outil.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default function CoreFeaturesSection() {
             <div className="absolute inset-0 opacity-[0.12] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
             <blockquote className="relative z-10">
               <p className="text-base sm:text-xl lg:text-2xl font-normal text-white leading-snug max-w-2xl">
-                "120h gagnées. Mes clients PME connectent leur boîte — je récupère automatiquement leurs factures fournisseurs. Zéro relance."
+                "Avant, je passais mes soirées à relancer mes clients pour récupérer leurs factures. Aujourd'hui, tout arrive seul dans le bon dossier pendant que je suis avec ma famille."
               </p>
             </blockquote>
             <div className="relative z-10 flex items-center gap-3">

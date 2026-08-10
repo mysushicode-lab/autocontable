@@ -3,13 +3,13 @@ import { Plus, Minus } from 'lucide-react';
 import { sectionBadge, sectionHeading } from './_styles';
 
 const FAQS = [
-  { q: "Serai-je conforme à la réforme 2026 ?", a: "Oui. FEC normé + Factur-X générés automatiquement. Audit trail complet. Prêt en 60 minutes, conforme septembre 2026." },
-  { q: "Dois-je abandonner Sage/Cegid/Quadratus ?", a: "Non. FactPilot se greffe sur votre logiciel existant : API native ou export FEC. Zéro migration. Votre plan comptable, vos workflows — intacts. Vous ajoutez l'automatisation, c'est tout." },
-  { q: "Comment les factures arrivent dans FactPilot ?", a: "Cabinet : connectez votre boîte (IMAP). PME : vos clients connectent leur propre boîte depuis leur espace. Leurs factures fournisseurs arrivent automatiquement chez vous. Extraction HT/TVA instantanée. Zéro relance." },
-  { q: "L'IA lit vraiment les scans flous et manuscrits ?", a: "Oui. PDF, scans dégradés, photos floues, factures manuscrites. Extraction HT/TTC/TVA/date en 2 sec. 95%+ précision. Factur-X natif. WhatsApp intégré." },
-  { q: "Mes données clients restent-elles confidentielles ?", a: "Hébergement Europe. Chiffrement transit + repos. RGPD certifié. Audit trail immuable — contrôleurs voient qui a saisi, modifié, validé quoi et quand. Zéro risque de requalification." },
-  { q: "Je gère 50 dossiers — l'outil suit-il ?", a: "Conçu pour cabinets. 50+ dossiers, interface unique. Chaque dossier : plan comptable dédié, règles de rapprochement sur mesure. Validation batch. Gagnez 120h/mois." },
-  { q: "Quel est le coût pour rester conforme ?", a: "39€/mois (5 dossiers, 200 factures) ou 149€/mois (30 dossiers illimités). Essai 14 jours sans CB. Moins cher qu'1h de saisie manuelle." },
+  { q: "Serai-je conforme à la réforme 2026 ?", a: "Oui, dès le premier jour. FactPilot génère automatiquement le FEC normé et comprend nativement le format Factur-X. Vous serez prêt bien avant l'échéance de septembre 2026, sans avoir à repenser vos processus." },
+  { q: "Dois-je abandonner mon logiciel comptable actuel ?", a: "Pas du tout. FactPilot vient se greffer sur Sage, Cegid, Quadratus ou tout autre outil que vous utilisez déjà. Votre plan comptable reste intact, vos habitudes ne changent pas — vous ajoutez simplement une couche d'automatisation par-dessus." },
+  { q: "Comment les factures arrivent-elles dans FactPilot ?", a: "Vos clients PME connectent leur propre boîte mail depuis leur espace, et leurs factures fournisseurs atterrissent directement dans le bon dossier chez vous. Plus besoin de relancer, plus d'emails perdus — tout est extrait et classé à la seconde où ça arrive." },
+  { q: "L'IA arrive-t-elle vraiment à lire les scans de mauvaise qualité ?", a: "Elle a été entraînée précisément pour ça. PDFs propres, scans dégradés, photos prises de travers sur un coin de bureau — elle extrait montants, dates et TVA en deux secondes avec plus de 95% de précision." },
+  { q: "Mes données clients restent-elles confidentielles ?", a: "Absolument. Tout est hébergé en Europe, chiffré en transit comme au repos, et conforme RGPD. Chaque action est horodatée de manière immuable, ce qui signifie que lors d'un contrôle, vous pouvez montrer exactement qui a fait quoi et quand." },
+  { q: "Je gère plus de 50 dossiers — l'outil tiendra-t-il la charge ?", a: "FactPilot a été pensé exactement pour ce volume. Chaque dossier dispose de son propre plan comptable et de ses règles de rapprochement, et vous pouvez valider par lot. Les cabinets qui l'utilisent récupèrent en moyenne 120 heures par mois." },
+  { q: "Combien ça coûte concrètement ?", a: "Le plan Starter démarre à 39€ par mois pour 5 dossiers et 200 factures. Le plan Pro à 149€ offre 30 dossiers en illimité. Vous pouvez essayer gratuitement pendant 7 jours sans carte bancaire — c'est moins que le coût d'une heure de saisie manuelle." },
 ];
 
 export default function FAQSection() {
@@ -21,7 +21,7 @@ export default function FAQSection() {
 
         <div className="text-center mb-16">
           <span className={sectionBadge}>FAQ</span>
-          <h2 className={sectionHeading}>Les questions qu'on nous pose avant de signer</h2>
+          <h2 className={sectionHeading}>Tout ce que vous vous demandez avant de vous lancer</h2>
         </div>
 
         <div className="divide-y divide-[#6c6f7635]">

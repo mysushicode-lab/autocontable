@@ -27,10 +27,10 @@ export default function ToolsSection() {
         <div className="lg:hidden mb-8">
           <span className={sectionBadge}>Proposition de valeur</span>
           <h2 className="text-2xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
-            Conçu pour les cabinets comptables
+            Chaque outil pensé pour votre quotidien
           </h2>
           <p className={sectionSubtext}>
-            Import manuel ou auto (email/IMAP), extraction IA, rapprochement bancaire — tout automatisé.
+            De la réception de la facture jusqu'à l'écriture comptable, chaque étape qui vous prenait du temps se fait désormais sans vous.
           </p>
         </div>
 
@@ -41,10 +41,10 @@ export default function ToolsSection() {
             <div className="sticky top-28">
               <span className={sectionBadge}>Proposition de valeur</span>
               <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight leading-tight mb-3">
-                Conçu pour les cabinets comptables
+                Chaque outil pensé pour votre quotidien
               </h2>
               <p className={`mb-10 max-w-xs ${sectionSubtext}`}>
-                Import manuel ou auto (email/IMAP), extraction IA, rapprochement bancaire — tout automatisé.
+                De la réception de la facture jusqu'à l'écriture comptable, chaque étape qui vous prenait du temps se fait désormais sans vous.
               </p>
               <div className="flex flex-col">
                 {TOOLS.map((f, i) => (

@@ -39,10 +39,10 @@ export default function VideoSection() {
             {/* Text block */}
             <div className="flex flex-col gap-3 p-8 lg:p-12 lg:w-[55%] shrink-0 justify-center border-b lg:border-b-0 lg:border-r border-[#6c6f7635]">
               <h2 className="text-[#181818] text-lg md:text-xl lg:text-2xl font-semibold leading-tight">
-                Voyez une facture<br />traitée en 2 minutes
+                Regardez une facture<br />traverser le système
               </h2>
               <p className="text-[#6b7280] text-xs md:text-sm leading-relaxed mt-3 max-w-sm">
-                Boîte mail connectée → extraction HT/TVA → rapprochement bancaire → export FEC. Automatique. Zéro saisie.
+                De la boîte mail de votre client jusqu'à l'écriture comptable validée — en deux minutes, sans toucher au clavier. C'est exactement comme ça que ça se passe, tous les jours.
               </p>
             </div>
 

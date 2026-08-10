@@ -20,10 +20,10 @@ export default function HeroSection() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-[#181818] leading-[1.05] tracking-tight mb-4 lg:mb-6">
-              Gagnez 120h/mois.<br />Factures récupérées, classées, rapprochées.
+              Vos dossiers se préparent<br />pendant que vous dormez.
             </h1>
             <p className="text-sm sm:text-base text-[#6b7280] mb-8 lg:mb-10 max-w-md">
-              Vos clients connectent leur boîte depuis leur espace. Leurs factures fournisseurs arrivent automatiquement. Extraction HT/TVA/date instantanée. Dossiers conformes 2026 prêts en 2 clics.
+              Vos clients connectent leur boîte mail, et leurs factures fournisseurs arrivent chez vous sans que personne ne lève le petit doigt. L'IA les lit, les classe, les rapproche de vos relevés bancaires — et vous récupérez 120 heures chaque mois pour faire ce qui compte vraiment.
             </p>
 
             {/* CTAs */}
@@ -42,7 +42,7 @@ export default function HeroSection() {
                   <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white object-cover" />
                 ))}
               </div>
-              <p className="text-xs text-[#6b7280]">Aucune CB · Opérationnel en 60 minutes</p>
+              <p className="text-xs text-[#6b7280]">Sans carte bancaire — opérationnel en une heure</p>
             </div>
 
           </div>

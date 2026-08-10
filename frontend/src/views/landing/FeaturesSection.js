@@ -21,7 +21,7 @@ export default function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 lg:pt-28">
         <div className="text-center mb-12">
           <span className={sectionBadge}>Comment ça marche ?</span>
-          <h2 className={sectionHeading}>Factures récupérées, rapprochées. Automatiquement.</h2>
+          <h2 className={sectionHeading}>Du chaos papier à la comptabilité qui tourne toute seule</h2>
         </div>
       </div>
 

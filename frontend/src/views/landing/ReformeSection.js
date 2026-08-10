@@ -6,19 +6,19 @@ const STEPS = [
   {
     date: '1er sept. 2026',
     title: 'Réception Factur-X obligatoire',
-    desc: 'Toutes entreprises, tous secteurs. Lecture Factur-X obligatoire. FactPilot le traite automatiquement.',
+    desc: "Toutes les entreprises devront savoir lire le format Factur-X. FactPilot le comprend déjà — vous n'aurez rien à changer le jour J.",
     ready: true,
   },
   {
     date: '1er sept. 2026',
     title: 'Export FEC normé obligatoire',
-    desc: 'Grandes entreprises & ETI : FEC conforme ou pénalité. Structure, numérotation, audit trail vérifiés.',
+    desc: "Les grandes entreprises et ETI devront produire un FEC parfaitement structuré sous peine de pénalités. Ici, il se génère tout seul.",
     ready: true,
   },
   {
     date: '1er sept. 2027',
-    title: 'Obligation PME & TPE',
-    desc: 'PME, TPE, micro-entreprises. Migration transparente avec FactPilot. Zéro reprise manuelle.',
+    title: 'Obligation étendue aux PME et TPE',
+    desc: "L'année suivante, c'est au tour des plus petites structures. Avec FactPilot, la migration sera transparente — sans reprise manuelle ni nuit blanche.",
     ready: true,
   },
 ];
@@ -31,10 +31,10 @@ export default function ReformeSection() {
           <div className="text-center mb-12">
             <span className={sectionBadge}>Réforme obligatoire 2026</span>
             <h2 className={sectionHeading}>
-              Septembre 2026 = obligation légale. Êtes-vous prêt ?
+              Septembre 2026 approche. Serez-vous prêt ?
             </h2>
             <p className={`${sectionSubtext} mt-4 max-w-2xl mx-auto`}>
-              FEC normé + Factur-X = obligation. Pénalités si non-conforme. FactPilot automatise tout — vous arrivez à l'échéance sans stress.
+              La facturation électronique devient une obligation légale, et les retardataires paieront des pénalités. FactPilot vous met en conformité dès aujourd'hui — pour que l'échéance devienne une simple date sur le calendrier, pas une source d'angoisse.
             </p>
           </div>
 
@@ -64,22 +64,22 @@ export default function ReformeSection() {
               <div className="flex items-start gap-3">
                 <FileCheck className="w-5 h-5 text-[#181818] mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#181818]">Factur-X traité automatiquement</p>
-                  <p className="text-xs text-[#6b7280] mt-1">PDF, Factur-X, email, WhatsApp. Tout extrait, tout classé.</p>
+                  <p className="text-sm font-semibold text-[#181818]">Factur-X compris nativement</p>
+                  <p className="text-xs text-[#6b7280] mt-1">Quel que soit le canal d'entrée — email, PDF, photo — chaque document est extrait et classé sans que vous n'ayez à intervenir.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-[#181818] mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#181818]">Archivage certifié</p>
-                  <p className="text-xs text-[#6b7280] mt-1">Stockage RGPD avec horodatage et traçabilité immuable.</p>
+                  <p className="text-sm font-semibold text-[#181818]">Un archivage qui inspire confiance</p>
+                  <p className="text-xs text-[#6b7280] mt-1">Vos données sont hébergées en Europe, chiffrées, horodatées. Chaque action est tracée de manière immuable pour satisfaire les exigences RGPD.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <CalendarClock className="w-5 h-5 text-[#181818] mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#181818]">Prêt en 60 minutes</p>
-                  <p className="text-xs text-[#6b7280] mt-1">Démarrez aujourd'hui. Conformité garantie septembre 2026.</p>
+                  <p className="text-sm font-semibold text-[#181818]">Opérationnel en une heure</p>
+                  <p className="text-xs text-[#6b7280] mt-1">Lancez-vous ce matin et soyez conforme avant la fin de la journée. Septembre 2026 ne vous fera plus perdre le sommeil.</p>
                 </div>
               </div>
             </div>

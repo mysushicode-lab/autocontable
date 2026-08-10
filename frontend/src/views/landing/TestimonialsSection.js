@@ -3,21 +3,21 @@ import { NOISE_SVG } from './_constants';
 
 const TESTIMONIALS = [
   {
-    quote: "Mes clients PME connectent leur boîte. Leurs factures fournisseurs arrivent automatiquement. Je gagne 120h/mois. Zéro relance.",
+    quote: "Mes clients connectent leur boîte mail et leurs factures arrivent chez moi pendant la nuit. Le matin, tout est classé. J'ai récupéré mes soirées et mes week-ends.",
     name: "Pierre M.",
     role: "Cabinet comptable, 80 dossiers",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&h=600&fit=crop&crop=face",
     color: '#466cf3',
   },
   {
-    quote: "Extraction HT/TVA instantanée. Rapprochement auto. Export FEC conforme 2026 en 2 clics. Je passe enfin du temps à auditer, pas à ressaisir.",
+    quote: "Je passais plus de temps à ressaisir qu'à auditer. Maintenant l'extraction est instantanée, le rapprochement se fait seul, et je peux enfin faire mon vrai métier.",
     name: "Valérie D.",
     role: "Collaboratrice comptable",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&h=600&fit=crop&crop=face",
     color: '#f59e0b',
   },
   {
-    quote: "Zéro erreur de saisie. Zéro facture oubliée. Dossiers exportés conformes 2026 sans retouche. Zéro réclamation client.",
+    quote: "Plus une seule facture oubliée, plus une erreur de saisie. Quand j'exporte le FEC, il est propre du premier coup. Mes clients n'ont jamais eu aussi peu de questions.",
     name: "Marc T.",
     role: "Gérant, petit cabinet",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop&crop=face",
@@ -85,7 +85,7 @@ export default function TestimonialsSection() {
             Témoignages
           </span>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-            Pourquoi les cabinets passent à FactPilot
+            Ce qu'en disent ceux qui l'utilisent au quotidien
           </h2>
         </div>
 
