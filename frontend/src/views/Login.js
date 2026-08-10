@@ -37,7 +37,7 @@ const Login = () => {
         <div className="bg-white rounded-md border border-gray-200 p-8 shadow-sm">
             <div className="text-center mb-8">
               <img
-                src="/logo2.png"
+                src="/factpilot-logo.svg"
                 alt="FactPilot"
                 className="h-10 w-auto mx-auto"
               />
