@@ -10,7 +10,7 @@ export default function HeroSection() {
 
           <div>
             {/* Social proof badge */}
-            <div className="flex items-center gap-3 mb-6 lg:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-6 lg:mb-8">
               <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
