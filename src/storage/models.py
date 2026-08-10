@@ -93,7 +93,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)
     role = Column(Enum(UserRole), default=UserRole.ACCOUNTANT)
     name = Column(String(100), nullable=True)
     email = Column(String(100), nullable=True, index=True)
