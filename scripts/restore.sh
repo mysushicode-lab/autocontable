@@ -1,5 +1,5 @@
 #!/bin/bash
-# Restore autocontable from a backup archive
+# Restore factpilot from a backup archive
 # Usage: ./restore.sh /path/to/backup.tar.gz
 
 set -euo pipefail
@@ -12,7 +12,7 @@ if [ -z "${BACKUP_FILE}" ]; then
     echo "Usage: $0 <backup_archive.tar.gz>"
     echo ""
     echo "Available backups:"
-    ls -lh "${BACKUP_DIR}"/autocontable_backup_*.tar.gz 2>/dev/null || echo "  (none found)"
+    ls -lh "${BACKUP_DIR}"/factpilot_backup_*.tar.gz 2>/dev/null || echo "  (none found)"
     exit 1
 fi
 

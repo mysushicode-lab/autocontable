@@ -36,7 +36,7 @@ export RETENTION_DAYS="${TEST_RETENTION_DAYS}"
 
 echo ""
 echo "4. Verifying backup..."
-BACKUP_FILE=$(ls -t "${TEST_BACKUP_DIR}"/autocontable_backup_*.tar.gz | head -1)
+BACKUP_FILE=$(ls -t "${TEST_BACKUP_DIR}"/factpilot_backup_*.tar.gz | head -1)
 if [ -z "${BACKUP_FILE}" ]; then
     echo "ERROR: No backup file created!"
     exit 1

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installation de l'application (à exécuter dans /opt/autocontable)
+# Installation de l'application (à exécuter dans /opt/factpilot)
 
 set -e
 
@@ -43,7 +43,7 @@ server {
 
     # Frontend (React build)
     location / {
-        root /opt/autocontable/frontend/build;
+        root /opt/factpilot/frontend/build;
         try_files $uri /index.html;
         add_header Cache-Control "public, max-age=31536000";
     }
@@ -75,7 +75,7 @@ server {
     }
 
     location /exports {
-        alias /opt/autocontable/data/exports;
+        alias /opt/factpilot/data/exports;
         autoindex off;
     }
 }

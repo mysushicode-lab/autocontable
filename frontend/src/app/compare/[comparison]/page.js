@@ -4,7 +4,7 @@ import PseoPageLayout from '@/components/pseo/PseoPageLayout';
 
 export function generateStaticParams() {
   return getPseoPagesByKind('comparison').map((p) => ({
-    comparison: `autocontable-vs-${p.params.slug_key}`,
+    comparison: `factpilot-vs-${p.params.slug_key}`,
   }));
 }
 

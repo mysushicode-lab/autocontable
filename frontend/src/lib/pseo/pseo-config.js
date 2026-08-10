@@ -32,7 +32,7 @@ function getConfig() {
       },
       {
         kind: 'comparison',
-        pathTemplate: '/compare/autocontable-vs-[slug_key]',
+        pathTemplate: '/compare/factpilot-vs-[slug_key]',
         titleTemplate: 'FactPilot vs [slug_key_label] : Prix, IA & Conformité 2026',
         descTemplate:
           'Comparez FactPilot et [slug_key_label] : extraction IA, rapidité, tarifs transparents, conformité réforme. Tableau comparatif complet et retours clients vérifiés.',

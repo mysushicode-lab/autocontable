@@ -2,7 +2,7 @@
 
 ## ✅ What's Already Done
 
-- API key configured in autocontable database
+- API key configured in factpilot database
 - 13 tags auto-created in GetResponse:
   - **Source tags**: `signup_google`, `signup_linkedin`, `signup_manual`
   - **Plan tags**: `plan_free`, `plan_pro`, `plan_cabinet`, `plan_reseau`
@@ -36,7 +36,7 @@ GetResponse v3 API doesn't expose automation/email creation endpoints, so you ne
 #### Email 1 (Day 0 - Immediate)
 ```
 Subject: Bienvenue sur Autocontable via Google!
-From: support@autocontable.fr
+From: support@factpilot.fr
 
 Body:
 Bonjour {{ contact.name }},
@@ -46,7 +46,7 @@ Merci de vous inscrire via Google! Vous êtes maintenant membre d'Autocontable.
 🚀 Voici comment démarrer:
 
 1. Connectez votre premier dossier client
-   → Go to: https://app.autocontable.fr/portfolio
+   → Go to: https://app.factpilot.fr/portfolio
 
 2. Importer vos factures
    → Drag & drop PDF dans la section "Factures"
@@ -70,8 +70,8 @@ Bonjour {{ contact.name }},
 Vous avez trouvé l'import factures? C'est le cœur d'Autocontable.
 
 📚 Tutoriel complet:
-- Manuel: https://docs.autocontable.fr/import-manual
-- IMAP (Gmail): https://docs.autocontable.fr/imap-setup
+- Manuel: https://docs.factpilot.fr/import-manual
+- IMAP (Gmail): https://docs.factpilot.fr/imap-setup
 - Vidéo: https://youtube.com/...
 
 💡 Pro tip: Configurez l'import IMAP une fois, puis oubliez. 
@@ -97,13 +97,13 @@ Bravo! Vous avez déjà:
 
 🎯 Prochaines étapes:
 1. Rapprochez vos factures avec vos relévés bancaires
-   → https://app.autocontable.fr/reconciliation
+   → https://app.factpilot.fr/reconciliation
 
 2. Générez vos rapports mensuels
-   → https://app.autocontable.fr/reports
+   → https://app.factpilot.fr/reports
 
 3. Invitez vos clients PME pour collaborer
-   → https://app.autocontable.fr/portfolio (click "Invite")
+   → https://app.factpilot.fr/portfolio (click "Invite")
 
 À bientôt,
 Autocontable
@@ -127,7 +127,7 @@ Vous adorez Autocontable? Passez à Pro et débloquez:
 
 💰 Special offer: 50% off this month only!
 
-👉 Upgrade now: https://app.autocontable.fr/billing/upgrade
+👉 Upgrade now: https://app.factpilot.fr/billing/upgrade
 
 Questions? Contactez-nous.
 
@@ -157,7 +157,7 @@ Content de vous voir! Vous venez via LinkedIn - notre communauté de
 comptables et directeurs financiers.
 
 🎯 Quick start (5 minutes):
-1. https://app.autocontable.fr/onboarding
+1. https://app.factpilot.fr/onboarding
 2. Créez votre premier dossier
 3. Importez 1 facture pour tester
 
@@ -206,7 +206,7 @@ Subject: Bienvenue sur Autocontable!
 
 Body:
 Votre compte est prêt. Commencez maintenant!
-https://app.autocontable.fr/onboarding
+https://app.factpilot.fr/onboarding
 ```
 
 #### Email 2 (Day 1)
@@ -218,7 +218,7 @@ Regardez cette vidéo (5 min):
 https://youtube.com/...
 
 Ou consultez le guide écrit:
-https://docs.autocontable.fr/getting-started
+https://docs.factpilot.fr/getting-started
 ```
 
 #### Email 3 (Day 4)
@@ -228,7 +228,7 @@ Subject: Vos premières factures importées?
 Body:
 Vous avez besoin d'aide pour importer?
 Répondez à cet email ou consultez:
-https://docs.autocontable.fr/import-methods
+https://docs.factpilot.fr/import-methods
 ```
 
 #### Email 4 (Day 8)
@@ -247,7 +247,7 @@ Body:
 Votre trial gratuit expire dans 7 jours.
 
 Upgrade maintenant pour continuer:
-https://app.autocontable.fr/billing/upgrade
+https://app.factpilot.fr/billing/upgrade
 
 Questions? Nous sommes là pour vous aider.
 ```
@@ -289,7 +289,7 @@ Subject: Guide complet des features Pro
 
 Body:
 Voici tous les super-pouvoirs Pro:
-https://docs.autocontable.fr/pro-features
+https://docs.factpilot.fr/pro-features
 
 Vidéo demo (15 min):
 https://youtube.com/...
@@ -312,7 +312,7 @@ Subject: Success stories Pro - Voir comment d'autres utilisent Pro
 
 Body:
 Découvrez comment d'autres comptables utilisent Pro:
-https://blog.autocontable.fr/success-stories
+https://blog.factpilot.fr/success-stories
 ```
 
 ---
@@ -335,7 +335,7 @@ https://blog.autocontable.fr/success-stories
 
 ## 🔄 Test the Flow
 
-1. **Register new account** in autocontable (manual signup)
+1. **Register new account** in factpilot (manual signup)
    - Username: test@example.com
    - Password: test123
 
@@ -355,7 +355,7 @@ https://blog.autocontable.fr/success-stories
 
 When user upgrades plan in Stripe:
 1. Webhook calls → `/api/getresponse/webhook/plan-upgraded`
-2. autocontable updates GetResponse contact tags
+2. factpilot updates GetResponse contact tags
 3. Old tags removed: `plan_free` → New tags added: `plan_pro, lifecycle_paying`
 4. "Upgrade Congratulations" automation triggers automatically
 
@@ -364,5 +364,5 @@ When user upgrades plan in Stripe:
 ## 📞 Support
 
 - GetResponse docs: https://apidocs.getresponse.com/v3
-- Email templates: https://docs.autocontable.fr/email-templates
-- Contact us: support@autocontable.fr
+- Email templates: https://docs.factpilot.fr/email-templates
+- Contact us: support@factpilot.fr

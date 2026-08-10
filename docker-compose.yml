@@ -6,12 +6,12 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=autocontable
-      - POSTGRES_USER=autocontable
+      - POSTGRES_DB=factpilot
+      - POSTGRES_USER=factpilot
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U autocontable"]
+      test: ["CMD-SHELL", "pg_isready -U factpilot"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,7 +23,7 @@ services:
       - .env
     environment:
       # Override .env with Docker-specific values
-      - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD:-changeme}@postgres:5432/autocontable
+      - DATABASE_URL=postgresql://factpilot:${POSTGRES_PASSWORD:-changeme}@postgres:5432/factpilot
       - PYTHONPATH=/app
     volumes:
       - app-data:/app/data
@@ -41,7 +41,7 @@ services:
       - .env
     environment:
       # Override .env with Docker-specific values
-      - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD:-changeme}@postgres:5432/autocontable
+      - DATABASE_URL=postgresql://factpilot:${POSTGRES_PASSWORD:-changeme}@postgres:5432/factpilot
       - PYTHONPATH=/app
     volumes:
       - app-data:/app/data

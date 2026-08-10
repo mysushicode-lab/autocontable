@@ -19,7 +19,7 @@ from src.api.billing import require_feature
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "autocontable-webhook-secret")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "factpilot-webhook-secret")
 
 
 def fire_webhook(org_id: int, event: str, payload: dict):

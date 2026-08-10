@@ -287,7 +287,7 @@ def get_backup_status(current_user: dict = Depends(get_current_user)):
     if not os.path.isdir(backup_dir):
         return {"has_backups": False, "message": "No backup directory found"}
 
-    backups = sorted(glob.glob(os.path.join(backup_dir, "autocontable_backup_*.tar.gz")), reverse=True)
+    backups = sorted(glob.glob(os.path.join(backup_dir, "factpilot_backup_*.tar.gz")), reverse=True)
     if not backups:
         return {"has_backups": False, "message": "No backups found"}
 

@@ -17,10 +17,10 @@ use-case,audit-comptable,Audit Comptable,audit trail comptable
 use-case,gestion-fournisseurs,Gestion Fournisseurs,suivi factures fournisseurs
 use-case,conformite-2026,Conformité Réforme 2026,réforme facturation 2026
 use-case,ingestion-email,Ingestion Email,récupération factures email
-comparison,pennylane,Pennylane,autocontable vs pennylane
-comparison,dext,Dext,autocontable vs dext
-comparison,tiime,Tiime,autocontable vs tiime
-comparison,inqom,Inqom,autocontable vs inqom
-comparison,receiptbank,Receipt Bank,autocontable vs receipt bank
-comparison,yooz,Yooz,autocontable vs yooz
-comparison,conciliator,Conciliator,autocontable vs conciliator
+comparison,pennylane,Pennylane,factpilot vs pennylane
+comparison,dext,Dext,factpilot vs dext
+comparison,tiime,Tiime,factpilot vs tiime
+comparison,inqom,Inqom,factpilot vs inqom
+comparison,receiptbank,Receipt Bank,factpilot vs receipt bank
+comparison,yooz,Yooz,factpilot vs yooz
+comparison,conciliator,Conciliator,factpilot vs conciliator

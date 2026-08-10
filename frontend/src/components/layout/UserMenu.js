@@ -38,7 +38,7 @@ const UserMenu = ({ profileMenuRef, profileMenuOpen, setProfileMenuOpen }) => {
               Paramètres
             </button>
             <a
-              href="mailto:support@autocontable.com"
+              href="mailto:support@factpilot.fr"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"

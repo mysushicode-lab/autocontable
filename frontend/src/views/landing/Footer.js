@@ -69,10 +69,10 @@ export default function Footer() {
 
           <div className="flex flex-col gap-3">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Comparer</span>
-            <Link href="/compare/autocontable-vs-pennylane" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Pennylane</Link>
-            <Link href="/compare/autocontable-vs-qonto" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Qonto</Link>
-            <Link href="/compare/autocontable-vs-indy" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Indy</Link>
-            <Link href="/compare/autocontable-vs-tiime" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Tiime</Link>
+            <Link href="/compare/factpilot-vs-pennylane" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Pennylane</Link>
+            <Link href="/compare/factpilot-vs-qonto" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Qonto</Link>
+            <Link href="/compare/factpilot-vs-indy" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Indy</Link>
+            <Link href="/compare/factpilot-vs-tiime" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Tiime</Link>
             <Link href="/compare" className="text-xs text-blue-600 hover:text-blue-700 transition-colors">Toutes les comparaisons →</Link>
           </div>
 

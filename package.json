@@ -1,5 +1,5 @@
 {
-  "name": "autocontable",
+  "name": "factpilot",
   "version": "1.0.0",
   "description": "Système de gestion comptable pour cabinets - Backend Python + Frontend React (Hetzner Cloud)",
   "scripts": {

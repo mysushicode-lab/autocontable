@@ -1,5 +1,5 @@
 """
-Script de données factices pour le dashboard autocontable.
+Script de données factices pour le dashboard factpilot.
 Insère: organisation, client files, fournisseurs, factures, transactions, rapprochements.
 """
 import os, sys
@@ -38,7 +38,7 @@ if not org:
 user = db.query(User).filter_by(organization_id=org.id).first()
 if not user:
     user = User(
-        email="demo@autocontable.fr",
+        email="demo@factpilot.fr",
         hashed_password=pwd_context.hash("demo1234"),
         full_name="Jean Durand",
         organization_id=org.id,

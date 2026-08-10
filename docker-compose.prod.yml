@@ -11,7 +11,7 @@ services:
 
   backend:
     environment:
-      - DATABASE_URL=postgresql://autocontable:${POSTGRES_PASSWORD}@postgres:5432/autocontable
+      - DATABASE_URL=postgresql://factpilot:${POSTGRES_PASSWORD}@postgres:5432/factpilot
       - FRONTEND_URL=https://factpilot.fr
       - CORS_ORIGINS=https://factpilot.fr
       - GOOGLE_REDIRECT_URI=https://factpilot.fr/api/auth/google/callback

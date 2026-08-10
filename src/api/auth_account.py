@@ -67,7 +67,7 @@ def export_user_data(request: Request, current_user: dict = Depends(get_current_
         return Response(
             content=content,
             media_type="application/json",
-            headers={"Content-Disposition": f"attachment; filename=autocontable-export-{user.username}.json"}
+            headers={"Content-Disposition": f"attachment; filename=factpilot-export-{user.username}.json"}
         )
     finally:
         session.close()

@@ -34,7 +34,7 @@ ufw --force enable
 
 # 4. Création dossier application
 echo "📁 Création structure..."
-APP_DIR="/opt/autocontable"
+APP_DIR="/opt/factpilot"
 mkdir -p $APP_DIR
 cd $APP_DIR
 mkdir -p data

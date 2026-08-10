@@ -1,5 +1,5 @@
 #!/bin/bash
-# Automated backup script for autocontable
+# Automated backup script for factpilot
 # Backs up SQLite database + uploaded documents to a local archive
 # Designed to run via cron daily
 
@@ -10,7 +10,7 @@ DATA_DIR="${DATA_DIR:-/app/data}"
 BACKUP_DIR="${BACKUP_DIR:-/app/backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_NAME="autocontable_backup_${TIMESTAMP}"
+BACKUP_NAME="factpilot_backup_${TIMESTAMP}"
 
 # Create backup directory
 mkdir -p "${BACKUP_DIR}"
@@ -46,12 +46,12 @@ echo "[backup] Archive created: ${BACKUP_NAME}.tar.gz (${BACKUP_SIZE})"
 rm -rf "${TEMP_DIR}"
 
 # 6. Retention: remove backups older than RETENTION_DAYS
-DELETED=$(find "${BACKUP_DIR}" -name "autocontable_backup_*.tar.gz" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
+DELETED=$(find "${BACKUP_DIR}" -name "factpilot_backup_*.tar.gz" -mtime +${RETENTION_DAYS} -delete -print | wc -l)
 if [ "${DELETED}" -gt 0 ]; then
     echo "[backup] Cleaned ${DELETED} old backup(s) (retention: ${RETENTION_DAYS} days)"
 fi
 
 # 7. List current backups
-TOTAL_BACKUPS=$(ls -1 "${BACKUP_DIR}"/autocontable_backup_*.tar.gz 2>/dev/null | wc -l)
+TOTAL_BACKUPS=$(ls -1 "${BACKUP_DIR}"/factpilot_backup_*.tar.gz 2>/dev/null | wc -l)
 TOTAL_SIZE=$(du -sh "${BACKUP_DIR}" | cut -f1)
 echo "[backup] Done. ${TOTAL_BACKUPS} backup(s) stored, total: ${TOTAL_SIZE}"

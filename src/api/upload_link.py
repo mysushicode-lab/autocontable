@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Secret for signing upload tokens (fallback to a random one if not set)
-_UPLOAD_SECRET = os.getenv("UPLOAD_LINK_SECRET", os.getenv("SECRET_KEY", "autocontable-upload-default-secret"))
+_UPLOAD_SECRET = os.getenv("UPLOAD_LINK_SECRET", os.getenv("SECRET_KEY", "factpilot-upload-default-secret"))
 
 from src.utils.paths import INVOICE_UPLOAD_DIR as UPLOAD_DIR
 
