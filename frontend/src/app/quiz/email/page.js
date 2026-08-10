@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import EmailCapturePage from './EmailCapturePage';
 
 export const metadata = {
-  title: 'Votre diagnostic est prêt ! | Autocontable',
+  title: 'Votre diagnostic est prêt ! | FactPilot',
   description: 'Recevez votre diagnostic personnalisé + guide gratuit',
 };
 

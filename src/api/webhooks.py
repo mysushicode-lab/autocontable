@@ -163,5 +163,5 @@ def update_webhook_config(payload: dict, current_user: dict = Depends(require_fe
 def test_webhook(current_user: dict = Depends(require_feature("webhooks"))):
     """Send a test webhook event."""
     org_id = current_user["organization_id"]
-    fire_webhook(org_id, "test", {"message": "Webhook test depuis Autocontable"})
+    fire_webhook(org_id, "test", {"message": "Webhook test depuis FactPilot"})
     return {"success": True, "message": "Webhook de test envoyé"}

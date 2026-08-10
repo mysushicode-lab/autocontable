@@ -33,7 +33,7 @@ export function buildComparisonJsonLd(page) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'Autocontable',
+    name: 'FactPilot',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     offers: {

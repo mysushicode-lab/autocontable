@@ -35,13 +35,13 @@ GetResponse v3 API doesn't expose automation/email creation endpoints, so you ne
 
 #### Email 1 (Day 0 - Immediate)
 ```
-Subject: Bienvenue sur Autocontable via Google!
+Subject: Bienvenue sur FactPilot via Google!
 From: support@factpilot.fr
 
 Body:
 Bonjour {{ contact.name }},
 
-Merci de vous inscrire via Google! Vous êtes maintenant membre d'Autocontable.
+Merci de vous inscrire via Google! Vous êtes maintenant membre d'FactPilot.
 
 🚀 Voici comment démarrer:
 
@@ -57,7 +57,7 @@ Merci de vous inscrire via Google! Vous êtes maintenant membre d'Autocontable.
 Questions? Répondez simplement à cet email.
 
 À bientôt,
-L'équipe Autocontable
+L'équipe FactPilot
 ```
 
 #### Email 2 (Day 3)
@@ -67,7 +67,7 @@ Subject: Comment importer vos factures automatiquement
 Body:
 Bonjour {{ contact.name }},
 
-Vous avez trouvé l'import factures? C'est le cœur d'Autocontable.
+Vous avez trouvé l'import factures? C'est le cœur d'FactPilot.
 
 📚 Tutoriel complet:
 - Manuel: https://docs.factpilot.fr/import-manual
@@ -80,7 +80,7 @@ Les factures s'importent automatiquement!
 Besoin d'aide? Répondez à cet email.
 
 À bientôt,
-Autocontable
+FactPilot
 ```
 
 #### Email 3 (Day 7)
@@ -106,7 +106,7 @@ Bravo! Vous avez déjà:
    → https://app.factpilot.fr/portfolio (click "Invite")
 
 À bientôt,
-Autocontable
+FactPilot
 ```
 
 #### Email 4 (Day 14)
@@ -116,7 +116,7 @@ Subject: Upgrade vers Pro - 50% de réduction ce mois-ci!
 Body:
 Bonjour {{ contact.name }},
 
-Vous adorez Autocontable? Passez à Pro et débloquez:
+Vous adorez FactPilot? Passez à Pro et débloquez:
 
 ✨ Features Pro:
 ✓ Automations illimitées
@@ -132,7 +132,7 @@ Vous adorez Autocontable? Passez à Pro et débloquez:
 Questions? Contactez-nous.
 
 À bientôt,
-Autocontable
+FactPilot
 ```
 
 ---
@@ -148,7 +148,7 @@ Autocontable
 
 #### Email 1 (Day 0)
 ```
-Subject: Bienvenue sur Autocontable via LinkedIn!
+Subject: Bienvenue sur FactPilot via LinkedIn!
 
 Body:
 Bonjour {{ contact.name }},
@@ -162,7 +162,7 @@ comptables et directeurs financiers.
 3. Importez 1 facture pour tester
 
 À bientôt,
-Autocontable
+FactPilot
 ```
 
 #### Email 2 (Day 2)
@@ -202,7 +202,7 @@ Body:
 
 #### Email 1 (Day 0)
 ```
-Subject: Bienvenue sur Autocontable!
+Subject: Bienvenue sur FactPilot!
 
 Body:
 Votre compte est prêt. Commencez maintenant!
@@ -280,7 +280,7 @@ Vous débloquez maintenant:
 ✓ Export illimité
 
 À bientôt,
-Autocontable
+FactPilot
 ```
 
 #### Email 2 (Day 1)

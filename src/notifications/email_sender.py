@@ -12,7 +12,7 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "contact@factpilot.fr")
 
 
-def send_email(to: str, subject: str, body_html: str, from_name: str = "Autocontable") -> bool:
+def send_email(to: str, subject: str, body_html: str, from_name: str = "FactPilot") -> bool:
     """Send an email notification via SendGrid.
 
     Returns True on success, False on failure.
@@ -48,7 +48,7 @@ def send_digest(to: str, dossier_name: str, stats: dict) -> bool:
 
     stats: {invoices_processed, matches_pending, unmatched_count, last_bank_update}
     """
-    subject = f"[Autocontable] Résumé hebdomadaire — {dossier_name}"
+    subject = f"[FactPilot] Résumé hebdomadaire — {dossier_name}"
 
     body = f"""
     <html>
@@ -77,7 +77,7 @@ def send_digest(to: str, dossier_name: str, stats: dict) -> bool:
         </p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
         <p style="font-size: 11px; color: #9ca3af;">
-            Autocontable — Comptabilité automatisée
+            FactPilot — Comptabilité automatisée
         </p>
     </body>
     </html>
@@ -94,7 +94,7 @@ def send_alert(to: str, alert_type: str, details: dict) -> bool:
         'no_bank_statement': '📄 Relevé bancaire manquant',
     }
 
-    subject = f"[Autocontable] {titles.get(alert_type, 'Alerte')}"
+    subject = f"[FactPilot] {titles.get(alert_type, 'Alerte')}"
 
     body = f"""
     <html>
@@ -105,7 +105,7 @@ def send_alert(to: str, alert_type: str, details: dict) -> bool:
             Dossier: <strong>{details.get('dossier_name', '')}</strong>
         </p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-        <p style="font-size: 11px; color: #9ca3af;">Autocontable — Comptabilité automatisée</p>
+        <p style="font-size: 11px; color: #9ca3af;">FactPilot — Comptabilité automatisée</p>
     </body>
     </html>
     """

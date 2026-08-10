@@ -15,7 +15,7 @@ def send_test_notification(current_user: dict = Depends(get_current_user)):
 
     success = send_email(
         to=email,
-        subject="[Autocontable] Test de notification",
+        subject="[FactPilot] Test de notification",
         body_html="<p>Si vous recevez cet email, les notifications sont correctement configurées. ✅</p>"
     )
 

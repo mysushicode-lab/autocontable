@@ -2,7 +2,7 @@
 # Script d'installation initiale sur Hetzner Cloud
 # À exécuter une seule fois sur le serveur frais
 
-echo "🚀 Installation Autocontable sur Hetzner"
+echo "🚀 Installation FactPilot sur Hetzner"
 
 # 1. Mise à jour système
 echo "⬆️  Mise à jour système..."

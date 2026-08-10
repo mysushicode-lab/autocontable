@@ -328,13 +328,13 @@ def invite_client(payload: dict, current_user: dict = Depends(get_current_user))
             from src.notifications.email_sender import send_email
             send_email(
                 to=email,
-                subject=f"[Autocontable] Accès à votre espace — {cf.name}",
+                subject=f"[FactPilot] Accès à votre espace — {cf.name}",
                 body_html=f"""
                 <html>
                 <body style="font-family: -apple-system, sans-serif; color: #181818; max-width: 600px; margin: 0 auto;">
-                <h2 style="font-size: 18px; margin-bottom: 16px;">Bienvenue sur Autocontable</h2>
+                <h2 style="font-size: 18px; margin-bottom: 16px;">Bienvenue sur FactPilot</h2>
                 <p style="color: #374151;">Bonjour {name},</p>
-                <p style="color: #374151;">Votre comptable vous a donné accès à votre espace Autocontable.</p>
+                <p style="color: #374151;">Votre comptable vous a donné accès à votre espace FactPilot.</p>
                 <p style="color: #374151;">Connectez-vous avec :</p>
                 <ul style="color: #374151;">
                     <li>Email : <strong>{email}</strong></li>
@@ -342,7 +342,7 @@ def invite_client(payload: dict, current_user: dict = Depends(get_current_user))
                 </ul>
                 <p style="color: #374151;">Vous pourrez consulter vos factures et l'état de vos rapprochements.</p>
                 <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-                <p style="font-size: 11px; color: #9ca3af;">Autocontable — Comptabilité automatisée</p>
+                <p style="font-size: 11px; color: #9ca3af;">FactPilot — Comptabilité automatisée</p>
                 </body>
                 </html>
                 """
