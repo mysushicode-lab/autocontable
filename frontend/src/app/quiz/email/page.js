@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import EmailCapturePage from './EmailCapturePage';
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function EmailCapture() {
-  return <EmailCapturePage />;
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Chargement...</div>}>
+      <EmailCapturePage />
+    </Suspense>
+  );
 }
