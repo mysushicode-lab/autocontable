@@ -59,11 +59,12 @@ async function proxyRequest(request, params, method) {
     if (['POST', 'PUT', 'PATCH'].includes(method)) {
       const contentType = request.headers.get('content-type');
       if (contentType?.includes('application/json')) {
-        body = JSON.stringify(await request.json());
+        const text = await request.text();
+        body = text || null;
       } else if (contentType?.includes('multipart/form-data')) {
         body = await request.formData();
       } else {
-        body = await request.text();
+        body = await request.text() || null;
       }
     }
 
