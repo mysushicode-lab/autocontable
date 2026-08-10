@@ -8,7 +8,7 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:scheduler\"",
     "dev:scheduler": ".venv\\Scripts\\python.exe -m src.scheduler.main",
     "dev:backend": ".venv\\Scripts\\python.exe -m uvicorn src.api.main:app --reload --port 8001",
-    "dev:frontend": "cd frontend && npm start",
+    "dev:frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "init:db": ".venv\\Scripts\\python.exe -m src.storage.init_db",
     "test": ".venv\\Scripts\\python.exe -m pytest tests/",

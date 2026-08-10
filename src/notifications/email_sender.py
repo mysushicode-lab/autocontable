@@ -1,45 +1,43 @@
-"""Email notification sender using SMTP."""
+"""Email notification sender using SendGrid."""
 import os
 import logging
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, To
 from typing import Optional
 
 import src.config  # noqa: F401
 logger = logging.getLogger(__name__)
 
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "contact@factpilot.fr")
+
 
 def send_email(to: str, subject: str, body_html: str, from_name: str = "Autocontable") -> bool:
-    """Send an email notification.
+    """Send an email notification via SendGrid.
 
-    Uses the SMTP settings from environment variables.
     Returns True on success, False on failure.
     """
-    smtp_host = os.getenv('SMTP_HOST', os.getenv('SMTP_SERVER', os.getenv('IMAP_SERVER', '')))
-    smtp_port = int(os.getenv('SMTP_PORT', '587'))
-    smtp_user = os.getenv('SMTP_USER', os.getenv('SMTP_EMAIL', os.getenv('EMAIL_ADDRESS', '')))
-    smtp_pass = os.getenv('SMTP_PASS', os.getenv('SMTP_PASSWORD', os.getenv('EMAIL_PASSWORD', '')))
-    from_email = os.getenv('SMTP_FROM', smtp_user)
-
-    if not smtp_host or not smtp_user or not smtp_pass:
-        logger.warning("SMTP not configured — notification email skipped")
+    if not SENDGRID_API_KEY:
+        logger.warning("SendGrid API key not configured — email skipped")
         return False
 
     try:
-        msg = MIMEMultipart('alternative')
-        msg['From'] = f"{from_name} <{from_email}>"
-        msg['To'] = to
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=To(email=to),
+            subject=subject,
+            html_content=body_html
+        )
 
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
 
-        logger.info(f"Email sent to {to}: {subject}")
-        return True
+        if response.status_code in [200, 201, 202]:
+            logger.info(f"Email sent to {to}: {subject}")
+            return True
+        else:
+            logger.error(f"SendGrid error {response.status_code}: {response.body}")
+            return False
     except Exception as e:
         logger.error(f"Failed to send email to {to}: {e}")
         return False
