@@ -38,7 +38,7 @@ PRICING_TIERS = [
 def get_org_plan(session, org_id: int) -> dict:
     """Get the organization's current plan tier."""
     org = session.query(Organization).get(org_id)
-    plan_type = org.plan_type if org else "starter"
+    plan_type = org.plan_type if org else "free"
 
     for tier in PRICING_TIERS:
         if tier["name"] == plan_type:
@@ -102,7 +102,7 @@ def get_billing_usage(current_user: dict = Depends(get_current_user)):
     try:
         org_id = current_user["organization_id"]
         org = session.query(Organization).get(org_id)
-        plan_name = org.plan_type if org else "starter"
+        plan_name = org.plan_type if org else "free"
 
         active_dossiers = session.query(ClientFile).filter(
             ClientFile.organization_id == org_id,

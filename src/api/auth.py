@@ -52,7 +52,7 @@ def register(request: Request, body: RegisterRequest, background_tasks: Backgrou
         trial_end = trial_start + timedelta(days=int(os.getenv("TRIAL_PERIOD_DAYS", 7)))
         org = Organization(
             name=body.name,
-            plan_type='starter',
+            plan_type='free',
             trial_start_date=trial_start,
             trial_end_date=trial_end,
             is_trial_active=True

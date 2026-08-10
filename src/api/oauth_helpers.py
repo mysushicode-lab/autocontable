@@ -92,7 +92,7 @@ def _get_or_create_user_from_oauth(email: str, name: str, provider: str, profile
             trial_end = trial_start + timedelta(days=int(os.getenv("TRIAL_PERIOD_DAYS", 7)))
             org = Organization(
                 name=name or email.split('@')[0],
-                plan_type='starter',
+                plan_type='free',
                 trial_start_date=trial_start,
                 trial_end_date=trial_end,
                 is_trial_active=True
@@ -156,7 +156,7 @@ def _get_or_create_user_from_oauth_legacy(email: str, name: str, provider: str, 
 
         org = Organization(
             name=name or email.split('@')[0],
-            plan_type='starter',
+            plan_type='free',
             trial_start_date=trial_start,
             trial_end_date=trial_end,
             is_trial_active=True

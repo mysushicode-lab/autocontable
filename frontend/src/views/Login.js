@@ -36,12 +36,11 @@ const Login = () => {
       <div className="relative w-full max-w-md">
         <div className="bg-white rounded-md border border-gray-200 p-8 shadow-sm">
             <div className="text-center mb-8">
-              <img 
-                src="/factpilot-logo.svg" 
-                alt="FactPilot logo" 
+              <img
+                src="/logo2.png"
+                alt="FactPilot"
                 className="h-10 w-auto mx-auto"
               />
-              <p className="text-gray-500 mt-1 text-sm">Gestion Comptable</p>
             </div>
 
             {/* OAuth */}

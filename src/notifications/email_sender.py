@@ -12,7 +12,7 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "contact@factpilot.fr")
 
 
-def send_email(to: str, subject: str, body_html: str, from_name: str = "FactPilot") -> bool:
+def send_email(to: str, subject: str, body_html: str, from_name: str = "FactPilot Team") -> bool:
     """Send an email notification via SendGrid.
 
     Returns True on success, False on failure.
@@ -23,7 +23,7 @@ def send_email(to: str, subject: str, body_html: str, from_name: str = "FactPilo
 
     try:
         message = Mail(
-            from_email=SENDGRID_FROM_EMAIL,
+            from_email=(SENDGRID_FROM_EMAIL, from_name),
             to_emails=To(email=to),
             subject=subject,
             html_content=body_html
