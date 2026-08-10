@@ -20,7 +20,6 @@ const PAGE_NAMES = {
   '/reports':        'Rapports',
   '/analytics':      'Analytics',
   '/portfolio':      'Portefeuille',
-  '/reference':      'Référence',
   '/settings':       'Paramètres',
   '/audit':          'Journal d\'audit',
 };

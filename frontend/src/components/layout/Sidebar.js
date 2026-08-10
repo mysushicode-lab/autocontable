@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  FolderKanban, Gauge, Receipt, GitMerge, BookMarked, TrendingUp,
+  FolderKanban, Gauge, Receipt, GitMerge, TrendingUp,
   SlidersHorizontal, Shield, LogOut, ArrowUp, BarChart3, Plug,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { path: '/invoices',       icon: Receipt,      label: 'Factures',        roles: ['admin', 'accountant', 'client'] },
   { path: '/reconciliation', icon: GitMerge,     label: 'Rapprochement',   roles: ['admin', 'accountant', 'client'] },
   { path: '/integrations',   icon: Plug,         label: 'Connecteur',      roles: ['admin', 'accountant', 'client'] },
-  { path: '/reference',      icon: BookMarked,   label: 'Référence',       roles: ['admin', 'accountant'] },
   { path: '/reports',        icon: TrendingUp,   label: 'Rapports',        roles: ['admin', 'accountant', 'client'] },
   { path: '/analytics',      icon: BarChart3,    label: 'Analytics',       roles: ['admin', 'accountant', 'client'] },
   { path: '/audit',          icon: Shield,       label: 'Journal d\'audit', roles: ['admin'] },
