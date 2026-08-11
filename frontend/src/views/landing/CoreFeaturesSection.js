@@ -1,4 +1,5 @@
-import { Globe, Lock, FileText, Shield } from 'lucide-react';
+import { Globe, Lock, FileText, Shield, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { sectionBadge, sectionHeading, sectionSubtext } from './_styles';
 import { NOISE_SVG_FINE, NOISE_SVG } from './_constants';
 
@@ -44,20 +45,42 @@ function GridRow({ children }) {
   );
 }
 
-function FeatureCard({ title, description, image }) {
+function FeatureCard({ title, description, image, align = 'left' }) {
   return (
-    <div className="p-4 sm:p-6 flex flex-col gap-4 min-h-[320px] sm:min-h-[480px] lg:min-h-[600px] bg-white">
-      <div className="rounded-lg bg-[#f7f7f5] border border-[#6c6f7635] overflow-hidden h-[260px]">
-        {image
-          ? <img src={image} alt={title} className="w-full h-full object-cover object-top" />
-          : <div className="w-full h-full flex items-center justify-center"><span className="text-xs text-[#6b7280] font-medium">{title} — aperçu</span></div>
-        }
+    <article className="relative overflow-hidden flex w-full flex-col items-stretch self-stretch border border-[#6c6f7635] bg-white transition-all hover:border-[#6c6f7660]">
+      <header className="flex flex-col items-center pt-8 md:pt-12 pb-4 px-4 md:px-6 h-[160px] md:h-[185px]">
+        <h3 className="text-[#181818] text-base sm:text-xl font-semibold leading-tight tracking-[-0.5px] text-center">
+          {title}
+        </h3>
+        <p className="text-[#6b7280] text-center text-xs sm:text-sm font-normal leading-relaxed mt-2 sm:mt-3 md:mt-4 max-w-[90%] md:max-w-[380px] mx-auto">
+          {description}
+        </p>
+      </header>
+      <div className="flex justify-center mt-4 md:mt-6">
+        <Link href="/join" className="group inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#181818] rounded-full pl-3 pr-1.5 py-1.5 hover:opacity-80 transition-opacity">
+          <span>Commencer</span>
+          <div className="bg-white rounded-full w-4 h-4 flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
+            <ArrowRight className="w-2.5 h-2.5 text-black" />
+          </div>
+        </Link>
       </div>
-      <div>
-        <h3 className="text-base sm:text-xl font-semibold text-[#181818] mb-1 sm:mb-2">{title}</h3>
-        <p className={`text-xs sm:text-sm leading-relaxed ${sectionSubtext}`}>{description}</p>
+      <div className="mt-8 md:mt-12 w-full flex-1 relative min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
+          <div className={`absolute top-[65%] [transform:translateY(calc(-50%_-_23px))] lg:[transform:translateY(calc(-50%_+_20px))] ${align === 'left' ? 'left-2 lg:-left-28' : 'right-2 lg:-right-28'} w-full lg:w-[580px] h-[210px] sm:h-[250px] lg:h-[340px]`}>
+            <div className="absolute -bottom-24 left-0 right-0 h-full -z-10 blur-2xl rounded-full opacity-20" style={{ background: 'radial-gradient(ellipse at center, rgba(70,108,243,0.4) 0%, rgba(180,210,255,0.2) 50%, transparent 80%)' }} />
+            <div className="w-full h-full rounded-lg border border-[#6c6f7635] bg-[#f7f7f5] shadow-[0_0_40px_rgba(0,0,0,0.03)] overflow-hidden flex items-center justify-center">
+              <img
+                src={image}
+                alt={title}
+                loading="lazy"
+                className={`w-[92%] h-[92%] object-cover opacity-90 ring-1 ring-[#6c6f7635] ${align === 'left' ? 'rounded-tl-md rounded-bl-md lg:rounded-md' : 'rounded-tr-md rounded-br-md lg:rounded-md'}`}
+                style={{ objectPosition: align === 'left' ? '0% center' : '100% center' }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -85,7 +108,7 @@ export default function CoreFeaturesSection() {
           <HorizontalRail />
 
           <GridRow>
-            {TOP_FEATURES.map((f) => <FeatureCard key={f.title} {...f} />)}
+            {TOP_FEATURES.map((f, i) => <FeatureCard key={f.title} {...f} align={i % 2 === 0 ? 'left' : 'right'} />)}
           </GridRow>
 
           <HorizontalRail />
@@ -110,7 +133,7 @@ export default function CoreFeaturesSection() {
           <HorizontalRail />
 
           <GridRow>
-            {BOTTOM_FEATURES.map((f) => <FeatureCard key={f.title} {...f} />)}
+            {BOTTOM_FEATURES.map((f, i) => <FeatureCard key={f.title} {...f} align={i % 2 === 0 ? 'left' : 'right'} />)}
           </GridRow>
 
           <HorizontalRail />
