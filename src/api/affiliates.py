@@ -134,18 +134,33 @@ def connect_onboard(current_user: dict = Depends(get_current_user)):
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
         if not affiliate.stripe_account_id:
+            import requests
+            import json as json_module
             user = session.query(User).filter(User.id == current_user["id"]).first()
-            # Use Stripe Accounts v2 API (v1 is deprecated)
-            account = stripe.core.accounts.create(
-                type="express",
-                country="FR",
-                email=user.email if user else current_user.get("email"),
-                capabilities={
-                    "transfers": {"requested": True},
+            # Use Stripe v2 API directly (v1 SDK deprecated) - v2 requires JSON
+            res = requests.post(
+                "https://api.stripe.com/v2/core/accounts",
+                auth=(stripe.api_key, ""),
+                headers={
+                    "Content-Type": "application/json",
+                    "Stripe-Version": "2026-05-27.dahlia",
                 },
-                metadata={"affiliate_id": str(affiliate.id)},
+                data=json_module.dumps({
+                    "type": "express",
+                    "country": "FR",
+                    "email": user.email if user else current_user.get("email"),
+                    "capabilities": {
+                        "transfers": {"requested": True},
+                    },
+                    "metadata": {
+                        "affiliate_id": str(affiliate.id),
+                    },
+                }),
             )
-            affiliate.stripe_account_id = account.id
+            if res.status_code != 200:
+                raise HTTPException(400, f"Stripe v2 API error: {res.text}")
+            account = res.json()
+            affiliate.stripe_account_id = account["id"]
             session.commit()
 
         link = stripe.AccountLink.create(
@@ -185,8 +200,16 @@ def connect_status(current_user: dict = Depends(get_current_user)):
         if not affiliate.stripe_account_id:
             return {"connected": False, "onboarding_complete": False}
 
-        # Use Stripe Accounts v2 API (v1 is deprecated)
-        account = stripe.core.accounts.retrieve(affiliate.stripe_account_id)
+        # Use Stripe v2 API directly (v1 SDK deprecated)
+        import requests
+        res = requests.get(
+            f"https://api.stripe.com/v2/core/accounts/{affiliate.stripe_account_id}",
+            auth=(stripe.api_key, ""),
+            headers={"Stripe-Version": "2026-05-27.dahlia"},
+        )
+        if res.status_code != 200:
+            raise HTTPException(400, f"Stripe v2 API error: {res.text}")
+        account = res.json()
         charges_enabled = account.get("charges_enabled", False)
         payouts_enabled = account.get("payouts_enabled", False)
 
