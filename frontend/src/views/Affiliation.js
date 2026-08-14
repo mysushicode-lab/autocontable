@@ -179,7 +179,7 @@ const Affiliation = () => {
               className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 font-medium disabled:opacity-50"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              {connectMutation.isPending ? 'Chargement...' : 'Connecter'}
+              {connectMutation.isPending ? 'Chargement...' : 'Connecter ma banque'}
             </button>
           )}
         </div>

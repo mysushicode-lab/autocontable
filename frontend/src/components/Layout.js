@@ -11,6 +11,7 @@ import { fetchPlanStatus } from '../api';
 import SidebarNav from './layout/Sidebar';
 import NotificationPanel from './layout/NotificationPanel';
 import UserMenu from './layout/UserMenu';
+import AffiliateModal from './AffiliateModal';
 
 const PAGE_NAMES = {
   '/dashboard':      'Tableau de bord',
@@ -37,6 +38,7 @@ const Layout = ({ children }) => {
   const [planStatus, setPlanStatus] = useState(null);
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [showAffiliate, setShowAffiliate] = useState(false);
 
   const panelRef = useRef(null);
   const profileMenuRef = useRef(null);
@@ -95,9 +97,13 @@ const Layout = ({ children }) => {
         <div className="flex-1" />
 
         <div className="flex items-center gap-0.5">
-          <Link href="/affiliation" aria-label="Affiliation" className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+          <button
+            onClick={() => setShowAffiliate(true)}
+            aria-label="Affiliation"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
             <Gift style={{ width: 15, height: 15 }} />
-          </Link>
+          </button>
           <button aria-label="Aide" className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
             <HelpCircle style={{ width: 15, height: 15 }} />
           </button>
@@ -168,6 +174,8 @@ const Layout = ({ children }) => {
           </main>
         </div>
       </div>
+
+      {showAffiliate && <AffiliateModal onClose={() => setShowAffiliate(false)} />}
 
       {showUpgradePopup && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
