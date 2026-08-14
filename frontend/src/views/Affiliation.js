@@ -111,7 +111,7 @@ const Affiliation = () => {
   if (!affiliate) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-gray-900">Programme d'affiliation</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

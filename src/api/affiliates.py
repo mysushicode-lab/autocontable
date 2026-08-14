@@ -135,7 +135,8 @@ def connect_onboard(current_user: dict = Depends(get_current_user)):
 
         if not affiliate.stripe_account_id:
             user = session.query(User).filter(User.id == current_user["id"]).first()
-            account = stripe.Account.create(
+            # Use Stripe Accounts v2 API (v1 is deprecated)
+            account = stripe.core.accounts.create(
                 type="express",
                 country="FR",
                 email=user.email if user else current_user.get("email"),
@@ -184,7 +185,8 @@ def connect_status(current_user: dict = Depends(get_current_user)):
         if not affiliate.stripe_account_id:
             return {"connected": False, "onboarding_complete": False}
 
-        account = stripe.Account.retrieve(affiliate.stripe_account_id)
+        # Use Stripe Accounts v2 API (v1 is deprecated)
+        account = stripe.core.accounts.retrieve(affiliate.stripe_account_id)
         charges_enabled = account.get("charges_enabled", False)
         payouts_enabled = account.get("payouts_enabled", False)
 
