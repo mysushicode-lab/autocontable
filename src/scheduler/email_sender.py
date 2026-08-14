@@ -78,6 +78,7 @@ def personalize_content(content: str, info: dict) -> str:
     deletion_date = (datetime.utcnow() + timedelta(days=23)).strftime("%d/%m/%Y")
 
     replacements = {
+        '[[email]]': str(info.get('email', '')),
         '[[firstName]]': str(info.get('first_name', 'there')),
         '[[client_count]]': str(info.get('client_count', 0)),
         '[[time_lost_week]]': str(info.get('time_lost_week', 0)),

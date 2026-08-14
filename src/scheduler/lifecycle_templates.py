@@ -4,6 +4,14 @@ Naming convention: {stage}_{sequence_number}
 Each template has 'subject' and 'html' with [[placeholder]] variables.
 """
 
+def email_footer(brand_url: str = 'https://factpilot.ai') -> str:
+  """Footer with manage preferences and unsubscribe links."""
+  return f'''<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+<p style="font-size: 12px; color: #cbd5e1; margin-top: 16px; text-align: center;">
+  <a href="{brand_url}/account/preferences" style="color: #64748b; text-decoration: none;">Gérer mes préférences</a> ·
+  <a href="{brand_url}/api/webhooks/email-events?action=unsubscribe&email=[[email]]" style="color: #64748b; text-decoration: none;">Se désabonner</a>
+</p>'''
+
 LIFECYCLE_TEMPLATES = {
     # ─── QUIZ LEAD (pre-signup nurture) ──────────────────────────────────────
     'quiz_diagnostic': {
@@ -28,8 +36,7 @@ LIFECYCLE_TEMPLATES = {
     <a href="[[signup_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Essayer FactPilot gratuitement →</a>
   </div>
   <p style="font-size: 13px; color: #64748b;">7 jours gratuits • Sans carte bancaire • Setup en 5 minutes</p>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -52,8 +59,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[signup_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Commencer mon essai gratuit →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -78,8 +84,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[signup_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Tester gratuitement pendant 7 jours →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -98,8 +103,7 @@ LIFECYCLE_TEMPLATES = {
     <a href="[[signup_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Essayer FactPilot (7 jours gratuits) →</a>
   </div>
   <p style="font-size: 14px; color: #64748b;">Bonne continuation, [[firstName]]. Je vous souhaite le meilleur.</p>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -121,8 +125,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 24px;">
     <p style="font-size: 14px; margin: 0; color: #64748b;"><strong>Besoin d'aide ?</strong> Répondez à cet email, je vous réponds personnellement sous 2h.</p>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -144,8 +147,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Essayer maintenant →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -166,8 +168,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Importer un relevé →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -195,8 +196,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Ouvrir FactPilot →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -218,8 +218,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Continuer mon essai →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -242,8 +241,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #dc2626; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Passer au plan payant →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -266,8 +264,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #dc2626; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Activer mon abonnement →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -295,8 +292,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Choisir un plan →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -315,8 +311,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #059669; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Réactiver à -30% →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -337,8 +332,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Réactiver mon compte →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -362,8 +356,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Accéder à FactPilot →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -390,8 +383,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Explorer ces fonctionnalités →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -416,8 +408,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[app_url]]/settings/affiliate" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Devenir ambassadeur →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -440,8 +431,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Réactiver mon abonnement →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -462,8 +452,7 @@ LIFECYCLE_TEMPLATES = {
   </div>
   <p style="font-size: 15px;">Répondez simplement à cet email avec le numéro. Ça m'aide vraiment.</p>
   <p style="font-size: 14px; color: #64748b; margin-top: 24px;">PS : Si c'est une question de prix, répondez "1" — j'ai peut-être une solution.</p>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 
@@ -491,8 +480,7 @@ LIFECYCLE_TEMPLATES = {
   <div style="text-align: center; margin: 32px 0;">
     <a href="[[upgrade_url]]" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Revenir sur FactPilot →</a>
   </div>
-  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-  <p style="font-size: 13px; color: #94a3b8;">Ernesto Le Goaziou — CEO, FactPilot</p>
+  {{email_footer()}}
 </div>'''
     },
 }
