@@ -108,7 +108,7 @@ export default function Onboarding() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <img src="/logo2.png" alt="FactPilot" className="h-8" />
+              <img src="/logo.png" alt="FactPilot" className="h-8" />
             </div>
             <button
               onClick={(e) => {
