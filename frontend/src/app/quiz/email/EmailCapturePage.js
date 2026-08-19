@@ -8,6 +8,7 @@ import Footer from '@/views/landing/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { btnPrimary } from '@/views/landing/_styles';
 import confetti from 'canvas-confetti';
+import { trackEmailCapture } from '@/lib/services/analytics/tracker';
 
 export default function EmailCapturePage() {
   const { user, logout } = useAuth();
@@ -69,6 +70,7 @@ export default function EmailCapturePage() {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
+    trackEmailCapture(email);
 
     try {
       // Backend Python: http://localhost:8001/api/quiz/submit

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import LandingHeader from '@/views/landing/LandingHeader';
 import Footer from '@/views/landing/Footer';
 import { useAuth } from '@/context/AuthContext';
+import { trackQuizStart, trackQuizProgress, trackQuizComplete } from '@/lib/services/analytics/tracker';
 
 const QUIZ_QUESTIONS = [
   {
@@ -86,16 +87,18 @@ export default function QuizPage() {
   const currentQuestion = QUIZ_QUESTIONS[currentStep];
   const progress = ((currentStep + 1) / QUIZ_QUESTIONS.length) * 100;
 
+  useEffect(() => { trackQuizStart(); }, []);
+
   const handleAnswer = (questionId, answer) => {
     const newAnswers = { ...answers, [questionId]: answer };
     setAnswers(newAnswers);
+    trackQuizProgress(currentStep, answer);
 
-    // Auto-advance après 300ms pour une UX fluide
     setTimeout(() => {
       if (currentStep < QUIZ_QUESTIONS.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        // Dernière question → Redirect vers capture email
+        trackQuizComplete(newAnswers);
         router.push(`/quiz/email?data=${encodeURIComponent(JSON.stringify(newAnswers))}`);
       }
     }, 300);

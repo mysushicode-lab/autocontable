@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { register, createStripeCheckoutSession } from '../api';
 import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { INPUT_CLASS } from '../utils/formHelpers';
+import { trackSignup } from '@/lib/services/analytics/tracker';
 
 const Signup = () => {
   const router = useRouter();
@@ -25,6 +26,7 @@ const Signup = () => {
     mutationFn: () => register(form.username, form.password, form.name, form.email),
     onSuccess: async (data) => {
       loginFromData(data);
+      trackSignup('email');
       if (intendedPlan === 'pro') {
         try {
           const { url } = await createStripeCheckoutSession('pro');
