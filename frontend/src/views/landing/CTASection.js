@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { btnPrimaryInverted } from './_styles';
+import { trackCTAClick } from '@/lib/services/analytics/tracker';
 
 export default function CTASection() {
   return (
@@ -12,7 +13,7 @@ export default function CTASection() {
           Lancez votre essai en deux minutes, importez votre première facture dans la foulée, et voyez par vous-même ce que ça change quand la saisie disparaît de votre quotidien.
         </p>
         <div className="flex items-center gap-3 flex-wrap justify-center">
-          <Link href="/signup" className={btnPrimaryInverted}>
+          <Link href="/signup" className={btnPrimaryInverted} onClick={() => trackCTAClick('Commencer gratuitement', 'cta_section')}>
             Commencer gratuitement
           </Link>
           <Link

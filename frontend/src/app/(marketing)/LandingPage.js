@@ -12,10 +12,14 @@ import VideoSection from '@/views/landing/VideoSection';
 import FAQSection from '@/views/landing/FAQSection';
 import CTASection from '@/views/landing/CTASection';
 import Footer from '@/views/landing/Footer';
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { trackPageView } from '@/lib/services/analytics/tracker';
 
 export default function LandingPage() {
   const { user, logout } = useAuth();
+
+  useEffect(() => { trackPageView('homepage', 'FactPilot — Gestion comptable automatisée'); }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
