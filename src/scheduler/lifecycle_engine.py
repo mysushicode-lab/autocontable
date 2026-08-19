@@ -142,7 +142,8 @@ def on_account_created(db: Session, user_id: int, organization_id: int, email: s
     """Called when user creates an account (signup).
 
     - Links QuizContact if exists → cancel quiz emails
-    - Starts trial_day0 + trial_active sequences
+    - Sends trial_welcome immediately (not via queue)
+    - Starts trial_active sequence via scheduler
     """
     # Link QuizContact if this email took the quiz
     contact = db.query(QuizContact).filter_by(email=email).first()
@@ -154,11 +155,28 @@ def on_account_created(db: Session, user_id: int, organization_id: int, email: s
         quiz_contact_id = contact.id
         cancel_pending_emails(db, quiz_contact_id=contact.id)
 
-    # Schedule welcome email (immediate)
-    schedule_sequence(db, LifecycleStage.TRIAL_DAY0,
-                      organization_id=organization_id,
-                      user_id=user_id,
-                      quiz_contact_id=quiz_contact_id)
+    # Send trial_welcome immediately — bypass the queue
+    try:
+        from src.scheduler.email_sender import send_lifecycle_email
+        user = db.query(User).filter_by(id=user_id).first()
+        org = db.query(Organization).filter_by(id=organization_id).first()
+        first_name = (user.name if user else None) or 'there'
+        info = {
+            'email': email,
+            'first_name': first_name,
+            'client_count': 0,
+            'time_lost_week': 0,
+            'time_lost_month': 0,
+            'time_lost_year': 0,
+            'plan_name': (org.plan_type or 'starter').capitalize() if org else 'Starter',
+            'days_left': max(0, (org.trial_end_date - datetime.utcnow()).days) if org and org.trial_end_date else 0,
+            'invoices_count': 0,
+            'matches_count': 0,
+            'time_saved': 0,
+        }
+        send_lifecycle_email(email=email, first_name=first_name, email_type='trial_welcome', info=info)
+    except Exception as e:
+        logger.error(f"Failed to send immediate trial_welcome to {email}: {e}")
 
     # Schedule trial_active sequence (starts J+1)
     schedule_sequence(db, LifecycleStage.TRIAL_ACTIVE,
