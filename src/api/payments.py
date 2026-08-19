@@ -28,6 +28,9 @@ router = APIRouter()
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
+# Plan hierarchy for determining upgrade vs downgrade
+PLAN_ORDER = ['free', 'starter', 'pro', 'reseau']
+
 
 class CreateCheckoutSessionRequest(BaseModel):
     plan_type: str  # 'pro' or other plan types
@@ -324,6 +327,7 @@ async def create_checkout_session(
                 email=current_user.get("email"),
                 name=org.name,
                 metadata={"organization_id": str(org.id)},
+                idempotency_key=f"customer-create-org-{org.id}",
             )
             customer_id = customer.id
             org.stripe_customer_id = customer_id
@@ -336,21 +340,54 @@ async def create_checkout_session(
             try:
                 subscription = stripe.Subscription.retrieve(org.stripe_subscription_id)
 
-                # Modifier l'abonnement existant
+                # Determine if this is an upgrade or downgrade
+                current_plan = org.plan_type or 'free'
+                current_idx = PLAN_ORDER.index(current_plan) if current_plan in PLAN_ORDER else 0
+                new_idx = PLAN_ORDER.index(request.plan_type) if request.plan_type in PLAN_ORDER else 0
+                is_downgrade = new_idx < current_idx
+
+                # For downgrade: schedule change at period end
+                if is_downgrade:
+                    schedule = stripe.SubscriptionSchedule.create(
+                        from_subscription=subscription.id
+                    )
+                    stripe.SubscriptionSchedule.modify(
+                        schedule.id,
+                        end_behavior='release',
+                        phases=[
+                            {
+                                'items': [{'price': subscription['items']['data'][0]['price']['id'], 'quantity': 1}],
+                                'start_date': subscription['current_period_start'],
+                                'end_date': subscription['current_period_end'],
+                            },
+                            {
+                                'items': [{'price': price_id, 'quantity': 1}],
+                                'metadata': {'organization_id': str(org.id), 'plan_type': request.plan_type},
+                            },
+                        ],
+                    )
+                    # Don't change plan in DB yet — webhook will do it when period ends
+                    return {
+                        "success": True,
+                        "message": "Plan changera à la fin de la période en cours",
+                        "downgrade_at": subscription['current_period_end']
+                    }
+
+                # For upgrade: modify immediately with prorations
                 updated_subscription = stripe.Subscription.modify(
                     org.stripe_subscription_id,
                     items=[{
                         'id': subscription['items']['data'][0].id,
                         'price': price_id,
                     }],
-                    proration_behavior='always_invoice',  # Facture prorata automatique
+                    proration_behavior='create_prorations',  # Standard proration behavior
                     metadata={
                         'organization_id': str(org.id),
                         'plan_type': request.plan_type,
                     }
                 )
 
-                # Update DB immédiatement
+                # Update DB immediately for upgrades
                 org.plan_type = request.plan_type
                 db_session.commit()
 
@@ -394,6 +431,50 @@ async def create_checkout_session(
         raise
     except Exception as e:
         logger.exception("Unexpected error in create_checkout_session")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+    finally:
+        db_session.close()
+
+
+@router.post("/cancel-subscription")
+async def cancel_subscription(current_user: dict = Depends(get_current_user)):
+    """Cancel subscription at end of billing period (graceful).
+
+    Uses cancel_at_period_end to let users continue using the service
+    until the end of their paid period.
+    """
+    db_session = db.get_session()
+    try:
+        org = db_session.query(Organization).filter(
+            Organization.id == current_user["organization_id"]
+        ).first()
+
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisation introuvable")
+
+        if not org.stripe_subscription_id:
+            raise HTTPException(status_code=400, detail="Aucun abonnement actif à annuler")
+
+        # Cancel at period end (graceful cancellation)
+        subscription = stripe.Subscription.modify(
+            org.stripe_subscription_id,
+            cancel_at_period_end=True
+        )
+
+        return {
+            "success": True,
+            "message": "Abonnement annulé en fin de période",
+            "cancel_at": subscription.get('current_period_end')
+        }
+
+    except stripe.error.StripeError as e:
+        msg = getattr(e, 'user_message', None) or str(e)
+        logger.error(f"Stripe cancel error: {msg}")
+        raise HTTPException(status_code=400, detail=f"Erreur Stripe : {msg}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error in cancel_subscription")
         raise HTTPException(status_code=500, detail="Erreur interne du serveur")
     finally:
         db_session.close()

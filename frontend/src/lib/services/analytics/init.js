@@ -9,8 +9,13 @@ export function initializeAnalytics() {
 
   window.dataLayer = window.dataLayer || [];
 
+  const GTM_ID = 'GTM-NSVT3VWB';
+  const GA_ID = 'G-XD6HFBDWGL';
+
   // ── FACEBOOK PIXEL ────────────────────────────────────────────────────────
-  const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+  // Configure Pixel ID here once you have it, or manage via GTM
+  const FB_PIXEL_ID = null;
+
   if (FB_PIXEL_ID) {
     const fbScript = document.createElement('script');
     fbScript.innerHTML = `
@@ -26,10 +31,20 @@ export function initializeAnalytics() {
       fbq('track', 'PageView');
     `;
     document.head.appendChild(fbScript);
+
+    window.fbq = window.fbq || function () {
+      (window.fbq).callMethod
+        ? (window.fbq).callMethod.apply(window.fbq, arguments)
+        : (window.fbq).queue.push(arguments);
+    };
+    window.fbq.push = window.fbq;
+    window.fbq.loaded = true;
+    window.fbq.version = '2.0';
+    window.fbq.queue = [];
   }
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Analytics] Initialized — GTM:', process.env.NEXT_PUBLIC_GTM_ID, '| Pixel:', FB_PIXEL_ID);
+    console.log(`[Analytics] Initialized — GTM: ${GTM_ID} | GA4: ${GA_ID} | Pixel: ${FB_PIXEL_ID || 'via GTM'}`);
   }
 }
 

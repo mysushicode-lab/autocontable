@@ -346,7 +346,8 @@
       "Bash(.venv/Scripts/python.exe -c \"from src.api.routes.quiz import router; print\\('Quiz router OK'\\)\")",
       "Bash(.venv/Scripts/python.exe -c \"from src.api.auth import router; print\\('Auth router OK'\\)\")",
       "Bash(.venv/Scripts/python.exe -c \"from src.api.payments import router; print\\('Payments router OK'\\)\")",
-      "Bash(.venv/Scripts/python.exe -c ' *)"
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(git restore *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\GitHub\\minimoes\\minimoes\\src\\components\\agents",

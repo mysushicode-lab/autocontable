@@ -117,11 +117,10 @@ const SOFTWARE_JSONLD = {
 import Providers from './providers';
 import { GoogleTagManager } from '@next/third-parties/google';
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
+      <GoogleTagManager gtmId="GTM-NSVT3VWB" />
       <body>
         <script
           type="application/ld+json"
@@ -133,7 +132,6 @@ export default function RootLayout({ children }) {
         />
         <Providers>{children}</Providers>
       </body>
-      {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
     </html>
   );
 }
