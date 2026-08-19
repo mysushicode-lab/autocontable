@@ -18,6 +18,7 @@ import src.config  # noqa: F401
 from src.email_ingestion import IMAPClient
 from src.scheduler.email_sender import process_pending_emails
 from src.scheduler.lifecycle_engine import check_trial_lifecycle
+from src.scheduler.sequenceScheduler import run_sequence_scheduler
 from src.storage.models import Settings, Organization, ClientFile
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
@@ -451,6 +452,18 @@ class InvoiceScheduler:
             replace_existing=True,
             max_instances=1,
             misfire_grace_time=3600,
+        )
+
+        # Deep sequence scheduler (every 30 minutes)
+        logger.info("Scheduling deep sequence scheduler (30m interval)")
+        self.scheduler.add_job(
+            run_sequence_scheduler,
+            trigger=IntervalTrigger(minutes=30),
+            id='sequence_scheduler',
+            name='Email Sequence Scheduler',
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=120,
         )
 
         try:

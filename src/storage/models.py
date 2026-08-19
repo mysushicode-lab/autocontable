@@ -61,6 +61,21 @@ class Organization(Base):
     monthly_quota_reset_date = Column(DateTime, nullable=True)  # Date de réinitialisation (1er du mois)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Sequence system fields
+    lifecycle_stage = Column(String(50), nullable=True)
+    current_sequence_id = Column(String(100), nullable=True)
+    current_step_index = Column(Integer, default=0)
+    sequence_entered_at = Column(DateTime, nullable=True)
+    last_email_sent_at = Column(DateTime, nullable=True)
+    sequence_cooldown_until = Column(DateTime, nullable=True)
+    emails_sent_today = Column(Integer, default=0)
+    emails_sent_this_week = Column(Integer, default=0)
+    last_freq_reset_daily = Column(DateTime, nullable=True)
+    last_freq_reset_weekly = Column(DateTime, nullable=True)
+    engagement_score = Column(Float, default=50.0)
+    total_emails_sent = Column(Integer, default=0)
+    total_emails_opened = Column(Integer, default=0)
+
     users = relationship("User", back_populates="organization")
 
 
@@ -347,6 +362,17 @@ class QuizContact(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Sequence system fields
+    current_sequence_id = Column(String(100), nullable=True)
+    current_step_index = Column(Integer, default=0)
+    sequence_entered_at = Column(DateTime, nullable=True)
+    last_email_sent_at = Column(DateTime, nullable=True)
+    sequence_cooldown_until = Column(DateTime, nullable=True)
+    emails_sent_today = Column(Integer, default=0)
+    emails_sent_this_week = Column(Integer, default=0)
+    last_freq_reset_daily = Column(DateTime, nullable=True)
+    last_freq_reset_weekly = Column(DateTime, nullable=True)
+
     email_jobs = relationship("EmailJob", back_populates="quiz_contact")
 
 
@@ -366,3 +392,48 @@ class EmailJob(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     quiz_contact = relationship("QuizContact", back_populates="email_jobs")
+
+
+class SequencePool(Base):
+    __tablename__ = 'sequence_pools'
+
+    id = Column(Integer, primary_key=True)
+    pool_id = Column(String(100), unique=True, nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    strategy = Column(String(50), default='chronological')  # chronological, round_robin, priority
+    target_lifecycle_stages = Column(JSON, default=list)  # list of LifecycleStage values
+    cooldown_days = Column(Integer, default=0)
+    loop_when_exhausted = Column(Boolean, default=False)
+    loop_cooldown_days = Column(Integer, default=90)
+    fallback_pool_id = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SequenceDefinition(Base):
+    __tablename__ = 'sequence_definitions'
+
+    id = Column(Integer, primary_key=True)
+    sequence_id = Column(String(100), unique=True, nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    pool_id = Column(String(100), nullable=False, index=True)
+    target_lifecycle_stages = Column(JSON, default=list)
+    priority = Column(Integer, default=50)
+    steps = Column(JSON, default=list)  # list of {step_index, email_type, delay_days, delay_hours}
+    on_complete_action = Column(String(50), default='exit')  # exit, next_in_pool, move_to_pool, cooldown_then_loop
+    on_complete_next_pool = Column(String(100), nullable=True)
+    on_complete_cooldown_days = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CompletedSequence(Base):
+    __tablename__ = 'completed_sequences'
+
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(Integer, ForeignKey('organizations.id'), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
+    quiz_contact_id = Column(Integer, ForeignKey('quiz_contacts.id'), nullable=True, index=True)
+    sequence_id = Column(String(100), nullable=False)
+    pool_id = Column(String(100), nullable=False)
+    completed_at = Column(DateTime, default=datetime.utcnow)
