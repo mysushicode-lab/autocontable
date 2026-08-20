@@ -4,6 +4,7 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, To
 from typing import Optional
+from src.scheduler.lifecycle_templates import layout, BRAND_URL
 
 import src.config  # noqa: F401
 logger = logging.getLogger(__name__)
@@ -50,38 +51,28 @@ def send_digest(to: str, dossier_name: str, stats: dict) -> bool:
     """
     subject = f"[FactPilot] Résumé hebdomadaire — {dossier_name}"
 
-    body = f"""
-    <html>
-    <body style="font-family: -apple-system, sans-serif; color: #181818; max-width: 600px; margin: 0 auto;">
-        <h2 style="font-size: 18px; margin-bottom: 16px;">📊 Résumé — {dossier_name}</h2>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 8px 0; color: #6b7280;">Factures traitées</td>
-                <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('invoices_processed', 0)}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 8px 0; color: #6b7280;">Rapprochements en attente</td>
-                <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('matches_pending', 0)}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 8px 0; color: #6b7280;">Factures non rapprochées</td>
-                <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('unmatched_count', 0)}</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px 0; color: #6b7280;">Dernier relevé importé</td>
-                <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('last_bank_update', 'N/A')}</td>
-            </tr>
-        </table>
-        <p style="font-size: 13px; color: #6b7280;">
-            Connectez-vous pour valider les rapprochements en attente.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-        <p style="font-size: 11px; color: #9ca3af;">
-            FactPilot — Comptabilité automatisée
-        </p>
-    </body>
-    </html>
-    """
+    body = layout(f"""
+  <p style="font-size: 15px;"><strong>Résumé — {dossier_name}</strong></p>
+  <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 8px 0;">Factures traitées</td>
+      <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('invoices_processed', 0)}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 8px 0;">Rapprochements en attente</td>
+      <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('matches_pending', 0)}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 8px 0;">Factures non rapprochées</td>
+      <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('unmatched_count', 0)}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0;">Dernier relevé importé</td>
+      <td style="padding: 8px 0; font-weight: 600; text-align: right;">{stats.get('last_bank_update', 'N/A')}</td>
+    </tr>
+  </table>
+  <p style="font-size: 13px;">Connectez-vous pour valider les rapprochements en attente.</p>
+""")
 
     return send_email(to, subject, body)
 
@@ -96,18 +87,10 @@ def send_alert(to: str, alert_type: str, details: dict) -> bool:
 
     subject = f"[FactPilot] {titles.get(alert_type, 'Alerte')}"
 
-    body = f"""
-    <html>
-    <body style="font-family: -apple-system, sans-serif; color: #181818; max-width: 600px; margin: 0 auto;">
-        <h2 style="font-size: 18px; margin-bottom: 16px;">{titles.get(alert_type, 'Alerte')}</h2>
-        <p style="color: #374151;">{details.get('message', '')}</p>
-        <p style="font-size: 13px; color: #6b7280; margin-top: 16px;">
-            Dossier: <strong>{details.get('dossier_name', '')}</strong>
-        </p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-        <p style="font-size: 11px; color: #9ca3af;">FactPilot — Comptabilité automatisée</p>
-    </body>
-    </html>
-    """
+    body = layout(f"""
+  <p style="font-size: 15px;"><strong>{titles.get(alert_type, 'Alerte')}</strong></p>
+  <p style="font-size: 15px;">{details.get('message', '')}</p>
+  <p style="font-size: 13px;">Dossier : <strong>{details.get('dossier_name', '')}</strong></p>
+""")
 
     return send_email(to, subject, body)

@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
 
-const GETRESPONSE_API_KEY = process.env.GETRESPONSE_API_KEY;
-const GETRESPONSE_API_URL = 'https://api.getresponse.com/v3';
-const CAMPAIGN_ID = process.env.GETRESPONSE_CAMPAIGN_ID;
-
 // Store scheduled emails in memory (in production, use a DB or queue service like Bull)
 const scheduledEmails = new Map();
 
@@ -115,11 +111,7 @@ export async function POST(request) {
 
     console.log('Webhook received:', JSON.stringify(body, null, 2));
 
-    // GetResponse webhook structure varies based on event type
-    // We expect a contact event with quiz_comptabilite tag
-
-    // Extract contact data from webhook
-    const { eventType, data, contact } = body;
+    const { data, contact } = body;
 
     if (!contact) {
       return NextResponse.json(

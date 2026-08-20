@@ -169,102 +169,22 @@ def get_plan_status(current_user: dict = Depends(get_current_user)):
         session.close()
 
 
-@router.post("/getresponse-config")
-def configure_getresponse(
+@router.post("/email-marketing-config")
+def configure_email_marketing(
     body: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Configure GetResponse API key for organization"""
-    api_key = body.get("api_key", "").strip()
-
-    if not api_key:
-        raise HTTPException(status_code=400, detail="API key required")
-
-    session = db.get_session()
-    try:
-        org_id = current_user["organization_id"]
-
-        existing = session.query(Settings).filter(
-            Settings.organization_id == org_id,
-            Settings.key == "getresponse_api_key"
-        ).first()
-
-        if existing:
-            existing.value = api_key
-        else:
-            session.add(Settings(
-                organization_id=org_id,
-                key="getresponse_api_key",
-                value=api_key,
-                category="integrations",
-                description="GetResponse API key for email marketing automation"
-            ))
-
-        session.commit()
-        return {"status": "configured", "message": "GetResponse API key saved"}
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        session.close()
+    """Deprecated - email marketing is now handled by SendGrid via lifecycle engine."""
+    return {"status": "deprecated", "message": "Email marketing is now handled by SendGrid"}
 
 
-@router.post("/getresponse-test")
-def test_getresponse_connection(current_user: dict = Depends(get_current_user)):
-    """Test GetResponse connection"""
-    from src.integrations.getresponse import GetResponseClient
-
-    session = db.get_session()
-    try:
-        org_id = current_user["organization_id"]
-
-        api_key_setting = session.query(Settings).filter(
-            Settings.organization_id == org_id,
-            Settings.key == "getresponse_api_key"
-        ).first()
-
-        if not api_key_setting or not api_key_setting.value:
-            raise HTTPException(
-                status_code=400,
-                detail="GetResponse API key not configured"
-            )
-
-        try:
-            client = GetResponseClient(api_key_setting.value)
-            account = client._request("GET", "/accounts")
-
-            return {
-                "status": "connected",
-                "account_id": account.get("accountId"),
-                "email": account.get("email"),
-                "company": account.get("companyName")
-            }
-        except Exception as e:
-            raise HTTPException(
-                status_code=401,
-                detail=f"GetResponse connection failed: {str(e)}"
-            )
-    finally:
-        session.close()
+@router.post("/email-marketing-test")
+def test_email_marketing_connection(current_user: dict = Depends(get_current_user)):
+    """Deprecated - email marketing is now handled by SendGrid via lifecycle engine."""
+    return {"status": "deprecated", "message": "Email marketing is now handled by SendGrid"}
 
 
-@router.get("/getresponse-status")
-def get_getresponse_status(current_user: dict = Depends(get_current_user)):
-    """Get GetResponse configuration status"""
-    session = db.get_session()
-    try:
-        org_id = current_user["organization_id"]
-
-        api_key_setting = session.query(Settings).filter(
-            Settings.organization_id == org_id,
-            Settings.key == "getresponse_api_key"
-        ).first()
-
-        is_configured = bool(api_key_setting and api_key_setting.value)
-
-        return {
-            "configured": is_configured,
-            "api_key_masked": f"...{api_key_setting.value[-10:]}" if is_configured else None
-        }
-    finally:
-        session.close()
+@router.get("/email-marketing-status")
+def get_email_marketing_status(current_user: dict = Depends(get_current_user)):
+    """Deprecated - email marketing is now handled by SendGrid via lifecycle engine."""
+    return {"configured": False, "message": "Email marketing is now handled by SendGrid"}

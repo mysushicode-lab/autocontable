@@ -84,17 +84,6 @@ def register(request: Request, body: RegisterRequest, background_tasks: Backgrou
 
         session.commit()
 
-        # Sync user to GetResponse (background task)
-        from src.api.getresponse_sync import sync_user_to_getresponse
-        background_tasks.add_task(
-            sync_user_to_getresponse,
-            email=body.email,
-            name=body.name,
-            org_id=org_id,
-            oauth_provider=None,
-            plan_type="free"
-        )
-
         return {
             "token": token_value,
             "user": {
@@ -283,17 +272,6 @@ def join_from_invitation(body: dict, background_tasks: BackgroundTasks):
         # Create token and return
         token_value = _create_user_token(session, user.id)
         session.commit()
-
-        # Sync PME to GetResponse (background task)
-        from src.api.getresponse_sync import sync_user_to_getresponse
-        background_tasks.add_task(
-            sync_user_to_getresponse,
-            email=invitation.invited_email,
-            name=name,
-            org_id=invitation.organization_id,
-            oauth_provider=None,
-            plan_type="free"
-        )
 
         return {
             "access_token": token_value,

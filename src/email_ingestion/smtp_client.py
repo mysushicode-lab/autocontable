@@ -4,6 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from typing import Optional
+from src.scheduler.lifecycle_templates import layout, BRAND_URL
 
 
 class SMTPClient:
@@ -65,43 +66,15 @@ Cordialement,
 L'équipe autofactmatch
 """
         
-        html_body = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-        .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-        .button {{ display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }}
-        .button:hover {{ background: #1d4ed8; }}
-        .footer {{ text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>autofactmatch</h1>
-            <p>Gestion Comptable</p>
-        </div>
-        <div class="content">
-            <p>Bonjour,</p>
-            <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-            <p>Cliquez sur le bouton ci-dessous pour réinitialiser votre mot de passe :</p>
-            <center>
-                <a href="{reset_link}" class="button">Réinitialiser mon mot de passe</a>
-            </center>
-            <p>Ou copiez ce lien dans votre navigateur :</p>
-            <p style="word-break: break-all; color: #2563eb;">{reset_link}</p>
-            <p><strong>Ce lien expire dans 1 heure.</strong></p>
-            <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
-        </div>
-        <div class="footer">
-            <p>L'équipe autofactmatch</p>
-        </div>
-    </div>
-</body>
-</html>"""
+        html_body = layout(f"""
+  <p>Bonjour,</p>
+  <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+  <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans 1 heure.</p>
+  <p style="text-align:center;margin:24px 0;">
+    <a href="{reset_link}" style="background-color:#2563eb;color:white;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">Réinitialiser mon mot de passe</a>
+  </p>
+  <p style="font-size:13px;color:#64748b;">Ou copiez ce lien : {reset_link}</p>
+  <p style="font-size:13px;color:#64748b;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+""")
         
         return self.send_email(to_email, subject, html_body, text_body)

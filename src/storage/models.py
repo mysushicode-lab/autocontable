@@ -349,7 +349,7 @@ class QuizContact(Base):
 
     id = Column(Integer, primary_key=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    getresponse_id = Column(String(100), nullable=True)
+    getresponse_id = Column(String(100), nullable=True)  # deprecated
     state = Column(String(50), default='quiz_pending')
     lifecycle_stage = Column(Enum(LifecycleStage), default=LifecycleStage.QUIZ_LEAD)
     first_name = Column(String(100), nullable=True)

@@ -44,7 +44,7 @@ from src.api.pcg import router as pcg_router
 from src.api.webhooks import router as webhooks_router
 from src.api.billing import router as billing_router
 from src.api.whatsapp import router as whatsapp_router
-from src.api.getresponse_sync import router as getresponse_router
+from src.api.marketing_sync import router as marketing_sync_router
 from src.api.affiliates import router as affiliates_router
 from src.api.routes.quiz import router as quiz_router
 
@@ -214,7 +214,7 @@ app.include_router(pcg_router, prefix="/api/pcg", tags=["PCG"])
 app.include_router(webhooks_router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
 app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["WhatsApp"])
-app.include_router(getresponse_router, prefix="/api/getresponse", tags=["GetResponse"])
+app.include_router(marketing_sync_router, prefix="/api/marketing", tags=["Marketing"])
 app.include_router(affiliates_router, prefix="/api/affiliates", tags=["Affiliates"])
 app.include_router(quiz_router, tags=["Quiz"])
 
