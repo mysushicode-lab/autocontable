@@ -246,9 +246,32 @@ def invite_user_to_dossier(payload: dict, current_user: dict = Depends(require_f
         session.add(invitation)
         session.commit()
 
-        # Send email (TODO: implement email service)
         join_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/join?token={token}"
-        # TODO: send_invitation_email(invited_email, cf.name, join_url, current_user["name"])
+
+        # Send invitation email directly via SMTP (transactional, not via queue)
+        try:
+            from src.email_ingestion.smtp_client import SMTPClient
+            from src.scheduler.lifecycle_templates import layout
+            inviter_name = current_user.get("name") or current_user.get("username") or "votre cabinet"
+            html_body = layout(f"""
+  <p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:0 0 16px 0;">Bonjour,</p>
+  <p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:0 0 16px 0;"><strong>{inviter_name}</strong> vous invite à rejoindre leur espace FactPilot et à accéder au dossier <strong>{cf.name}</strong>.</p>
+  <p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:0 0 16px 0;">Cliquez sur le bouton ci-dessous pour créer votre accès. Ce lien est valable 7 jours.</p>
+  <p style="text-align:center;margin:24px 0;">
+    <a href="{join_url}" style="background-color:#2563eb;color:white;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">Rejoindre FactPilot</a>
+  </p>
+  <p style="font-family:Helvetica,sans-serif;font-size:13px;color:#64748b;">Ou copiez ce lien : {join_url}</p>
+  <p style="font-family:Helvetica,sans-serif;font-size:13px;color:#64748b;">Si vous n'attendiez pas cette invitation, vous pouvez ignorer cet email.</p>
+""")
+            SMTPClient().send_email(
+                to_email=invited_email,
+                subject=f"Invitation FactPilot — {cf.name}",
+                html_body=html_body,
+                text_body=f"Bonjour,\n\n{inviter_name} vous invite à rejoindre FactPilot et à accéder au dossier {cf.name}.\n\nLien d'invitation (valable 7 jours) :\n{join_url}\n\n— L'équipe FactPilot"
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to send invitation email to {invited_email}: {e}")
 
         return {
             "success": True,

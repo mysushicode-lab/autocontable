@@ -76,9 +76,23 @@ def increment_invoice_count(org: Organization, session: Session) -> None:
     """
     Incrémente le compteur de factures traitées ce mois.
     Appeler APRÈS le traitement IA réussi.
+    Déclenche l'email quota_80_percent quand le seuil 80% est franchi.
     """
-    org.invoices_processed_this_month = (org.invoices_processed_this_month or 0) + 1
+    prev = org.invoices_processed_this_month or 0
+    org.invoices_processed_this_month = prev + 1
     session.commit()
+
+    # Fire quota_80_percent email once when crossing 80% threshold
+    quota = get_quota_for_plan(org.plan_type)
+    if quota and quota > 0:
+        threshold = int(quota * 0.8)
+        if prev < threshold <= org.invoices_processed_this_month:
+            try:
+                from src.scheduler.lifecycle_engine import on_quota_reached_80
+                on_quota_reached_80(session, organization_id=org.id)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"[quota] on_quota_reached_80 failed: {e}")
 
 
 def get_quota_status(org: Organization, session: Session) -> dict:

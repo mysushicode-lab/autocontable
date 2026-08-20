@@ -35,6 +35,10 @@ def seed_email_automation():
             SequencePool(pool_id='churned_pool', name='Churn Winback',
                          strategy='chronological', target_lifecycle_stages=['churned'],
                          cooldown_days=0, loop_when_exhausted=False, fallback_pool_id=None, is_active=True),
+            # 7. AT_RISK RE-ENGAGEMENT — paying orgs with low activity
+            SequencePool(pool_id='at_risk_pool', name='At-Risk Re-engagement',
+                         strategy='chronological', target_lifecycle_stages=['at_risk'],
+                         cooldown_days=0, loop_when_exhausted=False, fallback_pool_id='churned_pool', is_active=True),
         ]
         db.add_all(pools)
 
@@ -95,7 +99,17 @@ def seed_email_automation():
                 ],
                 on_complete_action='cooldown_then_loop', on_complete_cooldown_days=45, is_active=True
             ),
-            # 6. CHURN WINBACK (3 emails)
+            # 6. AT_RISK RE-ENGAGEMENT (2 emails)
+            SequenceDefinition(
+                sequence_id='at_risk_reengagement_v1', name='At-Risk Re-engagement — 2 Steps',
+                pool_id='at_risk_pool', target_lifecycle_stages=['at_risk'], priority=100,
+                steps=[
+                    {'step_index': 0, 'email_type': 'low_engagement_re_spark',        'delay_days': 0, 'delay_hours': 0},
+                    {'step_index': 1, 'email_type': 'paying_low_engagement_check_in', 'delay_days': 7, 'delay_hours': 0},
+                ],
+                on_complete_action='next_in_pool', is_active=True
+            ),
+            # 7. CHURN WINBACK (3 emails)
             SequenceDefinition(
                 sequence_id='churn_winback_v1', name='Churn Winback — 3 Steps',
                 pool_id='churned_pool', target_lifecycle_stages=['churned'], priority=100,

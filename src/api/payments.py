@@ -74,6 +74,8 @@ async def stripe_webhook(request: Request):
             handle_subscription_deleted(data, session)
         elif event_type == 'invoice.paid':
             handle_invoice_paid(data, session)
+        elif event_type == 'invoice.payment_failed':
+            handle_payment_failed(data, session)
 
         session.commit()
         return {"status": "success"}
@@ -152,6 +154,20 @@ def handle_subscription_deleted(subscription, session):
         # Lifecycle: subscription cancelled → churned sequence
         from src.scheduler.lifecycle_engine import on_subscription_cancelled
         on_subscription_cancelled(session, organization_id=org.id)
+
+
+def handle_payment_failed(invoice_data, session):
+    """Handle invoice.payment_failed — trigger payment_failed_1/2/3 email based on attempt count."""
+    customer_id = invoice_data.get('customer')
+    attempt = invoice_data.get('attempt_count', 1)
+    if not customer_id:
+        return
+    org = session.query(Organization).filter(
+        Organization.stripe_customer_id == customer_id
+    ).first()
+    if org:
+        from src.scheduler.lifecycle_engine import on_payment_failed
+        on_payment_failed(session, organization_id=org.id, attempt=attempt)
 
 
 def handle_invoice_paid(invoice_data, session):

@@ -427,6 +427,34 @@ class SequenceDefinition(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class EmailEvent(Base):
+    """Per-email event log — powers engagement scoring.
+    New table: create_all() adds it automatically, no migration required.
+    """
+    __tablename__ = 'email_events'
+
+    id = Column(Integer, primary_key=True)
+    organization_id  = Column(Integer, ForeignKey('organizations.id'),  nullable=True, index=True)
+    quiz_contact_id  = Column(Integer, ForeignKey('quiz_contacts.id'),  nullable=True, index=True)
+    user_id          = Column(Integer, ForeignKey('users.id'),          nullable=True, index=True)
+    email_type       = Column(String(80),  nullable=False)
+    event            = Column(String(30),  nullable=False)  # sent|opened|clicked|bounced|unsubscribed|complained
+    bounce_type      = Column(String(20),  nullable=True)   # hard|soft
+    occurred_at      = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class EmailSuppression(Base):
+    """Email suppression list — unsubscribed, hard bounce, spam complaint.
+    New table: create_all() adds it automatically, no migration required.
+    """
+    __tablename__ = 'email_suppressions'
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(200), nullable=False, unique=True, index=True)
+    reason = Column(String(50), nullable=True)  # 'unsubscribed' | 'hard_bounce' | 'spam_complaint'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class CompletedSequence(Base):
     __tablename__ = 'completed_sequences'
 

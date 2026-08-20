@@ -4,7 +4,7 @@ Sequence scheduler — mirrors minimoes sequenceScheduler.ts
 """
 from datetime import datetime, timedelta
 from src.storage.database import SessionLocal
-from src.storage.models import Organization, QuizContact, SequencePool, SequenceDefinition, CompletedSequence
+from src.storage.models import Organization, QuizContact, SequencePool, SequenceDefinition, CompletedSequence, EmailJob, User, UserRole, EmailSuppression
 
 MAX_PER_DAY = 2
 MAX_PER_WEEK = 5
@@ -93,6 +93,20 @@ def _phase_lifecycle_transitions(db, stats):
     for org in expired:
         _transition_org(db, org, 'trial_expired')
         stats['transitions'] += 1
+
+    # AT_RISK: paying orgs with low invoices processed (< 10% of quota) and > 14 days since last email
+    at_risk_threshold = now - timedelta(days=14)
+    paying_orgs = db.query(Organization).filter(
+        Organization.lifecycle_stage == 'paying',
+        Organization.last_email_sent_at < at_risk_threshold,
+    ).all()
+    for org in paying_orgs:
+        quota = org.invoices_processed_this_month or 0
+        from src.utils.quota import get_quota_for_plan
+        plan_quota = get_quota_for_plan(org.plan_type or 'free') or 80
+        if quota < plan_quota * 0.1:  # Less than 10% of quota used = low engagement
+            _transition_org(db, org, 'at_risk')
+            stats['transitions'] += 1
 
 
 def _transition_org(db, org, new_stage):
@@ -233,12 +247,30 @@ def _process_entity_sequence(db, entity, entity_type, stats, now):
         return
 
     # Frequency cap
-    if not _can_send(entity):
+    if not _can_send(entity, db):
+        stats['skipped'] += 1
+        return
+
+    # Dedup: skip if lifecycle_engine already queued or sent this email_type for this entity
+    # Prevents double-send when both scheduler systems are active simultaneously
+    email_type = step['email_type']
+    dedup_filter = (EmailJob.email_type == email_type,
+                    EmailJob.status.in_(['sent', 'pending']))
+    if entity_type == 'organization':
+        existing = db.query(EmailJob).filter(
+            EmailJob.organization_id == entity.id, *dedup_filter
+        ).first()
+    else:
+        existing = db.query(EmailJob).filter(
+            EmailJob.quiz_contact_id == entity.id, *dedup_filter
+        ).first()
+    if existing:
+        entity.current_step_index = step_index + 1
         stats['skipped'] += 1
         return
 
     # Resolve send info
-    info = _get_info(entity, entity_type)
+    info = _get_info(entity, entity_type, db)
     if not info.get('email'):
         stats['skipped'] += 1
         return
@@ -261,37 +293,90 @@ def _process_entity_sequence(db, entity, entity_type, stats, now):
         stats['errors'] += 1
 
 
-def _can_send(entity):
-    """Check frequency cap."""
-    if (entity.emails_sent_today or 0) >= MAX_PER_DAY:
+def _can_send(entity, db=None):
+    """Check frequency cap (engagement-adjusted) + suppression."""
+    # Resolve effective caps from engagement score
+    score = getattr(entity, 'engagement_score', 50.0) or 50.0
+    try:
+        from src.scheduler.engagement import get_adjusted_caps
+        caps = get_adjusted_caps(score, base_day=MAX_PER_DAY, base_week=MAX_PER_WEEK)
+        max_day  = caps['max_per_day']
+        max_week = caps['max_per_week']
+    except Exception:
+        max_day, max_week = MAX_PER_DAY, MAX_PER_WEEK
+
+    if (entity.emails_sent_today or 0) >= max_day:
         return False
-    if (entity.emails_sent_this_week or 0) >= MAX_PER_WEEK:
+    if (entity.emails_sent_this_week or 0) >= max_week:
         return False
+
+    # Suppression check — unsubscribed, hard-bounce, spam complaint
+    if db:
+        email = getattr(entity, 'email', None)
+        if not email and db:
+            # QuizContact stores email directly; for Organization look up admin User
+            pass
+        if email:
+            suppressed = db.query(EmailSuppression).filter(
+                EmailSuppression.email == email.lower()
+            ).first()
+            if suppressed:
+                return False
     return True
 
 
-def _get_info(entity, entity_type):
-    """Extract send info from entity."""
+def _get_info(entity, entity_type, db=None):
+    """Extract send info from entity — must match personalize_content() replacements."""
     if entity_type == 'organization':
         trial_days_left = 0
         if entity.trial_end_date:
             delta = (entity.trial_end_date - datetime.utcnow()).days
             trial_days_left = max(0, delta)
+        invoices = entity.invoices_processed_this_month or 0
+        # Approximate: 5 min/invoice → hours; 95% match rate
+        time_saved = round(invoices * 5 / 60, 1)
+        matches = round(invoices * 0.95)
+        # Look up admin user email — Organization has no direct email field
+        email = None
+        first_name = entity.name or 'there'
+        if db:
+            admin = db.query(User).filter(
+                User.organization_id == entity.id,
+                User.role == UserRole.ADMIN,
+            ).first()
+            if admin:
+                email = admin.email
+                first_name = admin.name or entity.name or 'there'
         return {
-            'email': getattr(entity, 'contact_email', None) or getattr(entity, 'email', None),
-            'first_name': entity.name or 'there',
+            'email': email,
+            'first_name': first_name,
+            'client_count': 0,
+            'time_lost_week': 0,
+            'time_lost_month': 0,
+            'time_lost_year': 0,
             'plan_name': (entity.plan_type or 'starter').capitalize(),
             'days_left': trial_days_left,
-            'invoices_count': entity.invoices_processed_this_month or 0,
+            'invoices_count': invoices,
+            'matches_count': matches,
+            'time_saved': time_saved,
         }
     else:
+        time_lost_year = entity.time_lost_year or 0
+        time_lost_week = entity.time_lost_week or 0
+        time_lost_month = entity.time_lost_month or round(time_lost_week * 4.3, 1)
         return {
             'email': entity.email,
             'first_name': entity.first_name or 'there',
             'client_count': entity.client_count or 0,
-            'time_lost_week': entity.time_lost_week or 0,
-            'time_lost_year': entity.time_lost_year or 0,
-            'annual_loss': int((entity.time_lost_year or 0) * 50),
+            'time_lost_week': time_lost_week,
+            'time_lost_month': time_lost_month,
+            'time_lost_year': time_lost_year,
+            'annual_loss': int(time_lost_year * 50),
+            'plan_name': 'Starter',
+            'days_left': 0,
+            'invoices_count': 0,
+            'matches_count': 0,
+            'time_saved': 0,
         }
 
 

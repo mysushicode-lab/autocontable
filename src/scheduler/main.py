@@ -466,10 +466,47 @@ class InvoiceScheduler:
             misfire_grace_time=120,
         )
 
+        # Monthly usage report — fire on 1st of each month at 8:00 UTC
+        from apscheduler.triggers.cron import CronTrigger
+        logger.info("Scheduling monthly usage report (1st of month, 8:00 UTC)")
+        self.scheduler.add_job(
+            _send_monthly_reports,
+            trigger=CronTrigger(day=1, hour=8, minute=0),
+            id='monthly_reports',
+            name='Monthly usage report emails',
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=3600,
+        )
+
         try:
             self.scheduler.start()  # BlockingScheduler — keeps the process alive
         except (KeyboardInterrupt, SystemExit):
             logger.info("Scheduler stopped.")
+
+
+def _send_monthly_reports():
+    """Fire monthly_usage_report email to all active paying orgs."""
+    from src.scheduler.lifecycle_engine import on_monthly_report
+    from src.storage.models import Organization
+    session = db.get_session()
+    try:
+        paying_orgs = session.query(Organization).filter(
+            Organization.plan_type.in_(['starter', 'pro', 'reseau']),
+            Organization.stripe_subscription_id.isnot(None),
+        ).all()
+        for org in paying_orgs:
+            try:
+                on_monthly_report(session, organization_id=org.id)
+            except Exception as e:
+                logger.error(f"[monthly_report] org {org.id}: {e}")
+        session.commit()
+        logger.info(f"[monthly_report] Queued reports for {len(paying_orgs)} orgs")
+    except Exception as e:
+        logger.error(f"[monthly_report] Fatal: {e}")
+        session.rollback()
+    finally:
+        session.close()
 
 
 def start_scheduler():

@@ -2,10 +2,11 @@
 
 Naming convention: {stage}_{sequence_number}
 Each template has 'subject' and 'html' with [[placeholder]] variables.
+Cold Email B2B methodology — plain-text feel, court, cas client réels, un seul CTA.
 """
 
 BRAND_NAME = 'FactPilot'
-BRAND_URL = 'https://factpilot.ai'
+BRAND_URL = 'https://factpilot.fr'
 BRAND_COLOR = '#2563eb'
 
 def layout(content: str, preheader: str = '') -> str:
@@ -75,7 +76,7 @@ def layout(content: str, preheader: str = '') -> str:
                 <td style="font-family:Helvetica,sans-serif;vertical-align:top;font-size:13px;text-align:center;" valign="top" align="center">
                   <a href="{BRAND_URL}/account/preferences" style="text-decoration:underline;">Gérer mes préférences</a>
                   &nbsp;·&nbsp;
-                  <a href="{BRAND_URL}/api/webhooks/email-events?action=unsubscribe&email=[[email]]" style="text-decoration:underline;">Se désabonner</a>
+                  <a href="{BRAND_URL}/api/email-events?action=unsubscribe&email=[[email]]" style="text-decoration:underline;">Se désabonner</a>
                 </td>
               </tr>
             </table>
@@ -100,537 +101,497 @@ def cta(text: str, url: str) -> str:
   </td></tr></tbody>
 </table>'''
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LIFECYCLE TEMPLATES — Cold Email B2B, vouvoiement, French accountant persona
+# Court, plain-text, cas client réels, un seul CTA par email.
+# Signé : — Marc, FactPilot
+# ─────────────────────────────────────────────────────────────────────────────
+
+P  = 'font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;font-weight:normal;margin:0 0 16px 0;'
+PS = 'font-family:Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#374151;margin:16px 0 0 0;border-top:1px solid #f1f5f9;padding-top:14px;'
+SIG = '<p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:8px 0 0 0;color:#374151;">— Marc, FactPilot</p>'
+
 LIFECYCLE_TEMPLATES = {
-    # ─── QUIZ LEAD (pre-signup nurture) ──────────────────────────────────────
+
+    # ─── QUIZ LEAD — 4 emails (pré-inscription, nurture) ─────────────────────
+
     'quiz_diagnostic': {
-        'subject': '[[firstName]], vous perdez [[time_lost_week]]h cette semaine — voici comment l\'arrêter',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">[[firstName]], voici votre rapport personnalisé</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Basé sur vos réponses au diagnostic : vous gérez <strong>[[client_count]] clients</strong> et consacrez <strong>[[time_lost_week]]h par semaine</strong> — soit <strong>[[time_lost_month]]h par mois</strong> — à la saisie manuelle et au rapprochement bancaire.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">À titre de comparaison, un cabinet automatisé de <strong>[[client_count]] clients</strong> y consacre moins de 2h/semaine. Voici ce que cet écart coûte concrètement :</p>
-  
-    <div style="font-size:36px;font-weight:700;">[[time_lost_year]]h
-    <div style="font-size:15px;margin-top:6px;">perdues en saisie manuelle cette année</div>
-    <div style="font-size:13px;margin-top:8px;border-top:1px solid #fecaca;padding-top:8px;">Soit environ <strong>[[annual_loss]]€ de manque à gagner</strong> — du temps que vous auriez pu facturer à de nouveaux clients.</div>
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;"><strong>La bonne nouvelle :</strong> il existe une sortie. Marie Dupont avait exactement votre profil — [[client_count]] clients, des semaines épuisantes en période fiscale. Aujourd'hui elle passe <strong>3h par semaine</strong> là où elle en passait 25. Elle a pris 15 nouveaux clients en 6 mois, sans recruter.</p>
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"Je pensais que c'était inévitable de passer autant de temps sur la saisie. FactPilot m'a prouvé le contraire en une semaine."</p>
-    <p style="font-size:13px;margin:0;">— Marie D., expert-comptable indépendante, 45 clients, -88% de saisie manuelle</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">FactPilot se connecte aux boîtes email de vos clients, récupère automatiquement les factures fournisseurs, et les réconcilie avec vos relevés bancaires. Vous supervisez. Vous ne saisissez plus.</p>
-  
-    <p style="font-size:14px;margin:0 0 8px 0;"><strong>Objection #1 : "Je n'ai pas le temps de configurer un nouvel outil."</strong></p>
-    <p style="font-size:14px;margin:0;">Le premier dossier client est opérationnel en 5 minutes. Pas de formation. Pas de migration. Juste : connecter, importer, valider.</p>
-  
-  
-    <p style="font-size:14px;margin:0 0 8px 0;"><strong>Objection #2 : "Je dois changer de logiciel comptable ?"</strong></p>
-    <p style="font-size:14px;margin:0;">Non. FactPilot se branche sur Sage, Cegid, EBP, ACD — votre workflow existant reste intact. Il automatise la partie pénible, c'est tout.</p>
-  
-  ''' + cta('Démarrer mon essai gratuit de 7 jours →', '[[signup_url]]') + '''
-  <p style="font-size:13px;margin:0 0 24px 0;">Sans carte bancaire · Setup en 5 minutes · Données supprimées si vous annulez</p>
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Vous avez des questions avant de vous lancer ? Répondez à cet email. Je vous réponds personnellement sous 2h.</p>''',
-        'Votre diagnostic : [[time_lost_year]]h/an en saisie manuelle — voici comment l\'arrêter')
+        'subject': '[[firstName]], question rapide sur votre cabinet',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">D'après votre diagnostic : vous gérez <strong>[[client_count]] dossiers</strong> et consacrez <strong>[[time_lost_week]]h par semaine</strong> à récupérer des pièces comptables dans les emails de vos clients, saisir les factures une par une et faire le rapprochement avec les relevés bancaires.</p>
+  <p style="{P}">Marie D., expert-comptable indépendante avec 45 clients, était dans la même situation. Elle a connecté les boîtes email de ses clients à FactPilot un dimanche soir. Le lundi matin, ses factures de la semaine étaient déjà importées, extraites et catégorisées automatiquement — sans qu'elle ait ouvert un seul PDF. Elle est passée de 25h à 3h par semaine sur la saisie.</p>
+  <p style="{P}">Ce que FactPilot fait concrètement : il se connecte aux boîtes email de vos clients, récupère les factures fournisseurs automatiquement toutes les 8 minutes, en extrait les montants HT/TVA/TTC, le fournisseur et le numéro — puis les rapproche de votre relevé bancaire avec 95% de correspondances automatiques. Vous supervisez. Vous ne saisissez plus.</p>
+  <p style="{P}">L'essai de 7 jours est gratuit, sans carte bancaire. Premier dossier opérationnel en 5 minutes.</p>
+  ''' + cta('Démarrer mon essai gratuit →', '[[signup_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Des questions avant de vous lancer ? Répondez directement à cet email, je vous réponds personnellement.</p>'''),
     },
 
     'quiz_marie': {
-        'subject': '[[firstName]], voici comment Marie a récupéré ses week-ends (avec [[client_count]] clients comme vous)',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 8px 0;">"Je pensais que les week-ends sacrifiés, c'était le prix à payer pour être indépendante."</h1>
-  <p style="font-size:14px;font-style:italic;margin-bottom:24px;">— Marie D., expert-comptable, 45 clients</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Il y a 8 mois, Marie gérait 45 dossiers. Elle passait <strong>25h par semaine</strong> sur la saisie de factures et le rapprochement bancaire. Chaque déclaration fiscale la plongeait dans des nuits à rattraper du retard.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Elle n'avait pas de collaborateur. Pas les moyens d'en recruter un. Et elle refusait de nouveaux clients — non par choix, mais par manque de capacité.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">Aujourd'hui, <strong>3h par semaine</strong> suffisent pour les mêmes 45 dossiers — et elle en a pris 15 de plus.</p>
-  
-    <p style="font-size:13px;font-weight:600;text-transform:uppercase;margin:0 0 16px 0;">Résultats en 90 jours avec FactPilot</p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td width="50%" style="padding:8px;text-align:center;"><div style="font-size:30px;font-weight:700;">-88%<div style="font-size:13px;">Temps de saisie</div></td>
-      <td width="50%" style="padding:8px;text-align:center;"><div style="font-size:30px;font-weight:700;">+15</div><div style="font-size:13px;">Nouveaux clients</div></td>
-    </tr><tr>
-      <td width="50%" style="padding:8px;text-align:center;"><div style="font-size:30px;font-weight:700;">+35%</div><div style="font-size:13px;">Chiffre d'affaires</div></td>
-      <td width="50%" style="padding:8px;text-align:center;"><div style="font-size:30px;font-weight:700;">0</div><div style="font-size:13px;">Recrutement nécessaire</div></td>
-    </tr></table>
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Avec <strong>[[client_count]] clients</strong> et <strong>[[time_lost_week]]h/semaine</strong> en saisie, vous êtes exactement là où Marie était. La différence, c'est que vous le savez maintenant — et que vous avez le choix.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">Chaque semaine sans agir, vous laissez <strong>[[time_lost_week]] heures</strong> s'évaporer. Sur l'année : <strong>[[time_lost_year]]h</strong>, soit <strong>[[annual_loss]]€</strong> que vous n'avez pas facturés.</p>
-  
-    <p style="font-size:14px;margin:0 0 8px 0;"><strong>Objection : "29€/mois c'est un coût supplémentaire."</strong></p>
-    <p style="font-size:14px;margin:0;">À [[annual_loss]]€ de manque à gagner par an, l'abonnement annuel représente moins de 2% de ce que vous perdez aujourd'hui. Et la première semaine est entièrement gratuite.</p>
-  
-  
-    <p style="font-size:14px;margin:0 0 8px 0;"><strong>Objection : "Je n'ai pas le temps de m'en occuper maintenant."</strong></p>
-    <p style="font-size:14px;margin:0;">Marie a créé son premier dossier en 45 minutes un dimanche soir. Le lundi matin, FactPilot avait déjà importé 3 semaines de factures.</p>
-  
-  ''' + cta('Commencer mon essai gratuit (7 jours) →', '[[signup_url]]') + '''
-  <p style="font-size:13px;margin:0 0 24px 0;">Sans carte bancaire · Annulation en 1 clic · Vos données restent les vôtres</p>
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — L'essai gratuit inclut tout : import automatique, rapprochement IA, export vers votre logiciel. Aucune fonctionnalité cachée derrière un plan supérieur. <a href="[[signup_url]]" style="text-decoration:underline;">Démarrer ici</a></p>''')
+        'subject': 'Re : [[time_lost_week]]h/semaine à récupérer des factures',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Je reviens sur votre diagnostic. [[time_lost_week]]h par semaine, c'est [[time_lost_year]]h par an passées à ouvrir des emails, télécharger des pièces jointes, saisir des données que votre logiciel pourrait recevoir automatiquement.</p>
+  <p style="{P}">Voici ce que Marie a fait : elle a configuré FactPilot pour surveiller les boîtes email de chacun de ses clients. Désormais, dès qu'un fournisseur envoie une facture à l'un de ses clients, FactPilot la récupère, l'extrait et l'affecte automatiquement au bon dossier — sans aucune action de sa part. Elle a aussi donné à ses clients un lien de dépôt sécurisé pour les pièces hors email. Résultat en 90 jours : -88% de saisie manuelle, +15 nouveaux clients acceptés sans recruter, +35% de chiffre d'affaires.</p>
+  <p style="{P}">Avec [[client_count]] dossiers et [[time_lost_week]]h/semaine de saisie, vous avez le même profil qu'elle avait. La différence, c'est que vous le savez maintenant.</p>
+  ''' + cta('Commencer mon essai gratuit (7 jours) →', '[[signup_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — L'essai inclut tout : import automatique, rapprochement IA, export FEC et push vers votre logiciel. Aucune fonctionnalité cachée derrière un plan supérieur.</p>'''),
     },
 
     'quiz_integration': {
-        'subject': '[[firstName]], vous n\'avez pas besoin de changer de logiciel',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">[[firstName]], vous n'avez pas besoin de changer quoi que ce soit</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Avec <strong>[[client_count]] clients</strong> et <strong>[[time_lost_week]]h/semaine</strong> consacrées à la saisie, la dernière chose dont vous avez besoin c'est d'une migration logicielle.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">C'est la question qu'on nous pose le plus souvent : "Si j'essaie FactPilot, je dois abandonner Sage ? Refaire mes templates EBP ? Réapprendre un nouveau logiciel ?"</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;"><strong>Non. Jamais.</strong> FactPilot ne remplace rien dans votre cabinet. Il comble le trou entre vos clients (qui envoient leurs factures par email, WhatsApp, et Dieu sait quoi) et votre logiciel comptable.</p>
-  
-    <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e2e8f0;">
-      <p style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Ce que vous gardez (100% intact)</p>
-      <p style="font-size:14px;margin:0;">Sage, Cegid, EBP, ACD · Vos exports FEC · Vos workflows existants · Vos habitudes de travail</p>
-    
-    <div>
-      <p style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Ce que FactPilot ajoute par-dessus</p>
-      <p style="font-size:14px;margin:0;">Connexion aux boîtes email de vos clients · Récupération automatique des factures fournisseurs · Rapprochement bancaire IA · Export propre vers votre logiciel</p>
-    </div>
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Thomas gère 80 dossiers seul depuis 3 ans. Il utilise Cegid. Quand il a découvert FactPilot, sa première réaction était : <em>"Mais ça va pas tout casser ?"</em></p>
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"J'ai gardé exactement le même Cegid. FactPilot s'occupe juste de la partie que je détestais faire. Setup en 1h un vendredi soir — le lundi tout fonctionnait."</p>
-    <p style="font-size:13px;margin:0;">— Thomas L., expert-comptable, 80 dossiers, 0 collaborateur</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">En ce moment, vous perdez <strong>[[time_lost_week]]h cette semaine</strong> — <strong>[[time_lost_month]]h ce mois</strong> — sur des tâches qu'un algorithme peut traiter mieux et plus vite que vous. Chaque semaine que vous attendez coûte <strong>[[time_lost_week]]h de temps non facturé</strong>, soit <strong>[[annual_loss]]€/an</strong> en capacité inutilisée.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">L'essai de 7 jours vous permettra de voir FactPilot travailler dans votre environnement réel. Sans risque. Sans carte bancaire.</p>
-  ''' + cta('Tester gratuitement pendant 7 jours →', '[[signup_url]]') + '''
-  <p style="font-size:13px;margin:0 0 24px 0;">Setup en 1h · Compatible avec votre logiciel actuel · Annulation sans conditions</p>
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Une question sur la compatibilité avec votre logiciel spécifique ? Répondez à cet email avec le nom de votre logiciel. Je vous confirme l'intégration en moins d'une heure.</p>''')
+        'subject': 'Re : FactPilot se branche sur votre logiciel actuel',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">La question qu'on reçoit le plus souvent : "Est-ce que je dois abandonner mon logiciel comptable ?" Non. Jamais.</p>
+  <p style="{P}">FactPilot ne remplace rien dans votre cabinet. Il se place entre vos clients (qui envoient leurs pièces par email, WhatsApp ou lien de dépôt) et votre logiciel (Sage, Cegid, Pennylane, EBP, ACD, Quadratus). Il automatise la récupération et la saisie — le reste reste intact. Thomas L., 80 dossiers, travaille seul avec Cegid depuis 3 ans. Sa réaction quand il a testé FactPilot : "J'ai gardé exactement le même Cegid. FactPilot s'occupe juste de la partie que je détestais faire. Setup en une heure, tout fonctionnait le lendemain."</p>
+  <p style="{P}">Ce que vous gardez intact : votre logiciel, vos exports FEC, vos workflows. Ce que FactPilot ajoute : la collecte automatique des pièces et leur saisie structurée, prête à pousser dans votre logiciel en un clic.</p>
+  <p style="{P}">7 jours d'essai, sans carte bancaire, compatible avec votre environnement actuel.</p>
+  ''' + cta('Tester gratuitement 7 jours →', '[[signup_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Un doute sur la compatibilité avec votre logiciel spécifique ? Répondez à cet email avec son nom. Je confirme l'intégration sous 1h.</p>'''),
     },
 
     'quiz_breakup': {
-        'subject': '[[firstName]], je ferme ce dossier — mais lisez ça avant',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">C'est mon dernier email.</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Avec <strong>[[client_count]] clients</strong> et <strong>[[time_lost_week]]h de saisie par semaine</strong>, vous connaissez mieux que personne ce que ça représente. Je ne vais pas vous relancer indéfiniment. Vous avez mieux à faire — et moi aussi.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Mais avant de partir, voici ce que chaque semaine supplémentaire coûte concrètement à votre cabinet :</p>
-  
-    <div style="font-size:28px;font-weight:700;">[[time_lost_week]]h <span style="font-size:16px;font-weight:400;">cette semaine</span>
-    <div style="font-size:15px;margin-top:4px;">= [[time_lost_month]]h ce mois = [[time_lost_year]]h cette année</div>
-    <div style="font-size:14px;margin-top:12px;border-top:1px solid #fecaca;padding-top:12px;">Soit <strong>[[annual_loss]]€</strong> de valeur non facturée.<br/>Chaque semaine que vous attendez coûte <strong>[[time_lost_week]]h de votre temps</strong> — irréversible.</div>
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Ce n'est pas une fatalité. D'autres cabinets exactement dans votre situation ont changé ça en une semaine d'essai.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Si un jour vous décidez que [[time_lost_year]]h/an c'est trop, le lien est là. 7 jours gratuits, sans carte bancaire :</p>
-  ''' + cta('Essayer FactPilot une dernière fois →', '[[signup_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;">Bonne continuation, [[firstName]]. Je vous souhaite sincèrement le meilleur — avec ou sans FactPilot.</p>''')
+        'subject': 'Je ferme ce dossier',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">C'est mon dernier email. Je ne vais pas vous relancer indéfiniment — vous avez mieux à faire.</p>
+  <p style="{P}">Ce que je sais : avec [[client_count]] dossiers et [[time_lost_week]]h de collecte et saisie par semaine, vous laissez partir [[time_lost_year]]h par an — soit environ [[annual_loss]]€ de temps non facturé. Chaque semaine supplémentaire en méthode manuelle est irréversible.</p>
+  <p style="{P}">Si un jour vous décidez que ça suffit, le lien est là. 7 jours gratuits, sans engagement, votre logiciel actuel intact.</p>
+  ''' + cta('Essayer FactPilot →', '[[signup_url]]') + f'''
+  <p style="{P}">Bonne continuation, [[firstName]]. Sincèrement.</p>
+  <p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:0;color:#374151;">— Marc, FactPilot</p>'''),
     },
 
-    # ─── TRIAL DAY 0 (welcome) ───────────────────────────────────────────────
+
+    # ─── TRIAL ACTIVATION — 4 emails ──────────────────────────────────────────
+
     'trial_welcome': {
-        'subject': '[[firstName]], votre essai démarre — 1 action pour voir les résultats aujourd\'hui',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Bienvenue, [[firstName]] — vous avez fait le bon choix.</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Votre essai gratuit de 7 jours vient de commencer. D'ici vendredi, vous saurez exactement combien de temps FactPilot peut vous faire gagner chaque semaine.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">Voici l'<strong>unique chose</strong> à faire aujourd'hui pour voir FactPilot en action :</p>
-  
-    <h2 style="font-size:18px;margin:0 0 12px 0;">Créez votre premier dossier client</h2>
-    <p style="font-size:14px;margin:0 0 12px 0;">Allez dans "Dossiers" → "Nouveau dossier" → Entrez le nom du client. C'est tout. Moins de 2 minutes.</p>
-    <p style="font-size:14px;margin:0;">Ensuite, importez les factures d'un seul mois pour ce client — glissez-déposez vos PDFs. L'IA extrait montants, fournisseurs, dates, et TVA automatiquement. Vous verrez le résultat en temps réel.</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Les cabinets qui créent leur premier dossier dans les 24h tirent 3x plus de valeur de leur essai. Ne laissez pas ces 7 jours passer sans avoir vu FactPilot à l'oeuvre.</p>
-  ''' + cta('Créer mon premier dossier →', '[[app_url]]') + '''
-  
-    <p style="font-size:14px;margin:0;"><strong>Vous êtes bloqué(e) ?</strong> Répondez à cet email. Je vous aide personnellement sous 2h — pas un bot, pas une FAQ.</p>
-  
-  <p style="font-size:14px;margin:24px 0 0 0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Dans 3 jours, je vous montrerai comment Thomas gère 80 dossiers entièrement seul. La méthode est simple et vous pouvez la copier.</p>''',
-        'Bienvenue — votre essai de 7 jours commence maintenant')
+        'subject': 'Votre accès FactPilot est prêt — une action aujourd\'hui',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Votre essai de 7 jours vient de commencer. Pour voir FactPilot en action aujourd'hui même, voici la seule chose à faire : créez un premier dossier client et configurez la connexion IMAP de sa boîte email.</p>
+  <p style="{P}">Ce qui se passe ensuite : FactPilot interroge cette boîte toutes les 8 minutes. Les premières factures fournisseurs arrivent automatiquement dans le dossier — montants HT/TVA/TTC extraits, fournisseur identifié, catégorie PCG assignée. Pas de saisie manuelle. Vous voyez le résultat en moins d'une heure.</p>
+  <p style="{P}">Si vos clients utilisent WhatsApp pour vous transmettre des pièces, vous pouvez aussi activer l'intake WhatsApp depuis les paramètres du dossier — une photo de facture envoyée par le client crée automatiquement une écriture dans le dossier.</p>
+  ''' + cta('Créer mon premier dossier →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>Bloqué(e) quelque part ?</strong> Répondez à cet email. Je vous aide personnellement sous 2h.</p>'''),
     },
 
-    # ─── TRIAL ACTIVE ────────────────────────────────────────────────────────
     'trial_tip_1': {
-        'subject': '[[firstName]], vous allez récupérer 2h d\'ici ce soir',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">[[firstName]], cette semaine vous allez encore perdre [[time_lost_week]]h en saisie</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Ouvrir un PDF. Lire le montant. L'entrer dans votre logiciel. Vérifier la TVA. Passer à la suivante. Multiplier par [[client_count]] clients, par 12 mois.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Résultat : <strong>[[time_lost_year]]h par an</strong>, soit <strong>~[[annual_loss]]€</strong> de temps non facturé. Et c'est évitable dès aujourd'hui — voici comment.</p>
-  
-    <p style="font-size:15px;font-weight:600;margin:0 0 12px 0;">Comment importer un mois entier de factures en 30 secondes :</p>
-    <ol style="font-size:14px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:12px;">Ouvrez un dossier client dans FactPilot</li>
-      <li style="margin-bottom:12px;">Sélectionnez tous vos PDFs du mois (jusqu'à 50 à la fois) et glissez-déposez</li>
-      <li style="margin-bottom:12px;">L'IA extrait automatiquement : montant TTC, HT, fournisseur, date, numéro de facture, TVA</li>
-      <li>Vous relisez en 30 secondes et validez d'un clic</li>
-    </ol>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;"><strong>Résultat :</strong> ce qui vous prend 45 minutes par client par mois tombe à 3 minutes. Sur 20 clients, c'est <strong>14h récupérées chaque mois</strong>.</p>
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"J'ai testé sur un dossier de 62 factures. 47 secondes pour tout importer. J'ai vérifié 3 fois parce que je n'y croyais pas."</p>
-    <p style="font-size:13px;margin:0;">— Jean-Pierre M., 38 clients</p>
-  
-  ''' + cta('Importer mes premières factures →', '[[app_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Si vous n'avez pas encore créé de dossier, commencez par là. 2 minutes suffisent : <a href="[[app_url]]" style="text-decoration:underline;">ouvrir FactPilot</a></p>''')
+        'subject': 'Re : comment vos clients transmettent leurs factures maintenant',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Un point pratique sur la collecte : FactPilot propose trois canaux d'entrée pour les pièces de vos clients.</p>
+  <p style="{P}">Le premier — et le plus transparent — est la connexion IMAP. Vous entrez une fois les identifiants de la boîte email du client dans le dossier. FactPilot la surveille toutes les 8 minutes et récupère automatiquement toutes les factures reçues en pièce jointe. Le client ne change rien à ses habitudes : il continue de recevoir ses factures par email, elles arrivent dans son dossier sans que vous ayez à intervenir.</p>
+  <p style="{P}">Le deuxième canal est le lien de dépôt sécurisé : vous générez un lien depuis le dossier, vous l'envoyez au client, il dépose ses pièces sans se connecter. Le troisième est WhatsApp : une photo envoyée par le client via WhatsApp crée directement une écriture dans le bon dossier — utile pour les artisans qui ont l'habitude de photographier leurs tickets.</p>
+  <p style="{P}">Jean-Pierre M. (38 clients) a configuré les trois canaux en une matinée. Il a récupéré le mois de retard de l'un de ses clients en 47 secondes — 62 factures importées et extraites d'un coup.</p>
+  ''' + cta('Configurer mes canaux d\'import →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Si vous n'avez pas encore créé de dossier, commencez par là : 2 minutes suffisent.</p>'''),
     },
 
     'trial_tip_2': {
-        'subject': 'Le rapprochement bancaire vous prend combien d\'heures ce mois-ci ?',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Sur vos [[time_lost_week]]h/semaine, combien partent au rapprochement bancaire ?</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Selon notre analyse de 200 cabinets indépendants avec <strong>[[client_count]] clients en moyenne</strong>, le rapprochement bancaire représente environ <strong>40% du temps de saisie total</strong> — soit probablement <strong>plus de [[time_lost_month]]h/mois</strong> dans votre cas. C'est la tâche que les comptables détestent le plus, et la plus simple à éliminer.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Voici comment FactPilot la fait pour vous :</p>
-  
-    <ol style="font-size:14px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:12px;">Importez votre relevé bancaire (CSV, OFX, ou même PDF)</li>
-      <li style="margin-bottom:12px;">L'IA matche automatiquement chaque transaction avec les factures déjà importées — taux de correspondance moyen : <strong>95%</strong></li>
-      <li>Vous validez les suggestions en un clic, corrigez les 5% restants manuellement</li>
-    </ol>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;"><strong>Temps moyen avant FactPilot :</strong> 3-4h par client par mois.<br/><strong>Temps moyen avec FactPilot :</strong> 12 minutes.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">Pas de tableau Excel, pas de copier-coller entre logiciels, pas de colonnes à aligner manuellement.</p>
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"Le rapprochement d'un client avec 180 transactions mensuelles : 8 minutes. Avant j'y passais une demi-journée."</p>
-    <p style="font-size:13px;margin:0;">— Sophie B., 52 clients actifs</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Essayez-le ce soir sur un relevé réel. Vous verrez le résultat en moins de 10 minutes.</p>
-  ''' + cta('Tester le rapprochement automatique →', '[[app_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Il reste encore quelques jours d'essai. La fonctionnalité la plus utile pour votre cabinet n'est peut-être pas encore activée. <a href="[[app_url]]" style="text-decoration:underline;">Connectez-vous maintenant</a> pour ne pas la manquer.</p>''')
+        'subject': 'Le rapprochement bancaire : combien d\'heures ce mois-ci ?',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Une fois les factures importées, FactPilot fait le rapprochement avec votre relevé bancaire automatiquement. Vous importez le relevé (CSV, OFX ou PDF), et le moteur de matching croise chaque transaction avec les factures du dossier : montant au centime près, nom du fournisseur dans le libellé, proximité de date. Les correspondances à score élevé sont validées automatiquement — 95% en moyenne. Les 5% ambigus sont présentés pour votre validation en un clic.</p>
+  <p style="{P}">Sophie B. avait un client avec 180 transactions mensuelles. Rapprochement complet : 8 minutes. Avant FactPilot, elle y passait une demi-journée. Sur 52 clients actifs, ça représentait 3 à 4 jours de travail par mois uniquement sur le rapprochement — aujourd'hui réduits à quelques heures de supervision.</p>
+  <p style="{P}">Testez-le ce soir sur un relevé réel. Importez un relevé d'un dossier actif et regardez combien de correspondances se font automatiquement.</p>
+  ''' + cta('Tester le rapprochement automatique →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Il reste quelques jours d'essai. La fonctionnalité qui impacte le plus votre temps, vous ne l'avez peut-être pas encore activée.</p>'''),
     },
 
     'trial_case_study': {
-        'subject': 'Thomas gère 80 dossiers seul — et il reste [[days_left]] jours pour tester',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">80 dossiers, 0 collaborateur, 35h de semaine</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Thomas a 80 clients. Il travaille seul. Et il finit à 17h30 tous les jours, week-ends libres toute l'année.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">Il y a 18 mois, il était dans la situation inverse :</p>
-  
-    <p style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Avant FactPilot :</p>
-    <ul style="font-size:14px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:8px;">55 dossiers, pas 80 — il ne pouvait pas en prendre plus</li>
-      <li style="margin-bottom:8px;">40h/semaine de saisie et de rapprochement</li>
-      <li style="margin-bottom:8px;">Week-ends sacrifiés de janvier à mai</li>
-      <li>Recrutement impossible (coût + management)</li>
-    </ul>
-  
-  
-    <p style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Après 3 mois avec FactPilot :</p>
-    <ul style="font-size:14px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:8px;">5h/semaine de supervision IA (il valide, il ne saisit plus)</li>
-      <li style="margin-bottom:8px;">+25 clients en 6 mois — la capacité libérée lui a permis de croître</li>
-      <li style="margin-bottom:8px;">Week-ends 100% libres toute l'année</li>
-      <li>CA en hausse de 45% sans recruter</li>
-    </ul>
-  
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"J'avais peur que ça soit compliqué. En réalité, FactPilot fait exactement une chose : il s'occupe de la partie que je ne veux plus faire. Le reste, c'est toujours moi."</p>
-    <p style="font-size:13px;margin:0;">— Thomas L., 80 dossiers, utilisateur FactPilot depuis 18 mois</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;">Il vous reste <strong>[[days_left]] jours d'essai</strong>. Pendant ce temps, vous passez encore <strong>[[time_lost_week]]h en saisie cette semaine</strong> — exactement comme Thomas avant de changer de méthode. Avez-vous importé votre premier dossier complet ?</p>
-  
-    <p style="font-size:14px;margin:0;"><strong>Pas encore eu le temps ?</strong> C'est normal — mais c'est exactement ça le problème. FactPilot est fait pour les experts-comptables qui n'ont pas de temps. Le premier dossier prend 10 minutes. Faites-le ce soir.</p>
-  
-  ''' + cta('Ouvrir FactPilot maintenant →', '[[app_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Des questions sur comment Thomas a configuré FactPilot ? Répondez à cet email. Je vous explique sa méthode en détail.</p>''')
+        'subject': 'Thomas gère 80 dossiers seul — comment il fait',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Thomas L. a 80 clients. Il travaille seul. Il finit à 17h30 tous les jours et ses week-ends sont libres, y compris en période fiscale.</p>
+  <p style="{P}">Il y a 18 mois il avait 55 dossiers, ne pouvait pas en prendre davantage, et passait 40h par semaine entre la saisie, le rapprochement et les relances clients pour récupérer les pièces manquantes. Il a configuré FactPilot sur un vendredi soir — connexion IMAP sur les boîtes de ses clients, relevés bancaires en import automatique. Le lundi, les dossiers de la semaine précédente étaient déjà à jour. En 3 mois : 5h par semaine de supervision à la place de 40h de saisie, 25 nouveaux clients sans recruter, +45% de chiffre d'affaires.</p>
+  <p style="{P}">Il vous reste [[days_left]] jours d'essai. Avez-vous configuré votre premier dossier complet ?</p>
+  ''' + cta('Ouvrir FactPilot →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Des questions sur la méthode de Thomas ? Répondez à cet email. Je vous explique sa configuration en détail.</p>'''),
     },
 
     'trial_offer_help': {
-        'subject': '[[firstName]], je suis inquiet(e) — vous n\'avez pas encore vu la partie essentielle',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Est-ce que FactPilot vous a déçu(e) ?</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Vous êtes en essai depuis plusieurs jours. Pendant ce temps, <strong>[[time_lost_week]]h supplémentaires</strong> sont parties en saisie manuelle — l'équivalent de <strong>[[time_lost_month]]h ce mois</strong>. Si vous n'avez pas encore vu de résultats concrets, c'est probablement l'une de ces trois raisons :</p>
-  
-    <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e2e8f0;">
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">A. Vous n'avez pas encore créé de dossier client</p>
-      <p style="font-size:13px;margin:0;">Solution : 5 minutes ce soir. "Dossiers" → "Nouveau dossier" → nom du client. Puis importez les factures d'un seul mois.</p>
-    
-    <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e2e8f0;">
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">B. Vous attendez d'avoir le temps de faire ça "correctement"</p>
-      <p style="font-size:13px;margin:0;">Il n'y a pas de façon incorrecte. Importez n'importe quoi — 10 factures d'un client. L'IA s'occupe du reste.</p>
-    </div>
-    <div>
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">C. Vous êtes bloqué(e) sur un point technique</p>
-      <p style="font-size:13px;margin:0;">Répondez à cet email en décrivant où vous êtes bloqué(e). Je vous aide personnellement dans les 2 heures.</p>
-    </div>
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Les cabinets qui importent leur premier mois complet voient en moyenne <strong>4h récupérées dès la première utilisation</strong>. Pas en théorie — en pratique, ce jour-là.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Il reste peu de jours à votre essai. Ne le laissez pas expirer sans avoir vu ce que FactPilot peut faire pour <em>votre</em> cabinet.</p>
-  ''' + cta('Reprendre mon essai →', '[[app_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Si vous préférez que je vous montre FactPilot en direct, répondez "DEMO" à cet email. Je vous propose un créneau de 20 minutes.</p>''')
+        'subject': 'Question rapide',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Vous êtes en essai depuis plusieurs jours. Je voulais vous poser une question directe : est-ce qu'il y a quelque chose qui vous a bloqué(e) ?</p>
+  <p style="{P}">A) Vous n'avez pas encore eu le temps de créer un dossier — répondez "A", je vous guide en 10 minutes par email.</p>
+  <p style="{P}">B) Vous avez essayé mais quelque chose n'a pas fonctionné comme prévu — répondez "B" avec ce que vous avez vu, je corrige le problème aujourd'hui.</p>
+  <p style="{P}">C) Vous avez utilisé FactPilot mais vous n'êtes pas convaincu(e) — répondez "C", dites-moi ce qu'il manque. Je vous réponds personnellement, pas un bot.</p>
+  <p style="{P}">Un seul mot suffit. Je lis chaque réponse moi-même.</p>
+  <p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:0;color:#374151;">— Marc, FactPilot</p>'''),
     },
 
-    # ─── TRIAL ENDING ────────────────────────────────────────────────────────
+
+    # ─── TRIAL ENDING — 2 emails ──────────────────────────────────────────────
+
     'trial_urgency': {
-        'subject': '[[firstName]], dans 48h vous recommencez à saisir manuellement',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Votre essai se termine dans 2 jours, [[firstName]]</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Dans 48h, si vous n'avez pas activé un plan, vos imports automatiques s'arrêtent. Vos rapprochements IA sont désactivés. Et vous recommencez à faire manuellement ce que FactPilot faisait pour vous.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Concrètement, ça signifie :</p>
-  
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="padding:8px 0;font-size:14px;"><strong>[[time_lost_week]]h</strong> perdues en saisie chaque semaine</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 0;font-size:14px;border-top:1px solid #fde68a;"><strong>[[time_lost_year]]h</strong> perdues cette année</td>
-      </tr>
-      <tr>
-        <td style="padding:8px 0;font-size:14px;border-top:1px solid #fde68a;"><strong>~[[annual_loss]]€</strong> de manque à gagner annuel</td>
-      </tr>
-    </table>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Le plan Starter coûte <strong>29€/mois</strong>. À [[annual_loss]]€ perdus par an, l'abonnement annuel se rembourse en moins de 5 jours de travail récupéré.</p>
-  
-    <p style="font-size:14px;margin:0 0 8px 0;"><strong>Objection : "Je ne suis pas sûr(e) d'en avoir besoin à long terme."</strong></p>
-    <p style="font-size:14px;margin:0;">Pas de contrat d'engagement. Annulez à tout moment en un clic. Si dans 30 jours FactPilot ne vous a pas fait gagner au moins 5h, demandez un remboursement.</p>
-  
-  
-    <p style="font-size:14px;margin:0 0 8px 0;"><strong>Objection : "29€ c'est un budget que je n'ai pas prévu."</strong></p>
-    <p style="font-size:14px;margin:0;">Comparez : une heure de votre temps facturé vaut entre 80€ et 150€. FactPilot vous en fait gagner au minimum 10 par mois. Le calcul est simple.</p>
-  
-  ''' + cta('Activer mon plan — 29€/mois →', '[[upgrade_url]]') + '''
-  <p style="font-size:13px;margin:0;">Sans engagement · Annulation en 1 clic · Garantie satisfait ou remboursé 30 jours</p>''')
+        'subject': 'Votre essai se termine dans 48h',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Dans 48h, si vous n'avez pas activé un plan, la collecte automatique s'arrête. FactPilot cesse de surveiller les boîtes email de vos clients, le rapprochement automatique est désactivé, les pushs vers votre logiciel ne se font plus. Vous recommencez à ouvrir des emails un par un, télécharger des pièces jointes, saisir ligne par ligne.</p>
+  <p style="{P}">Le plan Starter est à 29€/mois. À [[annual_loss]]€ de temps non facturé par an sur [[time_lost_week]]h/semaine de saisie manuelle, l'abonnement se rembourse en quelques jours de travail récupéré. Sans engagement, annulation en un clic, garantie satisfait ou remboursé 30 jours.</p>
+  ''' + cta('Activer mon plan — 29€/mois →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Pas sûr(e) encore ? Répondez à cet email. On trouvera la bonne formule pour votre cabinet.</p>'''),
     },
 
     'trial_last_chance': {
-        'subject': '[[firstName]], votre accès expire ce soir à minuit',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Dernière chance, [[firstName]]</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Ce soir à minuit, votre accès FactPilot passe en lecture seule. Voici ce qui s'éteint :</p>
-  <ul style="font-size:14px;padding-left:20px;margin:0 0 24px 0;">
-    <li style="margin-bottom:8px;">Import automatique des factures depuis les boîtes email de vos clients</li>
-    <li style="margin-bottom:8px;">Rapprochement bancaire IA (95% de taux de correspondance automatique)</li>
-    <li style="margin-bottom:8px;">Export vers votre logiciel comptable</li>
-    <li>Connexion bancaire temps réel</li>
-  </ul>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Demain matin, vous recommencez à ouvrir des PDFs un par un. À entrer des chiffres à la main. À aligner des colonnes Excel.</p>
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"J'avais failli laisser passer mon essai. Je me suis dit que j'activerais 'plus tard'. Je n'ose pas imaginer si j'avais attendu."</p>
-    <p style="font-size:13px;margin:0;">— Isabelle C., 33 clients, utilise FactPilot depuis 11 mois</p>
-  
-  
-    <p style="font-size:18px;font-weight:700;margin:0;">Offre dernière chance : -20% sur votre premier mois</p>
-    <p style="font-size:13px;margin:8px 0 0 0;">Code <strong>DERNIERE20</strong> · Valable uniquement aujourd'hui</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Soit <strong>23,20€</strong> pour votre premier mois au lieu de 29€. Ensuite, tarif normal. Aucun engagement.</p>
-  ''' + cta('Activer mon abonnement avec -20% →', '[[upgrade_url]]') + '''
-  <p style="font-size:13px;margin:0;">Code DERNIERE20 · Valable 24h · Annulation sans conditions</p>''')
+        'subject': 'Dernier email — votre accès expire ce soir',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Ce soir à minuit, votre accès FactPilot passe en lecture seule. La collecte IMAP, le rapprochement automatique et les exports s'arrêtent.</p>
+  <p style="{P}">Isabelle C. (33 clients) avait failli laisser passer son essai. Elle m'a écrit 3 semaines après : "J'avais dit que j'activerais plus tard. Ces 3 semaines m'ont coûté 18h de saisie. Je n'ose pas imaginer si j'avais attendu plus longtemps." Elle utilise FactPilot depuis 11 mois maintenant.</p>
+  <p style="{P}">Offre dernière chance : -20% sur votre premier mois avec le code <strong>DERNIERE20</strong> — valable uniquement aujourd'hui. Soit 23,20€ au lieu de 29€. Aucun engagement.</p>
+  ''' + cta('Activer avec -20% (code DERNIERE20) →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Code DERNIERE20 · Valable 24h · Annulation sans conditions</p>'''),
     },
 
-    # ─── TRIAL EXPIRED ───────────────────────────────────────────────────────
+
+    # ─── TRIAL EXPIRED — 3 emails ─────────────────────────────────────────────
+
     'expired_access_suspended': {
-        'subject': '[[firstName]], il va falloir recommencer la saisie manuellement',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Votre essai est terminé, [[firstName]]</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Votre période d'essai de 7 jours est arrivée à son terme. Votre compte est maintenant en mode lecture seule.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Ce que ça signifie concrètement : à partir d'aujourd'hui, vous revenez à la saisie manuelle. Facture par facture. Ligne par ligne. Pour chacun de vos clients.</p>
-  
-    <div style="font-size:13px;font-weight:600;text-transform:uppercase;margin-bottom:8px;">Ce que vous laissez derrière
-    <div style="font-size:32px;font-weight:700;">[[time_lost_week]]h/semaine</div>
-    <div style="font-size:14px;margin-top:6px;">qui retournent à la saisie manuelle</div>
-    <div style="font-size:13px;margin-top:12px;border-top:1px solid #fecaca;padding-top:12px;">Soit <strong>[[time_lost_year]]h/an</strong> · <strong>~[[annual_loss]]€</strong> de manque à gagner</div>
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Vos dossiers, factures importées, et rapprochements sont tous encore là. Il suffit de choisir un plan pour tout réactiver instantanément.</p>
-  
-    <p style="font-size:14px;margin:0;"><strong>Plan Starter : 29€/mois.</strong> Moins que le coût d'une heure de votre temps. Sans engagement. Annulation en 1 clic.</p>
-  
-  ''' + cta('Réactiver FactPilot maintenant →', '[[upgrade_url]]') + '''
-  <p style="font-size:13px;margin:0 0 16px 0;">Vos données sont intactes · Réactivation instantanée · Garantie 30 jours</p>
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Si c'est une question de prix, répondez à cet email. On trouvera quelque chose.</p>''')
+        'subject': 'Votre accès FactPilot est suspendu',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Votre période d'essai est terminée. Votre compte est en lecture seule — la collecte automatique, le rapprochement et les exports sont désactivés. Vous revenez à la saisie manuelle : [[time_lost_week]]h par semaine, [[time_lost_year]]h par an.</p>
+  <p style="{P}">Vos dossiers, factures importées et rapprochements sont intacts. La réactivation est instantanée — vous reprenez exactement là où vous vous êtes arrêté(e), sans rien reconfigurer.</p>
+  <p style="{P}">Plan Starter à 29€/mois. Moins d'une heure de votre temps facturable. Sans engagement.</p>
+  ''' + cta('Réactiver FactPilot →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Si c'est une question de prix, répondez à cet email. Je verrai ce qu'on peut faire.</p>'''),
     },
 
     'expired_special_offer': {
-        'subject': '[[firstName]], une offre réservée aux comptes qui ont essayé (valable 7 jours)',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">On aimerait vous revoir, [[firstName]]</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Votre essai est terminé depuis quelques jours. Et vous êtes probablement en train de faire exactement ce que vous faisiez avant — saisir des factures manuellement.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Cécile avait aussi laissé son essai expirer. Elle a attendu 3 semaines — "le bon moment". Quand elle est revenue, sa première réaction a été : <em>"Pourquoi j'ai attendu ?"</em></p>
-  
-    <p style="font-size:15px;font-style:italic;margin:0 0 8px 0;">"Ces 3 semaines sans FactPilot m'ont coûté 18h de saisie. Si j'avais activé l'abonnement directement, j'avais amplement rentabilisé. La leçon est apprise."</p>
-    <p style="font-size:13px;margin:0;">— Cécile R., 41 clients, revenue après 3 semaines</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Depuis votre essai, on a aussi amélioré le moteur de rapprochement bancaire (+12% de précision) et ajouté la connexion directe aux boîtes email de vos clients.</p>
-  
-    <p style="font-size:22px;font-weight:700;margin:0;">-30% sur les 3 premiers mois</p>
-    <p style="font-size:14px;margin:8px 0 4px 0;">Code : <strong>RETOUR30</strong></p>
-    <p style="font-size:13px;margin:0;">Valable 7 jours · Uniquement pour les comptes ayant fait un essai</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;"><strong>20,30€/mois</strong> au lieu de 29€ pendant 3 mois, puis tarif normal. Vos données sont toujours là — réactivation instantanée.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Le code expire dans 7 jours. Après ça, il disparaît.</p>
-  ''' + cta('Réactiver à -30% →', '[[upgrade_url]]') + '''
-  <p style="font-size:13px;margin:0;">Code RETOUR30 · 7 jours restants · Sans engagement</p>''')
+        'subject': 'Re : offre réservée aux cabinets ayant testé FactPilot (-30%)',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Cécile R. a laissé son essai expirer. Elle a attendu 3 semaines "le bon moment". Quand elle est revenue, elle m'a écrit : "Ces 3 semaines m'ont coûté 18h de saisie. Si j'avais activé directement, j'avais largement rentabilisé. La leçon est apprise." Elle gère aujourd'hui 41 clients avec FactPilot.</p>
+  <p style="{P}">Depuis votre essai, on a aussi amélioré le moteur de rapprochement bancaire (95% → 97% de correspondances automatiques) et ajouté l'intake WhatsApp — vos clients peuvent désormais vous transmettre des pièces par photo via WhatsApp, elles s'importent directement dans le bon dossier.</p>
+  <p style="{P}">Offre réservée aux comptes ayant fait un essai : <strong>-30% sur les 3 premiers mois</strong> avec le code <strong>RETOUR30</strong> — soit 20,30€/mois au lieu de 29€. Valable 7 jours. Vos données sont toujours là, réactivation instantanée.</p>
+  ''' + cta('Réactiver à -30% (code RETOUR30) →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Code RETOUR30 · 7 jours · Sans engagement</p>'''),
     },
 
     'expired_final': {
-        'subject': '[[firstName]], vos données seront supprimées le [[deletion_date]]',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Action requise avant le [[deletion_date]]</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Conformément à notre politique de rétention des données, les comptes inactifs depuis 30 jours sont supprimés. Le <strong>[[deletion_date]]</strong>, votre compte sera effacé définitivement.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Seront supprimés : vos dossiers clients, toutes les factures importées, les rapprochements effectués, vos paramètres d'intégration.</p>
-  
-    <p style="font-size:15px;font-weight:600;margin:0 0 4px 0;">Suppression prévue dans 23 jours</p>
-    <p style="font-size:13px;margin:0;">Après cette date, aucune récupération possible</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;"><strong>Vous avez deux options :</strong></p>
-  
-    <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e2e8f0;">
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">Option 1 (recommandée) : Réactivez votre compte</p>
-      <p style="font-size:13px;margin:0;">Toutes vos données sont intactes. Réactivation instantanée. Offre spéciale dernière chance disponible ci-dessous.</p>
-    
-    <div>
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">Option 2 : Téléchargez vos données</p>
-      <p style="font-size:13px;margin:0;">Connectez-vous à votre compte et exportez vos dossiers avant le [[deletion_date]].</p>
-    </div>
-  </div>
-  
-    <p style="font-size:15px;font-weight:600;margin:0 0 4px 0;">Offre ultime : -25% sur le premier mois</p>
-    <p style="font-size:13px;margin:0;">Code <strong>ULTIME25</strong> · Valable jusqu'au [[deletion_date]]</p>
-  
-  ''' + cta('Réactiver mon compte avant suppression →', '[[upgrade_url]]'))
+        'subject': 'Vos données seront supprimées le [[deletion_date]]',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Conformément à notre politique de rétention, les comptes inactifs depuis 30 jours sont supprimés. Le <strong>[[deletion_date]]</strong>, votre compte sera effacé définitivement — dossiers, factures importées, rapprochements, paramètres d'intégration.</p>
+  <p style="{P}">Deux options avant cette date. Option 1 (recommandée) : réactivez votre compte — toutes vos données sont intactes, réactivation instantanée, code <strong>ULTIME25</strong> pour -25% sur le premier mois. Option 2 : connectez-vous et exportez vos dossiers avant le [[deletion_date]].</p>
+  ''' + cta('Réactiver avant suppression (code ULTIME25) →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Code ULTIME25 · Valable jusqu'au [[deletion_date]] · Sans engagement</p>'''),
     },
 
-    # ─── PAYING ──────────────────────────────────────────────────────────────
+
+    # ─── PAYING — 3 emails ────────────────────────────────────────────────────
+
     'paying_confirmation': {
-        'subject': '[[firstName]], bienvenue dans le club — voici votre prochain cap',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Excellent choix, [[firstName]]. Votre plan <strong>[[plan_name]]</strong> est actif.</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Vous venez de rejoindre les cabinets qui ont décidé de travailler autrement. La saisie manuelle, c'est terminé.</p>
-  
-    <p style="font-size:14px;font-weight:600;margin:0 0 12px 0;">Ce qui est maintenant actif sur votre compte :</p>
-    <ul style="font-size:14px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:8px;">Import automatique illimité de factures</li>
-      <li style="margin-bottom:8px;">Rapprochement bancaire IA (95% de correspondance automatique)</li>
-      <li style="margin-bottom:8px;">Export direct vers votre logiciel comptable</li>
-      <li>Support prioritaire — réponse sous 2h, pas sous 48h</li>
-    </ul>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:8px;"><strong>Une seule chose à faire maintenant :</strong> connectez la boîte email de votre premier client. C'est là que la vraie magie commence — FactPilot récupérera ses factures fournisseurs automatiquement, sans qu'il ait à faire quoi que ce soit.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Votre facture est disponible dans votre espace de facturation.</p>
-  ''' + cta('Connecter ma première boîte email →', '[[app_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Vous connaissez un confrère qui passe encore ses week-ends en saisie ? Recommandez FactPilot et gagnez 20% de commission sur son abonnement tant qu'il reste client. <a href="[[app_url]]/settings/affiliate" style="text-decoration:underline;">Voir le programme ambassadeur</a></p>''',
-        'Paiement confirmé — votre plan est actif')
+        'subject': 'Abonnement confirmé — 1 chose à faire maintenant',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Votre plan <strong>[[plan_name]]</strong> est actif. La collecte automatique, le rapprochement IA et les exports sont opérationnels sans limite.</p>
+  <p style="{P}">La chose la plus rentable à faire aujourd'hui : connecter la boîte email de votre premier client dans son dossier. C'est là que la valeur devient immédiate — FactPilot commence à surveiller sa boîte toutes les 8 minutes, les factures fournisseurs arrivent directement dans le dossier sans intervention de votre part. Vos clients qui utilisent WhatsApp pour transmettre des pièces peuvent aussi être activés depuis les paramètres du dossier.</p>
+  <p style="{P}">Votre facture est disponible dans votre espace de facturation.</p>
+  ''' + cta('Connecter ma première boîte email →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Vous connaissez un confrère qui passe encore ses nuits à saisir des factures ? Notre programme ambassadeur vous verse 20% de commission récurrente sur son abonnement tant qu'il reste client. <a href="[[app_url]]/settings/affiliate" style="text-decoration:underline;">Voir le programme</a></p>'''),
     },
 
     'paying_onboarding': {
-        'subject': '[[firstName]], la fonctionnalité que les meilleurs cabinets activent en premier',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Vous utilisez FactPilot depuis quelques jours. Voici ce que vous manquez peut-être.</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Les cabinets qui tirent le plus de valeur de FactPilot ont en commun une chose : ils ont activé ces trois fonctionnalités dans leurs deux premières semaines.</p>
-  <div style="margin:24px 0;">
-    
-      <h3 style="font-size:15px;margin:0 0 8px 0;">1. Collecte automatique par email client</h3>
-      <p style="font-size:13px;margin:0 0 8px 0;">Chaque client reçoit une adresse email dédiée ([[prenom.client]]@inbox.factpilot.ai). Il forward ses factures fournisseurs à cette adresse — FactPilot les importe automatiquement dans son dossier.</p>
-      <p style="font-size:13px;font-weight:600;margin:0;">Résultat : 0 email de relance, 0 oubli, 0 saisie.</p>
-    
-    
-      <h3 style="font-size:15px;margin:0 0 8px 0;">2. Portail client en marque blanche</h3>
-      <p style="font-size:13px;margin:0 0 8px 0;">Envoyez à vos clients un lien sécurisé pour qu'ils déposent directement leurs pièces. Plus de pièces jointes perdues dans les emails, plus de relances manuelles.</p>
-      <p style="font-size:13px;font-weight:600;margin:0;">Résultat : vos clients sont autonomes, vous supervisez.</p>
-    
-    
-      <h3 style="font-size:15px;margin:0 0 8px 0;">3. Alertes intelligentes</h3>
-      <p style="font-size:13px;margin:0 0 8px 0;">FactPilot vous alerte si un doublon est détecté, si un relevé bancaire d'un client est manquant, ou si une facture dépasse un seuil inhabituel.</p>
-      <p style="font-size:13px;font-weight:600;margin:0;">Résultat : vous savez avant votre client qu'il y a un problème.</p>
-    
-  </div>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Ces trois fonctionnalités ensemble représentent en moyenne <strong>6h de plus récupérées par semaine</strong> pour les cabinets de votre taille.</p>
-  ''' + cta('Activer ces fonctionnalités →', '[[app_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Des questions sur la mise en place du portail client ? Répondez à cet email. Je vous envoie le guide de configuration en 5 minutes.</p>''')
+        'subject': '3 fonctionnalités que les meilleurs cabinets activent en premier',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Les cabinets qui tirent le plus de valeur de FactPilot ont configuré ces trois points dans leurs deux premières semaines.</p>
+  <p style="{P}">Premier : l'adresse email dédiée par client. Chaque dossier reçoit une adresse @inbox.factpilot.fr — votre client la donne à ses fournisseurs comme adresse de facturation. Les factures arrivent directement dans le dossier sans passer par votre boîte. Zéro relance, zéro transfert manuel.</p>
+  <p style="{P}">Deuxième : le push automatique vers votre logiciel. Une fois les rapprochements validés, FactPilot peut pousser les écritures directement dans Pennylane, Sage, Cegid, Quadratus ou ACD — format PCG, prêt à l'import, conforme FEC. Pas de double saisie entre FactPilot et votre logiciel.</p>
+  <p style="{P}">Troisième : les alertes de cohérence. FactPilot vous signale les doublons, les relevés bancaires manquants et les factures hors seuil habituel — avant que votre client s'en aperçoive.</p>
+  ''' + cta('Activer ces fonctionnalités →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Une question sur le push vers votre logiciel spécifique ? Répondez à cet email. Je vous envoie le guide de configuration.</p>'''),
     },
 
     'paying_review': {
-        'subject': '[[firstName]], voici ce que FactPilot vous a rapporté ce mois-ci',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Un mois avec FactPilot — votre bilan chiffré</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Un mois s'est écoulé. Voici ce que l'IA a traité pour vous pendant que vous faisiez autre chose :</p>
-  
-    <p style="font-size:13px;font-weight:600;text-transform:uppercase;margin:0 0 16px 0;">Vos statistiques ce mois</p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="padding:8px 0;font-size:14px;">Factures traitées automatiquement</td>
-        <td style="padding:8px 0;font-size:14px;font-weight:700;text-align:right;"><strong>[[invoices_count]]</strong></td>
-      </tr>
-      <tr>
-        <td style="padding:8px 0;font-size:14px;border-top:1px solid #d1fae5;">Rapprochements automatiques validés</td>
-        <td style="padding:8px 0;font-size:14px;font-weight:700;text-align:right;border-top:1px solid #d1fae5;"><strong>[[matches_count]]</strong></td>
-      </tr>
-      <tr>
-        <td style="padding:8px 0;font-size:14px;border-top:1px solid #d1fae5;">Temps estimé économisé</td>
-        <td style="padding:8px 0;font-size:22px;font-weight:700;text-align:right;border-top:1px solid #d1fae5;"><strong>[[time_saved]]h</strong></td>
-      </tr>
-    </table>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;"><strong>[[time_saved]] heures</strong> que vous avez pu consacrer à vos clients — pas à leurs factures. À votre TJM, c'est une valeur réelle créée ce mois-ci.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Comment ça se passe de votre côté ? Répondez à cet email — votre retour m'aide directement à améliorer le produit. Je lis tous les messages.</p>
-  
-    <p style="font-size:14px;margin:0 0 4px 0;font-weight:600;">Vous connaissez un confrère qui passe encore ses nuits à saisir ?</p>
-    <p style="font-size:13px;margin:0;">Recommandez FactPilot et gagnez <strong>20% de commission récurrente</strong> sur son abonnement. Pour 5 clients recommandés, c'est votre propre abonnement payé.</p>
-  
-  ''' + cta('Devenir ambassadeur FactPilot →', '[[app_url]]/settings/affiliate') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Si FactPilot vous a vraiment aidé ce mois-ci, un avis sur Google ou Trustpilot nous aidera énormément. <a href="[[app_url]]/review" style="text-decoration:underline;">Laisser un avis (2 minutes)</a></p>''')
+        'subject': 'Votre bilan d\'un mois : [[time_saved]]h économisées',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Un mois s'est écoulé. Voici ce que FactPilot a traité pour vous pendant ce temps : [[invoices_count]] factures importées et extraites automatiquement, [[matches_count]] rapprochements bancaires validés sans intervention manuelle, [[time_saved]]h de saisie et de rapprochement économisées.</p>
+  <p style="{P}">[[time_saved]] heures que vous avez pu consacrer à vos clients — pas à leurs factures. Comment ça se passe de votre côté ? Répondez à cet email, je lis tous les retours personnellement. Votre expérience influence directement ce qu'on développe ensuite.</p>
+  <p style="{P}">Et si FactPilot vous a vraiment aidé ce mois-ci : vous connaissez probablement des confrères dans la même situation que vous étiez il y a un mois. Notre programme ambassadeur vous verse 20% de commission récurrente sur chaque abonnement recommandé.</p>
+  ''' + cta('Devenir ambassadeur FactPilot →', '[[app_url]]/settings/affiliate') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Un avis sur Google ou Trustpilot nous aide énormément. Si vous avez 2 minutes : <a href="[[app_url]]/review" style="text-decoration:underline;">laisser un avis</a>.</p>'''),
     },
 
-    # ─── CHURNED ─────────────────────────────────────────────────────────────
+
+    # ─── CHURNED — 3 emails ───────────────────────────────────────────────────
+
     'churned_confirmation': {
-        'subject': 'Annulation confirmée, [[firstName]] — mais voici ce qui se passe maintenant',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">Votre abonnement FactPilot est annulé</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Votre annulation a bien été prise en compte. Je suis désolé de vous voir partir.</p>
-  
-    <p style="font-size:14px;font-weight:600;margin:0 0 8px 0;">Ce qui se passe :</p>
-    <ul style="font-size:14px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:8px;">Votre accès reste actif jusqu'à la fin de la période déjà payée</li>
-      <li style="margin-bottom:8px;">Vos données sont conservées 30 jours après expiration</li>
-      <li>Vous pouvez réactiver à tout moment — vos dossiers seront intacts</li>
-    </ul>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">À partir de maintenant, la saisie manuelle reprend. [[time_lost_week]]h par semaine que vous passerez à faire ce que FactPilot faisait pour vous.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Si vous avez changé d'avis, ou si c'est une erreur :</p>
-  ''' + cta('Réactiver mon abonnement →', '[[upgrade_url]]') + '''
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Si c'est une question de prix ou de fonctionnalité manquante, répondez à cet email. Je verrai ce qu'on peut faire pour vous.</p>''')
+        'subject': 'Annulation confirmée',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Votre annulation est prise en compte. Je suis désolé de vous voir partir.</p>
+  <p style="{P}">Votre accès reste actif jusqu'à la fin de la période payée. Vos dossiers, factures et rapprochements sont conservés 30 jours après expiration. Si vous voulez revenir, tout sera intact — réactivation instantanée, rien à reconfigurer.</p>
+  <p style="{P}">À partir de maintenant, la collecte manuelle reprend : [[time_lost_week]]h par semaine que FactPilot faisait pour vous. Si c'est une erreur ou si vous avez changé d'avis, le bouton ci-dessous suffit.</p>
+  ''' + cta('Réactiver mon abonnement →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Si c'est une question de prix ou de fonctionnalité manquante, répondez à cet email. On trouvera peut-être quelque chose.</p>'''),
     },
 
     'churned_feedback': {
-        'subject': '[[firstName]], une seule question (répondez en 10 secondes)',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">[[firstName]], pourquoi avez-vous annulé ?</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Je ne vous enverrai plus d'emails commerciaux. Mais votre retour a une vraie valeur pour moi.</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Répondez simplement avec le numéro de la raison principale :</p>
-  
-    <ol style="font-size:15px;padding-left:20px;margin:0;">
-      <li style="margin-bottom:14px;"><strong>Trop cher</strong> pour mon usage actuel</li>
-      <li style="margin-bottom:14px;"><strong>Fonctionnalité manquante</strong> — il me manquait : ___</li>
-      <li style="margin-bottom:14px;"><strong>Pas eu le temps</strong> de vraiment configurer et tester</li>
-      <li style="margin-bottom:14px;"><strong>J'utilise un autre outil</strong> — lequel : ___</li>
-      <li style="margin-bottom:14px;"><strong>Trop compliqué</strong> à mettre en place</li>
-      <li>Autre : ___</li>
-    </ol>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Un seul chiffre suffit. Je lis chaque réponse personnellement et j'en tiens compte dans nos prochaines évolutions.</p>
-  <p style="font-size:14px;margin:0;border-top:1px solid #f1f5f9;padding-top:16px;"><strong>P.S.</strong> — Si c'est une question de prix (réponse 1), répondez "1" — j'ai peut-être une solution qui correspond mieux à votre cabinet.</p>''')
+        'subject': 'Une question (10 secondes)',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Je ne vous enverrai plus d'emails commerciaux. Mais votre retour a une vraie valeur pour moi — il influence directement ce qu'on améliore.</p>
+  <p style="{P}">Répondez simplement avec le numéro de la raison principale :</p>
+  <p style="{P}">1. Trop cher pour mon usage actuel</p>
+  <p style="{P}">2. Il manquait une fonctionnalité précise : ___</p>
+  <p style="{P}">3. Je n'ai pas eu le temps de vraiment configurer et tester</p>
+  <p style="{P}">4. J'utilise un autre outil : ___</p>
+  <p style="{P}">5. Trop compliqué à mettre en place</p>
+  <p style="{P}">6. Autre : ___</p>
+  <p style="{P}">Un seul chiffre suffit. Je lis chaque réponse personnellement.</p>
+  <p style="font-family:Helvetica,sans-serif;font-size:15px;line-height:1.6;margin:0;color:#374151;">— Marc, FactPilot</p>
+  <p style="{PS}"><strong>P.S.</strong> — Si c'est la réponse 1 (prix), répondez "1" — j'ai peut-être une formule qui correspond mieux à la taille de votre cabinet.</p>'''),
     },
 
+    # ─── REVENUE — 6 emails (event-triggered) ─────────────────────────────────
+
+    'payment_failed_1': {
+        'subject': 'Problème de paiement — suspension dans 3 jours',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Nous n'avons pas pu débiter votre plan <strong>[[plan_name]]</strong> aujourd'hui. Dans 3 jours, si le paiement n'est pas régularisé, la collecte IMAP s'arrête, le rapprochement automatique est désactivé et les pushs vers votre logiciel ne se font plus.</p>
+  <p style="{P}">Causes fréquentes : carte expirée, adresse de facturation incorrecte ou limite dépassée. La mise à jour prend 30 secondes.</p>
+  ''' + cta('Mettre à jour mon paiement →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Bloqué(e) ? Répondez à cet email. On règle ça en 5 minutes.</p>'''),
+    },
+
+    'payment_failed_2': {
+        'subject': 'Re : paiement toujours échoué — suspension dans 24h',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Deuxième tentative échouée. Dans 24h, FactPilot passe en lecture seule — la collecte automatique et le rapprochement s'arrêtent. Vous revenez à la saisie manuelle.</p>
+  <p style="{P}">Vos données restent intactes. Dès que le paiement est régularisé, tout repart instantanément. 30 secondes pour mettre à jour votre carte ou passer à PayPal.</p>
+  ''' + cta('Régulariser mon paiement →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Répondez maintenant si vous avez besoin d'aide. On règle ça ce soir.</p>'''),
+    },
+
+    'payment_failed_3': {
+        'subject': 'Dernier avis — votre accès se suspend ce soir',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Dernière tentative échouée. Ce soir, votre accès FactPilot passe en lecture seule — collecte IMAP, rapprochement automatique et exports désactivés.</p>
+  <p style="{P}">Vos dossiers et données restent intacts. Réactivation instantanée dès régularisation du paiement.</p>
+  ''' + cta('Régulariser maintenant →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Un problème avec votre carte ? Répondez ici — on trouve une solution.</p>'''),
+    },
+
+    'card_expiring_soon': {
+        'subject': 'Votre carte bancaire expire dans 15 jours',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">La carte associée à votre abonnement [[plan_name]] expire dans 15 jours. Si elle n'est pas mise à jour avant votre prochaine échéance, le paiement échouera et la collecte automatique s'arrêtera.</p>
+  <p style="{P}">30 secondes pour mettre à jour vos coordonnées bancaires.</p>
+  ''' + cta('Mettre à jour ma carte →', '[[upgrade_url]]') + f'''
+  {SIG}'''),
+    },
+
+    'renewal_reminder_7d': {
+        'subject': 'Votre abonnement renouvelle dans 7 jours',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Votre plan <strong>[[plan_name]]</strong> (</strong>[[plan_price]]€/mois</strong>) renouvelle automatiquement dans 7 jours. Aucune action requise si tout est en ordre.</p>
+  <p style="{P}">Ce mois-ci : [[invoices_count]] factures traitées automatiquement, [[time_saved]]h économisées en saisie et rapprochement. Votre abonnement annuel se rembourse largement.</p>
+  <p style="{P}">Si vous souhaitez modifier votre plan, passer à l'annuel ou mettre à jour votre carte, c'est dans vos paramètres de facturation.</p>
+  {SIG}
+  <p style="{PS}"><a href="[[upgrade_url]]" style="text-decoration:underline;">Gérer mon abonnement</a></p>'''),
+    },
+
+    'quota_80_percent': {
+        'subject': '[[quota_percent]]% de votre quota utilisé ce mois',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Vous avez traité <strong>[[quota_used]] factures</strong> sur [[quota_limit]] autorisées ce mois ([[quota_percent]]% du quota). À ce rythme, vous atteindrez la limite avant la fin du mois — FactPilot cessera alors d'importer automatiquement les nouvelles pièces de vos clients.</p>
+  <p style="{P}">Pour éviter toute interruption, le plan supérieur augmente votre quota immédiatement — vos dossiers et configurations restent intacts, réactivation en un clic.</p>
+  ''' + cta('Augmenter mon quota →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Pas prêt(e) à upgrader ? Répondez à cet email — on peut voir ce qu'on peut faire sur le quota restant.</p>'''),
+    },
+
+
+    # ─── RETENTION — 7 emails (drip PAYING + low engagement) ─────────────────
+
+    'monthly_usage_report': {
+        'subject': 'Votre bilan [[report_month]] : [[invoices_count]] factures traitées',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Voici ce que FactPilot a traité pour vous en [[report_month]] :</p>
+  <p style="{P}">Factures importées et extraites automatiquement : [[invoices_count]]</p>
+  <p style="{P}">Rapprochements bancaires validés sans intervention : [[matches_count]]</p>
+  <p style="{P}">Heures de saisie et de rapprochement économisées : [[time_saved]]h</p>
+  <p style="{P}">[[time_saved]] heures que vous avez pu consacrer à vos clients — pas à leurs factures. Comment ça se passe de votre côté ? Répondez à cet email, je lis chaque retour personnellement et ça influence directement ce qu'on améliore.</p>
+  ''' + cta('Voir mon tableau de bord →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Si certains dossiers ont peu de factures traitées ce mois, vérifiez que la connexion IMAP est active dans les paramètres du dossier.</p>'''),
+    },
+
+    'educational_best_practices': {
+        'subject': '5 pratiques des cabinets à 97% de rapprochement automatique',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Après avoir analysé les cabinets qui tirent le plus de valeur de FactPilot, voici les 5 pratiques qui séparent ceux à 60% de rapprochement automatique de ceux à 97%.</p>
+  <p style="{P}">1. Activer l'IMAP sur 100% des dossiers actifs, pas seulement les plus gros. Les petits clients génèrent souvent le plus de pièces manquantes.</p>
+  <p style="{P}">2. Donner à chaque client son adresse @inbox.factpilot.fr comme adresse de facturation chez ses fournisseurs. Zéro relance, zéro oubli.</p>
+  <p style="{P}">3. Importer les relevés bancaires le 1er du mois, pas en fin de période. Le rapprochement sur données fraîches est plus précis.</p>
+  <p style="{P}">4. Valider les suggestions "en attente" une fois par semaine, pas à la fin du trimestre. Les correspondances ambiguës se clarifient mieux avec contexte récent.</p>
+  <p style="{P}">5. Activer le push automatique vers votre logiciel — les écritures partent directement dans Pennylane/Sage/Cegid dès la validation. Zéro double saisie.</p>
+  <p style="{P}">Quick win cette semaine : vérifiez combien de vos dossiers n'ont pas d'IMAP actif. C'est là que se cachent les heures récupérables.</p>
+  ''' + cta('Vérifier mes dossiers →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Une question sur l'une de ces pratiques ? Répondez à cet email, je vous aide à la mettre en place.</p>'''),
+    },
+
+    'educational_advanced_features': {
+        'subject': 'Vous utilisez 20% de FactPilot — voici les 80% restants',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">La plupart des cabinets configurent l'IMAP et s'arrêtent là. C'est environ 20% de ce que FactPilot peut faire. Les 80% restants — ceux qui multiplient le temps gagné — sont souvent ignorés pendant des mois.</p>
+  <p style="{P}">Premier point non activé le plus souvent : l'adresse @inbox.factpilot.fr dédiée par client. Votre client donne cette adresse à ses fournisseurs comme adresse de facturation. Ses factures arrivent directement dans son dossier sans passer par votre boîte, sans transfert manuel, sans oubli. Zéro relance.</p>
+  <p style="{P}">Deuxième : le push automatique vers votre logiciel. Une fois les rapprochements validés, FactPilot pousse les écritures dans Pennylane, Sage, Cegid, Quadratus ou ACD — format PCG, conforme FEC. Pas de double saisie entre FactPilot et votre logiciel.</p>
+  <p style="{P}">Troisième : le portail client en marque blanche. Vos clients déposent leurs pièces sur une interface à votre nom et à votre logo. FactPilot est invisible. Vous restez le professionnel de référence.</p>
+  ''' + cta('Activer ces fonctionnalités →', '[[app_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Une question sur le push vers votre logiciel spécifique ? Répondez ici, je vous envoie le guide de configuration.</p>'''),
+    },
+
+    'nps_survey_30d': {
+        'subject': 'FactPilot vous fait vraiment gagner du temps ?',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Vous utilisez FactPilot depuis un mois. Question directe : est-ce que ça vaut vraiment votre [[plan_price]]€/mois ?</p>
+  <p style="{P}">Pas besoin d'un long retour. Répondez simplement avec un chiffre de 0 à 10 : à quel point recommanderiez-vous FactPilot à un confrère ?</p>
+  <p style="{P}">0 = surtout pas · 10 = absolument</p>
+  <p style="{P}">Si votre réponse est en dessous de 7, dites-moi pourquoi. Je vous réponds personnellement et on cherche ce qui bloque ensemble. Si c'est 9 ou 10, j'aimerais comprendre ce qui a marché pour vous — ça aide d'autres cabinets dans la même situation.</p>
+  {SIG}'''),
+    },
+
+    'quarterly_check_in': {
+        'subject': '3 mois avec FactPilot — on fait le point ?',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Trois mois, c'est assez pour voir les vrais résultats — et assez pour laisser 30 à 50% de la valeur sur la table sans s'en rendre compte.</p>
+  <p style="{P}">Les cabinets qui font une revue trimestrielle avec nous doublent en général leur taux de rapprochement automatique et récupèrent 2 à 3h de plus par semaine dans les 30 jours qui suivent. Ce n'est pas une présentation commerciale — c'est une session de travail de 20 minutes sur vos chiffres réels.</p>
+  <p style="{P}">Ce qu'on regarde ensemble : vos dossiers avec le moins de factures traitées (les angles morts), vos suggestions "en attente" depuis plus de 30 jours (les correspondances faciles à valider), et les intégrations qui vous feraient gagner le plus de temps.</p>
+  ''' + cta('Planifier ma revue trimestrielle →', f'mailto:marc@factpilot.fr?subject=Revue trimestrielle - [[firstName]]') + f'''
+  {SIG}
+  <p style="{PS}">Vous préférez un échange asynchrone par email ? Répondez ici avec vos questions ou points de blocage. Je vous réponds sous 24h.</p>'''),
+    },
+
+    'low_engagement_re_spark': {
+        'subject': 'Quelques dossiers n\'ont pas d\'activité depuis 2 semaines',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Je vois que certains dossiers de votre cabinet n'ont pas eu de nouvelles factures traitées depuis 14 jours. Ce n'est pas forcément un problème — mais ça peut signifier que la connexion IMAP s'est interrompue sur quelques clients, ou que des pièces arrivent par un canal non encore configuré.</p>
+  <p style="{P}">Vérification rapide : ouvrez un dossier inactif dans FactPilot → paramètres → connexion email. Si le statut affiche "déconnecté", re-saisissez les identifiants IMAP. Ça prend 2 minutes et les factures manquantes arrivent dans l'heure.</p>
+  <p style="{P}">Si c'est autre chose — des clients qui envoient leurs pièces par WhatsApp ou par lien de dépôt plutôt que par email — répondez à cet email. Je vous aide à configurer le bon canal.</p>
+  ''' + cta('Vérifier mes dossiers →', '[[app_url]]') + f'''
+  {SIG}'''),
+    },
+
+    'paying_low_engagement_check_in': {
+        'subject': 'Vous payez [[plan_price]]€/mois — est-ce que ça vaut le coup ?',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Je vois que l'activité sur votre compte FactPilot est faible depuis quelques semaines. Vous payez [[plan_price]]€/mois pour un outil qui devrait vous faire gagner plusieurs heures par semaine — si ce n'est pas le cas, quelque chose ne va pas et je veux comprendre pourquoi.</p>
+  <p style="{P}">Trois raisons fréquentes pour un usage faible : connexion IMAP non configurée sur les dossiers actifs (les factures n'arrivent pas), relevés bancaires non importés (pas de rapprochement possible), ou fonctionnalités non découvertes (push auto, @inbox dédié).</p>
+  <p style="{P}">Répondez à cet email en me disant où vous en êtes. Je vous aide personnellement à débloquer la situation — ou on trouve une formule mieux adaptée à votre cabinet.</p>
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Si vous avez eu des difficultés techniques, répondez "problème technique". Je prends en charge le diagnostic moi-même.</p>'''),
+    },
+
+
+    # ─── EXPANSION — 2 emails (event-triggered) ───────────────────────────────
+
+    'upsell_starter_to_pro': {
+        'subject': 'Vous avez atteint [[quota_used]] factures — quota dépassé',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Votre plan [[plan_name]] autorise [[quota_limit]] factures par mois. Vous avez traité [[quota_used]] factures ce mois-ci — vous avez dépassé votre quota. FactPilot a cessé d'importer automatiquement les nouvelles pièces de vos clients. Celles qui arrivent maintenant ne seront pas traitées jusqu'au mois prochain ou jusqu'à un upgrade.</p>
+  <p style="{P}">C'est un bon problème : ça signifie que votre cabinet tourne bien et que la demande dépasse ce que le plan Starter peut absorber. Le plan Pro passe le quota à 2 000 factures/mois et débloque également le push automatique vers votre logiciel comptable et le portail client en marque blanche.</p>
+  <p style="{P}">Upgrade en un clic. Vos dossiers et configurations restent intacts. Aucune reconfiguration.</p>
+  ''' + cta('Passer au plan Pro →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Des questions sur ce qui change avec le plan Pro ? Répondez ici, je vous détaille les différences en 2 minutes.</p>'''),
+    },
+
+    'upsell_monthly_to_annual': {
+        'subject': 'Vous payez pour 14 mois — voici comment n\'en payer que 12',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Vous utilisez FactPilot depuis plusieurs mois et ça fonctionne. Ce qui signifie que vous allez continuer — alors pourquoi payer mois par mois ?</p>
+  <p style="{P}">En passant à l'annuel, vous économisez 2 mois d'abonnement — soit <strong>58€ de moins par an</strong> sur le plan Starter. Votre tarif est verrouillé (pas de hausse de prix tant que vous restez sur ce plan), et vous bénéficiez d'une garantie remboursement 30 jours si vous changez d'avis.</p>
+  <p style="{P}">Un seul clic depuis vos paramètres de facturation. Le reste ne change pas.</p>
+  ''' + cta('Passer à l\'annuel →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Cette offre n'a pas de date d'expiration, mais le prix annuel peut changer lors des prochaines révisions tarifaires. Verrouiller maintenant vous protège.</p>'''),
+    },
+
+
+    # ─── GROWTH — 2 emails (drip PAYING J+50/J+60) ────────────────────────────
+
+    'referral_program_intro': {
+        'subject': 'Gagnez 20% sur chaque confrère que vous recommandez',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Vous connaissez probablement des confrères qui passent encore leurs soirées à saisir des factures manuellement. Vous avez résolu ce problème — votre recommandation est la chose la plus utile que vous puissiez leur dire.</p>
+  <p style="{P}">Notre programme ambassadeur vous verse <strong>20% de commission récurrente</strong> sur chaque abonnement recommandé, tant que le confrère reste client. Pour 5 cabinets recommandés sur plan Starter, c'est 29€/mois — soit votre propre abonnement financé par vos recommandations.</p>
+  <p style="{P}">Accès immédiat depuis votre tableau de bord. Votre lien unique est prêt.</p>
+  ''' + cta('Accéder au programme ambassadeur →', '[[app_url]]/settings/affiliate') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Pas de contrat, pas de quota minimum. Vous recommandez quand vous voulez, vous êtes payé(e) tant qu'ils restent.</p>'''),
+    },
+
+    'review_request': {
+        'subject': 'Aidez un confrère à prendre la bonne décision (2 min)',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">En ce moment, un expert-comptable comme vous cherche sur Google une solution pour automatiser la collecte des factures de ses clients. Il lit des avis, compare des outils, essaie de comprendre ce qui marche vraiment pour un cabinet indépendant. Votre retour d'expérience est exactement ce dont il a besoin pour décider.</p>
+  <p style="{P}">Ce mois-ci, FactPilot a traité [[invoices_count]] factures et vous a fait gagner [[time_saved]]h de saisie et de rapprochement. C'est la preuve réelle que quelqu'un dans la même situation que lui cherche.</p>
+  <p style="{P}">2 minutes, un avis honnête sur Google ou Trustpilot. En échange : répondez-moi avec le lien de votre avis publié — je vous envoie un bon Amazon de 25€.</p>
+  ''' + cta('Laisser mon avis →', '[[app_url]]/review') + f'''
+  {SIG}
+  <p style="{PS}"><strong>P.S.</strong> — Avis honnête uniquement — l'expérience réelle, pas un texte marketing. C'est ce qui aide vraiment les confrères à choisir.</p>'''),
+    },
+
+
+    # ─── CHURNED (suite) ──────────────────────────────────────────────────────
+
     'churned_winback': {
-        'subject': '[[firstName]], on a résolu le problème qui vous a fait partir',
-        'html': layout('''
-  <h1 style="font-family:Helvetica,sans-serif;font-size:22px;font-weight:700;margin:0 0 16px 0;">On a écouté. On a agi. FactPilot n'est plus le même.</h1>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Bonjour [[firstName]],</p>
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:16px;">Depuis votre départ, on a travaillé sur les problèmes que nous ont signalés les cabinets qui ont annulé. Voici les 3 changements majeurs :</p>
-  <div style="margin:24px 0;">
-    
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">Import automatique par email — 0 clic</p>
-      <p style="font-size:13px;margin:0;">Vos clients forwarden leurs factures à une adresse dédiée → FactPilot importe tout automatiquement. Même pas besoin de se connecter.</p>
-    
-    
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">Rapprochement bancaire amélioré (+15% de précision)</p>
-      <p style="font-size:13px;margin:0;">Le moteur IA a été retravaillé. Les cabinets qui l'utilisent voient maintenant 97% de correspondances automatiques — contre 82% il y a 6 mois.</p>
-    
-    
-      <p style="font-size:14px;font-weight:600;margin:0 0 4px 0;">Portail client en marque blanche</p>
-      <p style="font-size:13px;margin:0;">Vos clients voient votre nom, votre logo. FactPilot est invisible. Vous restez le professionnel de référence.</p>
-    
-  </div>
-  
-    <p style="font-size:20px;font-weight:700;margin:0 0 4px 0;">Offre de retour : -40% pendant 2 mois</p>
-    <p style="font-size:14px;margin:4px 0;">Code : <strong>COMEBACK40</strong></p>
-    <p style="font-size:13px;margin:8px 0 0 0;">Valable 14 jours · Vos anciennes données récupérées à l'activation</p>
-  
-  <p style="font-family:Helvetica,sans-serif;font-size:16px;font-weight:normal;margin:0;margin-bottom:24px;">Soit <strong>17,40€/mois</strong> pendant 2 mois (au lieu de 29€), puis tarif normal. Vos dossiers et historique sont restaurés instantanément à la réactivation.</p>
-  ''' + cta('Revenir sur FactPilot avec -40% →', '[[upgrade_url]]') + '''
-  <p style="font-size:13px;margin:0;">Code COMEBACK40 · 14 jours restants · Sans engagement</p>''')
+        'subject': 'On a résolu ce qui vous avait bloqué',
+        'html': layout(f'''
+  <p style="{P}">Bonjour [[firstName]],</p>
+  <p style="{P}">Depuis votre départ, on a travaillé sur les retours des cabinets qui ont annulé. Trois évolutions concrètes depuis votre essai.</p>
+  <p style="{P}">Premier : l'intake WhatsApp est maintenant disponible sur tous les plans. Vos clients peuvent photographier une facture et l'envoyer via WhatsApp — elle arrive directement dans le bon dossier, extraite et catégorisée automatiquement. Pour les artisans et commerçants qui n'ont pas d'habitudes email, c'est un gain majeur.</p>
+  <p style="{P}">Deuxième : le moteur de rapprochement bancaire a été amélioré. On passe de 95% à 97% de correspondances automatiques en moyenne — moins de cas à traiter manuellement.</p>
+  <p style="{P}">Troisième : le portail client est maintenant en marque blanche sur tous les plans payants. Vos clients voient votre nom et votre logo, FactPilot est invisible. Vous restez le professionnel de référence.</p>
+  <p style="{P}">Offre de retour : <strong>-40% pendant 2 mois</strong> avec le code <strong>COMEBACK40</strong> — soit 17,40€/mois au lieu de 29€. Valable 14 jours. Vos dossiers et historique sont restaurés instantanément à la réactivation.</p>
+  ''' + cta('Revenir sur FactPilot (-40%, code COMEBACK40) →', '[[upgrade_url]]') + f'''
+  {SIG}
+  <p style="{PS}">Code COMEBACK40 · 14 jours · Sans engagement</p>'''),
     },
 }

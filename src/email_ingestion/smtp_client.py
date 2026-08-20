@@ -49,21 +49,20 @@ class SMTPClient:
         base_url = base_url or os.getenv('FRONTEND_URL', 'http://localhost:3000')
         reset_link = f"{base_url}/reset-password?token={reset_token}"
         
-        subject = "Réinitialisation de votre mot de passe - autofactmatch"
-        
+        subject = "Réinitialisation de votre mot de passe — FactPilot"
+
         text_body = f"""Bonjour,
 
-Vous avez demandé la réinitialisation de votre mot de passe.
+Vous avez demandé la réinitialisation de votre mot de passe FactPilot.
 
-Cliquez sur le lien suivant pour réinitialiser votre mot de passe :
+Cliquez sur le lien suivant pour choisir un nouveau mot de passe :
 {reset_link}
 
 Ce lien expire dans 1 heure.
 
 Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
 
-Cordialement,
-L'équipe autofactmatch
+— L'équipe FactPilot
 """
         
         html_body = layout(f"""

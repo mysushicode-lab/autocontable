@@ -50,9 +50,14 @@ SEQUENCES = {
         ('expired_final', timedelta(days=7)),
     ],
     LifecycleStage.PAYING: [
-        ('paying_confirmation', timedelta(minutes=0)),
-        ('paying_onboarding', timedelta(days=7)),
-        ('paying_review', timedelta(days=30)),
+        ('paying_confirmation',           timedelta(minutes=0)),
+        ('paying_onboarding',             timedelta(days=7)),
+        ('educational_best_practices',    timedelta(days=14)),
+        ('paying_review',                 timedelta(days=30)),
+        ('educational_advanced_features', timedelta(days=45)),
+        ('referral_program_intro',        timedelta(days=50)),
+        ('review_request',                timedelta(days=60)),
+        ('quarterly_check_in',            timedelta(days=90)),
     ],
     LifecycleStage.CHURNED: [
         ('churned_confirmation', timedelta(minutes=0)),
@@ -257,6 +262,99 @@ def on_subscription_cancelled(db: Session, organization_id: int):
             if contact:
                 contact.lifecycle_stage = LifecycleStage.CHURNED
                 break
+
+
+# ─── Event triggers: payment, quota, monthly report ─────────────────────────
+
+def on_payment_failed(db: Session, organization_id: int, attempt: int = 1):
+    """Called by Stripe webhook on invoice.payment_failed. attempt = 1|2|3."""
+    email_type_map = {1: 'payment_failed_1', 2: 'payment_failed_2', 3: 'payment_failed_3'}
+    email_type = email_type_map.get(attempt, 'payment_failed_1')
+    users = db.query(User).filter_by(organization_id=organization_id).all()
+    for user in users:
+        if user.email:
+            from src.scheduler.email_sender import send_lifecycle_email
+            info = _build_org_info(db, organization_id, user)
+            send_lifecycle_email(email=user.email, first_name=user.name or '', email_type=email_type, info=info)
+
+
+def on_quota_reached_80(db: Session, organization_id: int):
+    """Called when org hits 80% of monthly invoice quota."""
+    users = db.query(User).filter_by(organization_id=organization_id).all()
+    for user in users:
+        if user.email:
+            existing = db.query(EmailJob).filter(
+                EmailJob.organization_id == organization_id,
+                EmailJob.email_type == 'quota_80_percent',
+                EmailJob.status.in_(['pending', 'sent']),
+            ).first()
+            if not existing:
+                job = EmailJob(
+                    organization_id=organization_id,
+                    user_id=user.id,
+                    lifecycle_stage=LifecycleStage.PAYING,
+                    email_type='quota_80_percent',
+                    scheduled_for=datetime.utcnow(),
+                    status='pending'
+                )
+                db.add(job)
+
+
+def on_monthly_report(db: Session, organization_id: int):
+    """Call once a month (e.g., 1st of each month) for active paying orgs."""
+    users = db.query(User).filter_by(organization_id=organization_id).all()
+    for user in users:
+        if user.email:
+            job = EmailJob(
+                organization_id=organization_id,
+                user_id=user.id,
+                lifecycle_stage=LifecycleStage.PAYING,
+                email_type='monthly_usage_report',
+                scheduled_for=datetime.utcnow(),
+                status='pending'
+            )
+            db.add(job)
+
+
+def on_low_engagement(db: Session, organization_id: int, is_paying: bool = False):
+    """Called when a paying org shows no activity for 14+ days."""
+    email_type = 'paying_low_engagement_check_in' if is_paying else 'low_engagement_re_spark'
+    users = db.query(User).filter_by(organization_id=organization_id).all()
+    for user in users:
+        if user.email:
+            existing = db.query(EmailJob).filter(
+                EmailJob.organization_id == organization_id,
+                EmailJob.email_type == email_type,
+                EmailJob.status.in_(['pending', 'sent']),
+            ).first()
+            if not existing:
+                job = EmailJob(
+                    organization_id=organization_id,
+                    user_id=user.id,
+                    lifecycle_stage=LifecycleStage.PAYING,
+                    email_type=email_type,
+                    scheduled_for=datetime.utcnow(),
+                    status='pending'
+                )
+                db.add(job)
+
+
+def _build_org_info(db: Session, organization_id: int, user) -> dict:
+    """Build info dict for a user/org — used by event-triggered sends."""
+    org = db.query(Organization).filter_by(id=organization_id).first()
+    return {
+        'email': user.email,
+        'first_name': user.name or '',
+        'client_count': 0,
+        'time_lost_week': 0,
+        'time_lost_month': 0,
+        'time_lost_year': 0,
+        'plan_name': (org.plan_type or 'starter').capitalize() if org else 'Starter',
+        'days_left': 0,
+        'invoices_count': org.invoices_processed_this_month if org else 0,
+        'matches_count': 0,
+        'time_saved': 0,
+    }
 
 
 # ─── Scheduler job: detect trial_ending and trial_expired ────────────────────

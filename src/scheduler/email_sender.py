@@ -70,12 +70,25 @@ def get_recipient_info(db, job: EmailJob) -> dict:
     return info
 
 
+# Must match billing.py PRICING_TIERS and quota.py PLAN_QUOTAS
+PLAN_PRICES = {'free': 0, 'starter': 49, 'pro': 149, 'reseau': 0}
+PLAN_QUOTAS = {'free': 80, 'starter': 400, 'pro': 1500, 'reseau': 99999}
+MONTHS_FR = ['janvier','février','mars','avril','mai','juin',
+             'juillet','août','septembre','octobre','novembre','décembre']
+
+
 def personalize_content(content: str, info: dict) -> str:
     """Replace all [[placeholder]] variables in content."""
-    annual_loss = int((info.get('time_lost_year', 0)) * 50)
-    deletion_date = ""
     from datetime import timedelta
+    annual_loss = int((info.get('time_lost_year', 0)) * 50)
     deletion_date = (datetime.utcnow() + timedelta(days=23)).strftime("%d/%m/%Y")
+    plan_key = str(info.get('plan_name', 'starter')).lower()
+    plan_price = PLAN_PRICES.get(plan_key, 29)
+    quota_limit = PLAN_QUOTAS.get(plan_key, 500)
+    quota_used = info.get('invoices_count', 0)
+    quota_percent = int(quota_used / quota_limit * 100) if quota_limit > 0 else 0
+    now = datetime.utcnow()
+    report_month = MONTHS_FR[now.month - 1] + ' ' + str(now.year)
 
     replacements = {
         '[[email]]': str(info.get('email', '')),
@@ -86,10 +99,15 @@ def personalize_content(content: str, info: dict) -> str:
         '[[time_lost_year]]': str(info.get('time_lost_year', 0)),
         '[[annual_loss]]': str(annual_loss),
         '[[plan_name]]': str(info.get('plan_name', 'Starter')),
+        '[[plan_price]]': str(plan_price),
         '[[days_left]]': str(info.get('days_left', 0)),
         '[[invoices_count]]': str(info.get('invoices_count', 0)),
         '[[matches_count]]': str(info.get('matches_count', 0)),
         '[[time_saved]]': str(info.get('time_saved', 0)),
+        '[[quota_used]]': str(quota_used),
+        '[[quota_limit]]': str(quota_limit),
+        '[[quota_percent]]': str(quota_percent),
+        '[[report_month]]': report_month,
         '[[deletion_date]]': deletion_date,
         '[[signup_url]]': f"{FRONTEND_URL}/auth/register",
         '[[app_url]]': f"{FRONTEND_URL}/dashboard",
@@ -100,6 +118,29 @@ def personalize_content(content: str, info: dict) -> str:
     for placeholder, value in replacements.items():
         result = result.replace(placeholder, value)
     return result
+
+
+def _record_sent_event(email: str, email_type: str):
+    """Record a 'sent' EmailEvent for engagement tracking (best-effort, non-blocking)."""
+    try:
+        from src.storage.models import EmailEvent, User, QuizContact
+        session = SessionLocal()
+        try:
+            user    = session.query(User).filter(User.email == email).first()
+            contact = session.query(QuizContact).filter(QuizContact.email == email).first()
+            ev = EmailEvent(
+                organization_id=user.organization_id if user else None,
+                user_id=user.id if user else None,
+                quiz_contact_id=contact.id if contact else None,
+                email_type=email_type,
+                event='sent',
+            )
+            session.add(ev)
+            session.commit()
+        finally:
+            session.close()
+    except Exception as e:
+        logger.debug(f"[EmailSender] _record_sent_event failed silently: {e}")
 
 
 def send_lifecycle_email(email: str, first_name: str, email_type: str, info: dict) -> bool:
@@ -129,6 +170,7 @@ def send_lifecycle_email(email: str, first_name: str, email_type: str, info: dic
 
         if response.status_code in [200, 201, 202]:
             logger.info(f"[EMAIL SENT] {email_type} → {email} (status {response.status_code})")
+            _record_sent_event(email, email_type)
             return True
         else:
             logger.error(f"[EMAIL FAILED] {email_type} → {email} (status {response.status_code})")

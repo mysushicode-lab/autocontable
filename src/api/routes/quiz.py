@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 import logging
 
 from src.storage.database import db
-from src.storage.models import QuizContact
+from src.storage.models import QuizContact, EmailJob
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quiz", tags=["quiz"])

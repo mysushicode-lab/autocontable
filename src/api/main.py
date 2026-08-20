@@ -47,6 +47,7 @@ from src.api.whatsapp import router as whatsapp_router
 from src.api.marketing_sync import router as marketing_sync_router
 from src.api.affiliates import router as affiliates_router
 from src.api.routes.quiz import router as quiz_router
+from src.api.email_events import router as email_events_router
 
 
 @asynccontextmanager
@@ -216,6 +217,7 @@ app.include_router(billing_router, prefix="/api/billing", tags=["Billing"])
 app.include_router(whatsapp_router, prefix="/api/whatsapp", tags=["WhatsApp"])
 app.include_router(marketing_sync_router, prefix="/api/marketing", tags=["Marketing"])
 app.include_router(affiliates_router, prefix="/api/affiliates", tags=["Affiliates"])
+app.include_router(email_events_router, prefix="/api", tags=["Email Events"])
 app.include_router(quiz_router, tags=["Quiz"])
 
 
