@@ -116,11 +116,21 @@ const SOFTWARE_JSONLD = {
 
 import Providers from './providers';
 import { GoogleTagManager } from '@next/third-parties/google';
+import { CookieBanner } from '@/components/CookieBanner';
 
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <GoogleTagManager gtmId="GTM-NSVT3VWB" />
+      <head>
+        {/* Google Consent Mode v2 — default denied, updated by CookieBanner */}
+        <script
+          id="consent-defaults"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','wait_for_update':500});`,
+          }}
+        />
+      </head>
       <body>
         <script
           type="application/ld+json"
@@ -131,6 +141,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_JSONLD) }}
         />
         <Providers>{children}</Providers>
+        <CookieBanner />
       </body>
     </html>
   );
