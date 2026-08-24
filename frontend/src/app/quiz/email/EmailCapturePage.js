@@ -70,7 +70,6 @@ export default function EmailCapturePage() {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
-    trackEmailCapture(email);
 
     try {
       const response = await fetch('/api/quiz/submit', {
@@ -88,6 +87,8 @@ export default function EmailCapturePage() {
       if (!response.ok) {
         throw new Error(data.detail || data.message || 'Une erreur est survenue');
       }
+
+      trackEmailCapture(email); // Lead envoyé uniquement si l'API confirme
 
       // Redirection vers la home
       router.push('/');

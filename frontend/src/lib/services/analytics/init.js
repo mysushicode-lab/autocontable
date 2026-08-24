@@ -13,8 +13,7 @@ export function initializeAnalytics() {
   const GA_ID = 'G-XD6HFBDWGL';
 
   // ── FACEBOOK PIXEL ────────────────────────────────────────────────────────
-  // Configure Pixel ID here once you have it, or manage via GTM
-  const FB_PIXEL_ID = null;
+  const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || null;
 
   if (FB_PIXEL_ID) {
     const fbScript = document.createElement('script');

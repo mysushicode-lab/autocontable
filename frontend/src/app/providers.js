@@ -1,11 +1,14 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider } from '@/context/AuthContext';
 import { ClientFileProvider } from '@/context/ClientFileContext';
+import { initializeAnalytics } from '@/lib/services/analytics/init';
 
 export default function Providers({ children }) {
+  useEffect(() => { initializeAnalytics(); }, []);
+
   const [queryClient] = useState(
     () =>
       new QueryClient({

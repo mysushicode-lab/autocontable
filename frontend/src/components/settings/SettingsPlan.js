@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Loader2, Zap } from 'lucide-react';
 import { fetchPlanStatus, createStripeCheckoutSession, verifyStripeSession } from '../../api';
+import { trackPurchase } from '@/lib/services/analytics/tracker';
 
 const PLANS = [
   {
@@ -83,7 +84,11 @@ export const SettingsPlan = () => {
         window.history.replaceState({}, document.title, window.location.pathname);
         try {
           const result = await verifyStripeSession(sessionId);
-          if (result.status === 'success') setShowSuccess(true);
+          if (result.status === 'success') {
+            setShowSuccess(true);
+            const planValue = { starter: 49, pro: 149 }[result.plan] ?? 49;
+            trackPurchase(result.plan || 'starter', planValue, 'EUR');
+          }
         } catch (error) { console.error('Failed to verify Stripe session:', error); }
       }
       try {
