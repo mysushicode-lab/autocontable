@@ -4,13 +4,13 @@ import { sectionBadge, sectionHeading, sectionSubtext } from './_styles';
 import { NOISE_SVG_FINE, NOISE_SVG } from './_constants';
 
 const TOP_FEATURES = [
-  { title: 'Les factures arrivent sans que vous les demandiez', description: "Vos clients PME connectent leur propre boîte mail depuis leur espace. À partir de là, chaque facture fournisseur atterrit chez vous automatiquement — extraite, lue, classée. Plus jamais un email de relance à envoyer.", image: '/facture-email.png' },
-  { title: 'Même un scan froissé ne lui résiste pas', description: "PDF nets, scans dégradés, photos prises à la hâte sur un coin de bureau — l'IA déchiffre tout en deux secondes avec une précision de plus de 95%. Le format Factur-X est géré nativement.", image: '/extraction-instantané.png' },
+  { title: 'Zéro relance. Les factures viennent d\'elles-mêmes.', description: "Vos clients PME connectent leur propre boîte mail depuis leur espace personnel. À partir de là, chaque facture fournisseur atterrit chez vous extraite, lue, classée. Fini les emails perdus dans une boîte partagée. Fini les relances que personne n'envoie.", image: '/facture-email.png' },
+  { title: 'PDF, scan dégradé, photo de travers — elle lit tout.', description: "L'IA déchiffre n'importe quel document en deux secondes avec une précision de plus de 95%. Le format Factur-X est géré nativement — vous n'aurez rien à reconfigurer quand l'obligation arrive en septembre 2026.", image: '/extraction-instantané.png' },
 ];
 
 const BOTTOM_FEATURES = [
-  { title: 'Chaque facture retrouve sa transaction bancaire', description: "Importez votre relevé et observez : en quelques secondes, chaque ligne trouve son match. Les impayés remontent d'eux-mêmes, et la traçabilité est totale — prête pour n'importe quel contrôle.", image: '/reconciliation.png' },
-  { title: 'Un export FEC conforme, sans retouche', description: "Grand livre, journal, FEC normé — tout est rapproché, tout est tracé. Le jour de l'audit, vous exportez un fichier propre et complet. Pas de nettoyage de dernière minute, pas de sueur froide.", image: '/audit-trail.png' },
+  { title: 'Relevé importé → factures rapprochées → impayés signalés.', description: "Importez votre relevé et observez : en quelques secondes, chaque ligne trouve son match. Les impayés remontent seuls, et la traçabilité est totale — prête pour n'importe quel contrôle, même impromptu.", image: '/reconciliation.png' },
+  { title: 'Le FEC sort propre du premier coup. Sans retouche.', description: "Grand livre, journal, FEC normé — tout rapproché, tout tracé, tout horodaté. Le jour de l'audit, vous exportez un fichier irréprochable en un clic. Pas de nettoyage de dernière minute, pas de nuit blanche à corriger des erreurs de catégorie.", image: '/audit-trail.png' },
 ];
 
 function GridMarker({ type = 'cross', className }) {
@@ -97,9 +97,9 @@ export default function CoreFeaturesSection() {
 
         <div className="text-center mb-10 lg:mb-16">
           <span className={sectionBadge}>Fonctionnalités métier</span>
-          <h2 className={sectionHeading}>Construit pour la réalité des cabinets, pas pour une démo</h2>
+          <h2 className={sectionHeading}>Construit pour éliminer la saisie, pas pour la réduire.</h2>
           <p className={`mt-3 max-w-md mx-auto ${sectionSubtext}`}>
-            De la boîte mail de votre client jusqu'au FEC prêt pour l'administration fiscale, chaque étape du cycle comptable est couverte — sans jamais quitter un seul outil.
+            De l'email de votre client jusqu'à l'écriture comptable validée — chaque étape qui prenait des heures tourne maintenant en secondes, sans que vous ayez besoin d'y penser.
           </p>
         </div>
 

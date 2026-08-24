@@ -3,21 +3,21 @@ import { NOISE_SVG } from './_constants';
 
 const TESTIMONIALS = [
   {
-    quote: "Mes clients connectent leur boîte mail et leurs factures arrivent chez moi pendant la nuit. Le matin, tout est classé. J'ai récupéré mes soirées et mes week-ends.",
+    quote: "Il m'a fallu 20 minutes pour connecter les boîtes mail de mes clients. Depuis, les factures arrivent seules chaque nuit. J'ai récupéré 3 soirées par semaine.",
     name: "Pierre M.",
     role: "Cabinet comptable, 80 dossiers",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&h=600&fit=crop&crop=face",
     color: '#466cf3',
   },
   {
-    quote: "Je passais plus de temps à ressaisir qu'à auditer. Maintenant l'extraction est instantanée, le rapprochement se fait seul, et je peux enfin faire mon vrai métier.",
+    quote: "Je passais 3 heures par jour à ressaisir. Maintenant l'extraction est instantanée, le rapprochement est automatique — et je fais enfin le travail pour lequel j'ai été formée.",
     name: "Valérie D.",
     role: "Collaboratrice comptable",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=600&h=600&fit=crop&crop=face",
     color: '#f59e0b',
   },
   {
-    quote: "Plus une seule facture oubliée, plus une erreur de saisie. Quand j'exporte le FEC, il est propre du premier coup. Mes clients n'ont jamais eu aussi peu de questions.",
+    quote: "Premier FEC exporté hier soir. Propre, conforme, sans une seule erreur. Mon client ne comprend pas pourquoi j'ai l'air si calme à l'approche du contrôle.",
     name: "Marc T.",
     role: "Gérant, petit cabinet",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop&crop=face",
@@ -26,10 +26,10 @@ const TESTIMONIALS = [
 ];
 
 const STATS = [
-  { end: 2,    prefix: '',  suffix: 'M+', label: 'Factures traitées' },
-  { end: 120,  prefix: '',  suffix: 'h',  label: 'Gagnées / cabinet / mois' },
-  { end: 4.9,  prefix: '',  suffix: '/5', label: 'Note cabinets comptables', decimals: 1 },
-  { end: 300,  prefix: '+', suffix: '',   label: 'Banques compatibles' },
+  { end: 2,    prefix: '',  suffix: 'M+', label: 'Factures traitées automatiquement' },
+  { end: 120,  prefix: '',  suffix: 'h',  label: 'Récupérées par cabinet, chaque mois' },
+  { end: 4.9,  prefix: '',  suffix: '/5', label: 'Note moyenne — 200+ cabinets', decimals: 1 },
+  { end: 300,  prefix: '+', suffix: '',   label: 'Banques compatibles en France' },
 ];
 
 function Counter({ end, prefix, suffix, decimals = 0, duration = 1800 }) {
@@ -85,7 +85,7 @@ export default function TestimonialsSection() {
             Témoignages
           </span>
           <h2 className="text-3xl sm:text-4xl font-medium text-white tracking-tight">
-            Ce qu'en disent ceux qui l'utilisent au quotidien
+            Ce que les cabinets disent quand la saisie a disparu.
           </h2>
         </div>
 

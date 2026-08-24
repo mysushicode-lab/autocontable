@@ -20,18 +20,18 @@ export default function HeroSection() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-[#181818] leading-[1.05] tracking-tight mb-4 lg:mb-6">
-              Vos dossiers se préparent<br />pendant que vous dormez.
+              La saisie vous vole 120 heures<br />par mois. Reprenez-les.
             </h1>
             <p className="text-sm sm:text-base text-[#6b7280] mb-8 lg:mb-10 max-w-md">
-              Vos clients connectent leur boîte mail, et leurs factures fournisseurs arrivent chez vous sans que personne ne lève le petit doigt. L'IA les lit, les classe, les rapproche de vos relevés bancaires — et vous récupérez 120 heures chaque mois pour faire ce qui compte vraiment.
+              Vos clients connectent leur boîte mail une fois. Leurs factures arrivent chez vous classées, extraites, rapprochées — prêtes pour l'export FEC conforme 2026. Sans que vous touchiez au clavier.
             </p>
 
             {/* CTAs */}
             <div className="flex items-center gap-4 flex-wrap">
               <Link href="/signup" className={btnPrimary}>
-                Démarrer gratuitement
+                Récupérer mes 120h/mois
               </Link>
-              <a href="#features" className={btnGhost}>
+              <a href="#reforme" className={btnGhost}>
                 Êtes-vous prêt pour 2026 ?
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
@@ -42,7 +42,7 @@ export default function HeroSection() {
                   <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white object-cover" />
                 ))}
               </div>
-              <p className="text-xs text-[#6b7280]">Sans carte bancaire — opérationnel en une heure</p>
+              <p className="text-xs text-[#6b7280]">Essai 7 jours gratuit · Conforme 2026 inclus · Résiliation immédiate</p>
             </div>
 
           </div>

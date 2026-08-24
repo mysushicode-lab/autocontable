@@ -31,10 +31,10 @@ export default function ReformeSection() {
           <div className="text-center mb-12">
             <span className={sectionBadge}>Réforme obligatoire 2026</span>
             <h2 className={sectionHeading}>
-              Septembre 2026 approche. Serez-vous prêt ?
+              Septembre 2026. Conforme ou pénalisé — il n'y a pas de milieu.
             </h2>
             <p className={`${sectionSubtext} mt-4 max-w-2xl mx-auto`}>
-              La facturation électronique devient une obligation légale, et les retardataires paieront des pénalités. FactPilot vous met en conformité dès aujourd'hui — pour que l'échéance devienne une simple date sur le calendrier, pas une source d'angoisse.
+              La facturation électronique devient une obligation légale. Les retardataires paieront des pénalités. Les cabinets qui s'y préparent maintenant ne verront pas la différence le jour J — parce que FactPilot a rendu transparente une transition que d'autres subiront.
             </p>
           </div>
 
@@ -87,7 +87,7 @@ export default function ReformeSection() {
 
           <div className="text-center">
             <Link href="/signup" className={btnPrimary}>
-              Devenir conforme maintenant
+              Me préparer à 2026 — c'est gratuit
               <ArrowRight className="w-3.5 h-3.5 ml-2" />
             </Link>
           </div>

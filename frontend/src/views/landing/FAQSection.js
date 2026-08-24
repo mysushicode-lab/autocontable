@@ -21,7 +21,7 @@ export default function FAQSection() {
 
         <div className="text-center mb-16">
           <span className={sectionBadge}>FAQ</span>
-          <h2 className={sectionHeading}>Tout ce que vous vous demandez avant de vous lancer</h2>
+          <h2 className={sectionHeading}>Tout ce que vous voulez savoir avant de supprimer votre dernière ressaisie.</h2>
         </div>
 
         <div className="divide-y divide-[#6c6f7635]">

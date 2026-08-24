@@ -7,43 +7,43 @@ export const NAV_LINKS = [
 
 export const FEATURES = [
   {
-    title: "Un portefeuille clair, chaque client à sa place",
-    description: "Chaque dossier vit dans son propre espace avec son plan comptable et ses règles de rapprochement. Vous voyez d'un coup d'œil ce qui avance, ce qui bloque, et ce qui nécessite votre attention — sans jamais basculer entre des onglets.",
+    title: "Vos 50 dossiers, sans jongler entre les onglets.",
+    description: "Chaque client dans son espace dédié, avec son propre plan comptable et ses règles de rapprochement. Vous voyez d'un coup d'œil ce qui bloque, ce qui avance, ce qui attend votre validation. Plus de confusion. Plus d'erreur de dossier.",
     image: '/portfolio.png',
   },
   {
-    title: "Le rapprochement se fait tout seul",
-    description: "Importez un relevé et regardez l'IA associer chaque ligne à la bonne facture en quelques secondes. Les impayés remontent immédiatement, et l'export FEC conforme 2026 est prêt avant même que vous y pensiez.",
+    title: "Relevé importé. Rapprochement terminé.",
+    description: "Importez un relevé bancaire et regardez l'IA associer chaque ligne à la bonne facture en quelques secondes. Les impayés remontent seuls. L'export FEC conforme 2026 est prêt avant même que vous y pensiez.",
     image: '/reconciliation.png',
   },
   {
-    title: "Vos écritures poussées dans votre logiciel existant",
-    description: "Sage, Cegid, ACD, Quadratus — FactPilot s'adapte à votre outil, pas l'inverse. Configurez la passerelle une fois, et vos écritures coulent naturellement vers votre logiciel comptable sans double saisie.",
+    title: "Sage, Cegid, Quadratus — branché une fois, pour toujours.",
+    description: "FactPilot s'adapte à vos outils, pas l'inverse. Configurez la passerelle une fois et vos écritures coulent vers votre logiciel sans double saisie, sans formation, sans migration douloureuse.",
     image: '/connecteur.png',
   },
 ];
 
 export const TOOLS = [
   {
-    title: "Les factures viennent à vous, pas l'inverse",
-    description: "Glissez vos PDF si vous préférez faire les choses à la main, ou connectez une boîte mail et laissez les factures affluer d'elles-mêmes. Vos clients PME font de même depuis leur espace — plus besoin de les relancer, tout arrive sans friction.",
+    title: "Vos clients déposent. L'IA classe. Vous validez.",
+    description: "Boîte mail connectée, lien de dépôt partagé, ou glisser-déposer direct — les factures de vos clients PME arrivent dans le bon dossier sans que personne n'ait à relancer personne. Zéro email de réclamation, zéro pièce perdue.",
     image: '/import.png',
   },
   {
-    title: "Vérifiez en trente secondes ce que l'IA a compris",
-    description: "L'intelligence artificielle lit chaque document — PDF propre, scan froissé ou photo prise à la va-vite — et en extrait les données essentielles. À vous de valider d'un regard et de corriger si besoin, jamais de ressaisir.",
+    title: "95% extrait automatiquement. Les 5% restants, 30 secondes à la main.",
+    description: "L'IA lit les PDF nets, les scans dégradés et les photos prises de travers — et extrait montants, dates, TVA, SIRET en deux secondes. Vous validez d'un regard, pas en retapant. La différence, c'est des heures récupérées chaque semaine.",
     image: '/edition.png',
   },
   {
-    title: "Des rapports qui se génèrent, pas qui se construisent",
-    description: "Grand livre, journal, balance, FEC normé — tout est là, prêt à être exporté en un clic. Le tableau de bord vous montre qui vous doit quoi, par fournisseur, par période, avec un historique d'audit complet pour dormir tranquille.",
+    title: "Le jour du contrôle, vous exportez. Vous n'expliquez pas.",
+    description: "Grand livre, journal, balance, FEC normé — tout rapproché, tout tracé, tout horodaté. Lors d'un contrôle fiscal, vous exportez un fichier irréprochable en un clic. Pas de nettoyage de dernière minute, pas de sueur froide.",
     image: '/Rapports Comptables.png',
   },
 ];
 
 export const STATS = [
-  { value: '120h+',    label: 'Gagnées par cabinet/mois', icon: 'clock' },
-  { value: '+200',     label: 'Cabinets actifs', icon: 'users' },
-  { value: '95%+',     label: 'Précision extraction', icon: 'target' },
-  { value: 'Sept. 2026', label: 'Conforme avant échéance', icon: 'zap' },
+  { value: '120h+',    label: 'Récupérées par cabinet, chaque mois', icon: 'clock' },
+  { value: '+200',     label: 'Cabinets qui ne ressaisissent plus rien', icon: 'users' },
+  { value: '95%+',     label: 'Taux d\'extraction automatique correct', icon: 'target' },
+  { value: 'Sept. 2026', label: 'Conforme avant l\'échéance légale', icon: 'zap' },
 ];
