@@ -7,7 +7,8 @@
 
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8001';
+const BACKEND_URL = process.env.BACKEND_URL;
+if (!BACKEND_URL) throw new Error('BACKEND_URL env var is not set');
 
 export async function GET(request, { params }) {
   return proxyRequest(request, params, 'GET');

@@ -109,12 +109,12 @@ const EMAIL_TEMPLATES = {
   <table style="width: 100%; margin: 32px 0; border-collapse: collapse;">
     <tr>
       <td style="padding-right: 8px;">
-        <a href="https://factpilot.fr/demo" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/demo" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
           Voir la démo
         </a>
       </td>
       <td style="padding-left: 8px;">
-        <a href="https://factpilot.fr/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
           Essai gratuit 14j
         </a>
       </td>
@@ -249,12 +249,12 @@ const EMAIL_TEMPLATES = {
   <table style="width: 100%; margin: 32px 0; border-collapse: collapse;">
     <tr>
       <td style="padding-right: 8px;">
-        <a href="https://factpilot.fr/demo" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/demo" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
           Voir la démo
         </a>
       </td>
       <td style="padding-left: 8px;">
-        <a href="https://factpilot.fr/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
           Essai gratuit 14j
         </a>
       </td>
@@ -433,12 +433,12 @@ const EMAIL_TEMPLATES = {
   <table style="width: 100%; margin: 32px 0; border-collapse: collapse;">
     <tr>
       <td style="padding-right: 8px;">
-        <a href="https://factpilot.fr/guided-config" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/guided-config" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
           Configuration guidée (1h)
         </a>
       </td>
       <td style="padding-left: 8px;">
-        <a href="https://factpilot.fr/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
           Essai gratuit 14j
         </a>
       </td>
@@ -595,12 +595,12 @@ const EMAIL_TEMPLATES = {
   <table style="width: 100%; margin: 24px 0; border-collapse: collapse;">
     <tr>
       <td style="padding-right: 8px;">
-        <a href="https://factpilot.fr/guided-config" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/guided-config" style="display: block; text-align: center; background: #181818; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
           Configuration guidée (1h)
         </a>
       </td>
       <td style="padding-left: 8px;">
-        <a href="https://factpilot.fr/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/trial" style="display: block; text-align: center; background: #f5f5f5; color: #181818; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e7eb;">
           Essai gratuit 14j
         </a>
       </td>
