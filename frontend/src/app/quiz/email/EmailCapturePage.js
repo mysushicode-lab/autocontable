@@ -73,9 +73,7 @@ export default function EmailCapturePage() {
     trackEmailCapture(email);
 
     try {
-      // Backend Python: http://localhost:8001/api/quiz/submit
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      const response = await fetch(`${backendUrl}/api/quiz/submit`, {
+      const response = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
