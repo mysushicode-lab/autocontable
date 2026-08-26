@@ -1,15 +1,41 @@
 """Quiz submission and email automation endpoints."""
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 import logging
+import os
+import urllib.request
+import json as _json
 
 from src.storage.database import db
 from src.storage.models import QuizContact, EmailJob
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quiz", tags=["quiz"])
+
+
+def _add_to_sendgrid_list(email: str, first_name: str) -> None:
+    """Add contact to SendGrid Marketing list (best-effort, runs in background thread)."""
+    api_key = os.getenv('SENDGRID_API_KEY')
+    if not api_key:
+        return
+    list_id = os.getenv('SENDGRID_MARKETING_LIST_ID')
+    body = {'contacts': [{'email': email, 'first_name': first_name}]}
+    if list_id:
+        body['list_ids'] = [list_id]
+    try:
+        data = _json.dumps(body).encode()
+        req = urllib.request.Request(
+            'https://api.sendgrid.com/v3/marketing/contacts',
+            data=data,
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            method='PUT',
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            logger.info(f"[SG Marketing] Added {email} — status {resp.status}")
+    except Exception as exc:
+        logger.warning(f"[SG Marketing] Failed for {email}: {exc}")
 
 
 class QuizSubmitRequest(BaseModel):
@@ -114,6 +140,14 @@ def submit_quiz(body: QuizSubmitRequest):
         on_quiz_completed(session, quiz_contact_id=quiz_contact.id)
 
         session.commit()
+
+        # Add to SendGrid Marketing list (async, non-blocking)
+        import threading
+        threading.Thread(
+            target=_add_to_sendgrid_list,
+            args=(email, first_name),
+            daemon=True
+        ).start()
 
         logger.info(f"Quiz submitted for {email}, scheduled 4 emails")
 

@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { getPseoPagesByKind } from '@/lib/pseo/pseo-config';
 import { buildBreadcrumbJsonLd } from '@/lib/pseo/pseo-jsonld';
+import PseoHubLayout from '@/components/pseo/PseoHubLayout';
 
 export const metadata = {
   title: 'Comparaisons — FactPilot vs concurrents',
-  description: 'Comparez FactPilot avec Pennylane, Dext, Tiime, Inqom, Yooz et d\'autres solutions comptables.',
+  description: "Comparez FactPilot avec Pennylane, Dext, Tiime, Inqom, Yooz et d'autres solutions comptables.",
   alternates: { canonical: '/compare' },
 };
 
@@ -14,33 +14,15 @@ export default function CompareHubPage() {
     { name: 'Accueil', href: '/' },
     { name: 'Comparaisons', href: '/compare' },
   ]);
-
   return (
-    <div className="min-h-screen bg-white">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <PseoHubLayout
+        badge="Comparatifs"
+        title="FactPilot vs la concurrence : comparaison complète"
+        description="Pennylane, Dext, Tiime, Qonto, Indy — comparez FactPilot avec les principales solutions du marché et faites le bon choix pour votre cabinet."
+        pages={pages}
       />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 lg:py-24">
-        <h1 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight mb-4">
-          FactPilot vs concurrents
-        </h1>
-        <p className="text-base text-[#6b7280] mb-12">
-          Découvrez pourquoi les cabinets comptables choisissent FactPilot.
-        </p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {pages.map((p) => (
-            <Link
-              key={p.slug}
-              href={p.slug}
-              className="block p-6 rounded-xl border border-[#6c6f761f] hover:border-[#181818] transition-colors"
-            >
-              <h2 className="text-lg font-medium text-[#181818]">{p.title}</h2>
-              <p className="text-sm text-[#6b7280] mt-2 line-clamp-2">{p.description}</p>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </div>
+    </>
   );
 }

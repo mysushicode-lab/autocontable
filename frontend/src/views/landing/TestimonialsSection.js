@@ -100,7 +100,7 @@ export default function TestimonialsSection() {
                 <p className="text-xs text-white/70">{t.role}</p>
               </div>
               <div className="absolute bottom-0 left-0 right-0 p-6">
-                <p className="text-base sm:text-lg font-medium text-white leading-snug">
+                <p className="text-sm sm:text-base font-medium text-white leading-snug">
                   "{t.quote}"
                 </p>
               </div>

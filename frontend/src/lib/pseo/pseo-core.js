@@ -44,14 +44,3 @@ export function buildAllPages(config) {
   return pages;
 }
 
-export function getPage(pages, slug) {
-  return pages.find((p) => p.slug === slug) || null;
-}
-
-export function getPagesByKind(pages, kind) {
-  return pages.filter((p) => p.kind === kind);
-}
-
-export function buildStaticParams(pages, kind, paramKey) {
-  return getPagesByKind(pages, kind).map((p) => ({ [paramKey]: p.params[paramKey] }));
-}

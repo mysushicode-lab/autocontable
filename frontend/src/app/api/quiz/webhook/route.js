@@ -120,14 +120,17 @@ export async function POST(request) {
       );
     }
 
+    const findField = (values, id) =>
+      values?.find(f => f.customFieldId === id)?.value?.[0] || 0;
+
     const contactData = {
       contactId: contact.contactId || data?.contactId,
       email: contact.email || data?.email,
       firstName: contact.name || data?.name || 'there',
-      clientCount: contact.customFieldValues?.find(f => f.customFieldId === 'njPTZy')?.value?.[0] || 0,
-      timeLostPerWeek: contact.customFieldValues?.find(f => f.customFieldId === 'njPTix')?.value?.[0] || 0,
-      timeLostPerMonth: contact.customFieldValues?.find(f => f.customFieldId === 'njf13v')?.value?.[0] || 0,
-      timeLostPerYear: contact.customFieldValues?.find(f => f.customFieldId === 'njf1mF')?.value?.[0] || 0,
+      clientCount:      findField(contact.customFieldValues, 'client_count'),
+      timeLostPerWeek:  findField(contact.customFieldValues, 'time_lost_week'),
+      timeLostPerMonth: findField(contact.customFieldValues, 'time_lost_month'),
+      timeLostPerYear:  findField(contact.customFieldValues, 'time_lost_year'),
     };
 
     if (!contactData.contactId || !contactData.email) {

@@ -1,6 +1,12 @@
+import { notFound } from 'next/navigation';
 import { getPseoPagesByKind, getPseoPage } from '@/lib/pseo/pseo-config';
 import { buildPseoJsonLd } from '@/lib/pseo/pseo-jsonld';
+import { getPseoContent } from '@/lib/pseo/pseo-content';
 import PseoPageLayout from '@/components/pseo/PseoPageLayout';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://factpilot.fr';
+
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return getPseoPagesByKind('industry').map((p) => ({
@@ -21,7 +27,7 @@ export async function generateMetadata({ params }) {
       locale: 'fr_FR',
       title: page.title,
       description: page.description,
-      url: page.canonical,
+      url: `${SITE_URL}${page.canonical}`,
       images: [{ url: '/assets/og-image.png', width: 1200, height: 630 }],
     },
     twitter: {
@@ -36,9 +42,10 @@ export async function generateMetadata({ params }) {
 export default async function IndustryPage({ params }) {
   const { industry } = await params;
   const page = getPseoPage(`/comptabilite/${industry}`);
-  if (!page) return <div>Page non trouvée</div>;
+  if (!page) notFound();
 
-  const jsonLd = buildPseoJsonLd(page, []);
+  const content = getPseoContent(page);
+  const jsonLd = buildPseoJsonLd(page, content.faq);
 
   return (
     <>

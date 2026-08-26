@@ -20,10 +20,10 @@ export function buildFaqJsonLd(faqs) {
     '@type': 'FAQPage',
     mainEntity: faqs.map((faq) => ({
       '@type': 'Question',
-      name: faq.question,
+      name: faq.q,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: faq.answer,
+        text: faq.a,
       },
     })),
   };
@@ -54,7 +54,7 @@ export function buildPseoJsonLd(page, faqs) {
   const breadcrumbItems = [{ name: 'Accueil', href: '/' }];
 
   if (page.kind === 'industry') {
-    breadcrumbItems.push({ name: 'Secteurs', href: '/comptabilite' });
+    breadcrumbItems.push({ name: 'Comptabilité par secteur', href: '/comptabilite' });
     breadcrumbItems.push({ name: page.title, href: page.canonical });
   } else if (page.kind === 'use-case') {
     breadcrumbItems.push({ name: 'Cas d\'usage', href: '/cas-usage' });

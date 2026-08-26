@@ -156,8 +156,8 @@ export default function CoreFeaturesSection() {
                     { icon: FileText, label: 'FEC normé & Factur-X' },
                     { icon: Lock, label: 'Archivage sécurisé' },
                   ].map(({ icon: Icon, label }, i) => (
-                    <div key={`${dupeIdx}-${i}`} className="flex items-center gap-2.5 text-base text-[#46484d]">
-                      <Icon className="w-5 h-5 text-[#466cf3] shrink-0" />
+                    <div key={`${dupeIdx}-${i}`} className="flex items-center gap-2.5 text-sm text-[#46484d] select-none">
+                      <Icon className="w-5 h-5 shrink-0" style={{ animationName: 'icon-color-shift', animationDuration: '3s', animationTimingFunction: 'linear', animationIterationCount: 'infinite', animationDelay: `${-(i * (3 / 8))}s` }} />
                       <span className="whitespace-nowrap">{label}</span>
                     </div>
                   ))}

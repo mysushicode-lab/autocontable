@@ -8,6 +8,22 @@
   }
 }
 
+@keyframes progress-fill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes icon-color-shift {
+  0%,  100% { color: #466cf3; filter: drop-shadow(0 0 2px rgba(70,108,243,0.25)); }
+  33%        { color: #10b981; filter: drop-shadow(0 0 2px rgba(16,185,129,0.25)); }
+  66%        { color: #ec4899; filter: drop-shadow(0 0 2px rgba(236,72,153,0.25)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-spin,
   .animate-bounce,

@@ -16,7 +16,7 @@ export default function FAQSection() {
   const [open, setOpen] = useState(null);
 
   return (
-    <section id="faq" className="bg-white border-t border-[#6c6f7635] scroll-mt-20">
+    <section id="faq" className="bg-white scroll-mt-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
 
         <div className="text-center mb-16">

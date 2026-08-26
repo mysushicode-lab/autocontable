@@ -38,11 +38,11 @@ export default function VideoSection() {
 
             {/* Text block */}
             <div className="flex flex-col gap-3 p-8 lg:p-12 lg:w-[55%] shrink-0 justify-center border-b lg:border-b-0 lg:border-r border-[#6c6f7635]">
-              <h2 className="text-[#181818] text-lg md:text-xl lg:text-2xl font-semibold leading-tight">
-                Regardez 3 minutes d'IA<br />remplacer une heure de saisie.
+              <h2 className="text-[#181818] text-2xl sm:text-3xl font-semibold leading-tight tracking-tight">
+                Regardez une semaine de saisie<br />disparaître en 3 minutes.
               </h2>
-              <p className="text-[#6b7280] text-xs md:text-sm leading-relaxed mt-3 max-w-sm">
-                De la boîte mail de votre client jusqu'à l'export FEC validé — en deux minutes, sans toucher au clavier. C'est exactement comme ça que ça se passe, tous les jours, pour 200+ cabinets.
+              <p className="text-sm text-[#6b7280] leading-relaxed mt-3 max-w-sm">
+                Boîte mail connectée, factures extraites, FEC prêt à l'export. Pas de clavier, pas de relance — juste le résultat. 200+ cabinets font ça tous les jours.
               </p>
             </div>
 

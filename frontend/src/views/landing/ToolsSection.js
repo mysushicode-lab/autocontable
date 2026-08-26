@@ -26,7 +26,7 @@ export default function ToolsSection() {
         {/* Mobile header */}
         <div className="lg:hidden mb-8">
           <span className={sectionBadge}>Proposition de valeur</span>
-          <h2 className="text-2xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
+          <h2 className="text-3xl sm:text-4xl font-medium text-[#181818] tracking-tight leading-tight mb-2">
             Chaque outil pensé pour votre quotidien
           </h2>
           <p className={sectionSubtext}>
@@ -70,13 +70,13 @@ export default function ToolsSection() {
               >
                 <div>
                   <h3 className="text-sm font-semibold text-[#181818] mb-1">{f.title}</h3>
-                  <p className={`text-xs ${sectionSubtext}`}>{f.description}</p>
+                  <p className={sectionSubtext}>{f.description}</p>
                 </div>
                 <div className="relative border border-[#6c6f7635] overflow-hidden bg-[#fafafa] min-h-[180px] sm:min-h-[220px] lg:min-h-[280px]">
                   <div className="absolute top-4 left-4 w-[130%] rounded-xl border border-[#6c6f7635] overflow-hidden shadow-sm">
                     <img src={f.image} alt={f.title} className="w-full h-auto block" />
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#fafafa] to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#fafafa]/60 to-transparent pointer-events-none" />
                 </div>
               </div>
             ))}

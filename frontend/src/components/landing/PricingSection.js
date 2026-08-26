@@ -185,10 +185,7 @@ export default function PricingSection() {
         </div>
 
         <div className="flex flex-col items-center mt-6 gap-3">
-          <p className="text-xs text-[#6b7280]">
-            Sans engagement · Résiliation 2 clics · Hébergé France · RGPD certifié
-          </p>
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+<div className="flex flex-col items-center gap-2">
             <div className="flex -space-x-2 shrink-0">
               {[12, 25, 32, 45, 57].map((id) => (
                 <img key={id} src={`https://i.pravatar.cc/40?img=${id}`} alt="" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-[#f7f7f5] object-cover" />
