@@ -3,7 +3,7 @@ import os
 import logging
 from datetime import datetime
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, To
+from sendgrid.helpers.mail import Mail, To, From
 
 from src.storage.database import SessionLocal
 from src.storage.models import EmailJob, QuizContact, Organization, User
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "contact@factpilot.fr")
+SENDGRID_FROM_NAME = os.getenv("SENDGRID_FROM_NAME", "FactPilot")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 
@@ -159,7 +160,7 @@ def send_lifecycle_email(email: str, first_name: str, email_type: str, info: dic
         html_content = personalize_content(template['html'], info)
 
         message = Mail(
-            from_email=SENDGRID_FROM_EMAIL,
+            from_email=From(email=SENDGRID_FROM_EMAIL, name=SENDGRID_FROM_NAME),
             to_emails=To(email=email, name=first_name),
             subject=subject,
             html_content=html_content
