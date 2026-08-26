@@ -1,13 +1,17 @@
 """Database startup and migrations"""
 from sqlalchemy import text
-from src.storage.database import db
+from src.storage.database import db, run_migrations
 from src.storage.models import Base, Settings, User, UserRole, Organization
 import os
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def startup_event():
     """Create database tables on startup and run migrations"""
     Base.metadata.create_all(bind=db.engine)
+    run_migrations()
 
     conn = db.engine.connect()
 
