@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bell, Zap, Menu, ChevronRight, X, Gift, HelpCircle, BookOpen } from 'lucide-react';
-import { useNotifications } from '../context/NotificationContext';
+import { useNotifications, NotificationHelpers } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useClientFile } from '../context/ClientFileContext';
 import { fetchPlanStatus } from '../api';
@@ -27,7 +27,7 @@ const PAGE_NAMES = {
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
-  const { notifications, unreadCount, markRead, markAllRead, remove, clearAll } = useNotifications();
+  const { notifications, unreadCount, markRead, markAllRead, remove, clearAll, add: addNotification } = useNotifications();
   const { user } = useAuth();
   const { activeClientFile } = useClientFile();
   const router = useRouter();
@@ -45,7 +45,14 @@ const Layout = ({ children }) => {
 
   useEffect(() => {
     fetchPlanStatus()
-      .then(d => { setPlanStatus(d); if (d.is_trial_expired) setShowUpgradePopup(true); })
+      .then(d => {
+        setPlanStatus(d);
+        if (d.is_trial_expired) setShowUpgradePopup(true);
+        if (d.is_trial_active && d.days_remaining <= 3) {
+          const n = NotificationHelpers.trialExpiring(d.days_remaining);
+          addNotification(n.type, n.title, n.message);
+        }
+      })
       .catch(() => {});
   }, []);
 

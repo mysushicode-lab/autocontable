@@ -107,6 +107,29 @@ const SidebarNav = ({ open, planStatus }) => {
         </button>
       </div>
 
+      {open && !isClient && isTrial && !isExpired && (
+        <div className="px-2 pt-3 border-t border-gray-100">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[12px] font-medium text-blue-700">Période d'essai</span>
+              <span className="text-[12px] font-semibold text-blue-600">{daysLeft}j restant{daysLeft > 1 ? 's' : ''}</span>
+            </div>
+            <div className="w-full h-1.5 bg-blue-100 rounded-full overflow-hidden mb-2">
+              <div
+                className={`h-full rounded-full transition-all ${daysLeft <= 3 ? 'bg-orange-500' : 'bg-blue-500'}`}
+                style={{ width: `${Math.max(5, ((14 - daysLeft) / 14) * 100)}%` }}
+              />
+            </div>
+            <button
+              onClick={() => router.push('/settings?tab=plan')}
+              className="w-full py-1.5 text-[11px] font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors rounded-md"
+            >
+              Choisir un plan
+            </button>
+          </div>
+        </div>
+      )}
+
       {open && !isClient && (
         <div className="px-2 py-3 border-t border-gray-100">
           <div className="bg-white border border-gray-200 rounded-lg p-3">

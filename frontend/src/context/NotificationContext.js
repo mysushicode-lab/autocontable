@@ -53,6 +53,16 @@ export const NotificationHelpers = {
     message: `${used}/${limit} dossiers utilisés`,
   }),
 
+  trialExpiring: (daysLeft) => ({
+    type: daysLeft <= 1 ? NOTIF_TYPES.ERROR : NOTIF_TYPES.WARNING,
+    title: daysLeft <= 0 ? 'Essai expiré' : `Essai : ${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}`,
+    message: daysLeft <= 0
+      ? 'Choisissez un plan pour continuer à utiliser FactPilot.'
+      : daysLeft <= 1
+        ? 'Votre essai expire demain. Passez à un plan payant pour ne rien perdre.'
+        : `Votre période d'essai se termine dans ${daysLeft} jours.`,
+  }),
+
   invoiceUpdated: (invoice) => ({
     type: NOTIF_TYPES.SUCCESS,
     title: 'Facture mise à jour',

@@ -49,7 +49,7 @@ def register(request: Request, body: RegisterRequest, background_tasks: Backgrou
         if session.query(User).filter(User.email == body.email).first():
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé.")
         trial_start = datetime.utcnow()
-        trial_end = trial_start + timedelta(days=int(os.getenv("TRIAL_PERIOD_DAYS", 7)))
+        trial_end = trial_start + timedelta(days=int(os.getenv("TRIAL_PERIOD_DAYS", 14)))
         org = Organization(
             name=body.name,
             plan_type='free',
