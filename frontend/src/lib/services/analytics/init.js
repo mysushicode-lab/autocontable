@@ -9,8 +9,8 @@ export function initializeAnalytics() {
 
   window.dataLayer = window.dataLayer || [];
 
-  const GTM_ID = 'GTM-NSVT3VWB';
-  const GA_ID = 'G-XD6HFBDWGL';
+  const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || 'GTM-NSVT3VWB';
+  const GA_ID  = process.env.NEXT_PUBLIC_GA4_ID  || 'G-XD6HFBDWGL';
 
   // ── FACEBOOK PIXEL ────────────────────────────────────────────────────────
   const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || null;

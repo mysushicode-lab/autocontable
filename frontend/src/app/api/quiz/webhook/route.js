@@ -83,8 +83,11 @@ const sendEmailViaSendGrid = async (contactData, emailType) => {
             }
           }
         ],
-        from: { email: 'contact@factpilot.fr', name: 'Ernesto Le Goaziou' },
-        reply_to: { email: 'contact@factpilot.fr' },
+        from: {
+          email: process.env.SENDGRID_FROM_EMAIL || 'contact@factpilot.fr',
+          name:  process.env.SENDGRID_FROM_NAME  || 'FactPilot',
+        },
+        reply_to: { email: process.env.SENDGRID_FROM_EMAIL || 'contact@factpilot.fr' },
         template_id: template.templateId,
       }),
     });

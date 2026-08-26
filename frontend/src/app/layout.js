@@ -121,7 +121,7 @@ import { CookieBanner } from '@/components/CookieBanner';
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
-      <GoogleTagManager gtmId="GTM-NSVT3VWB" />
+      <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || 'GTM-NSVT3VWB'} />
       <head>
         {/* Google Consent Mode v2 — default denied, updated by CookieBanner */}
         <script

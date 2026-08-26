@@ -33,7 +33,11 @@ def startup_event():
             # Create default admin user if not exists
             try:
                 default_admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
-                default_admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+                default_admin_password = os.environ.get('ADMIN_PASSWORD')
+                if not default_admin_password:
+                    import secrets as _secrets
+                    default_admin_password = _secrets.token_urlsafe(16)
+                    logger.warning(f"ADMIN_PASSWORD not set — generated random password. Set it in .env to persist.")
                 default_admin_email = os.environ.get('ADMIN_EMAIL', '')
                 admin_exists = session.query(User).filter(User.username == default_admin_username).first()
                 if not admin_exists:
