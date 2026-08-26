@@ -51,7 +51,7 @@ export default function VideoSection() {
               <iframe
                 width="100%"
                 height="100%"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0"
+                src="https://www.youtube.com/embed/ybzKN2aelq8?controls=0"
                 title="Démo FactPilot"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
