@@ -7,8 +7,13 @@
 
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL;
-if (!BACKEND_URL) throw new Error('BACKEND_URL env var is not set');
+export const dynamic = 'force-dynamic';
+
+function getBackendUrl() {
+  const url = process.env.BACKEND_URL;
+  if (!url) throw new Error('BACKEND_URL env var is not set');
+  return url;
+}
 
 export async function GET(request, { params }) {
   return proxyRequest(request, params, 'GET');
@@ -46,7 +51,7 @@ function extractSetCookies(response) {
 async function proxyRequest(request, params, method) {
   const path = (await params).path.join('/');
   const url = new URL(request.url);
-  const backendUrl = `${BACKEND_URL}/api/${path}${url.search}`;
+  const backendUrl = `${getBackendUrl()}/api/${path}${url.search}`;
 
   try {
     const headers = new Headers();
