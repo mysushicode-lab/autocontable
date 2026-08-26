@@ -44,35 +44,35 @@ export default function Footer() {
 
           <div className="flex flex-col gap-3">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Légal</span>
-            <Link href="/mentions-legales" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Mentions légales</Link>
-            <Link href="/politique-confidentialite" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Confidentialité</Link>
-            <Link href="/cgu" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">CGU</Link>
+            <Link href="/docs/mentions-legales" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Mentions légales</Link>
+            <Link href="/docs/politique-confidentialite" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Confidentialité</Link>
+            <Link href="/docs/cgu" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">CGU</Link>
           </div>
 
           <div className="flex flex-col gap-3">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Par secteur</span>
             <Link href="/comptabilite/cabinet-comptable" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Cabinet comptable</Link>
             <Link href="/comptabilite/expert-comptable" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Expert-comptable</Link>
-            <Link href="/comptabilite/tpe-pme" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">TPE / PME</Link>
-            <Link href="/comptabilite/startup-tech" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Startup & Tech</Link>
+            <Link href="/comptabilite/pme" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">PME</Link>
+            <Link href="/comptabilite/ecommerce" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">E-commerce</Link>
             <Link href="/comptabilite" className="text-xs text-blue-600 hover:text-blue-700 transition-colors">Tous les secteurs →</Link>
           </div>
 
           <div className="flex flex-col gap-3">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Cas d'usage</span>
-            <Link href="/cas-usage/automatisation-saisie" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Automatisation saisie</Link>
+            <Link href="/cas-usage/extraction-factures" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Extraction de factures</Link>
             <Link href="/cas-usage/rapprochement-bancaire" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Rapprochement bancaire</Link>
-            <Link href="/cas-usage/exports-comptables" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Exports comptables</Link>
-            <Link href="/cas-usage/audit-conformite" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Audit & conformité</Link>
+            <Link href="/cas-usage/export-fec" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Export FEC</Link>
+            <Link href="/cas-usage/audit-comptable" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">Audit comptable</Link>
             <Link href="/cas-usage" className="text-xs text-blue-600 hover:text-blue-700 transition-colors">Tous les cas d'usage →</Link>
           </div>
 
           <div className="flex flex-col gap-3">
             <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Comparer</span>
             <Link href="/compare/factpilot-vs-pennylane" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Pennylane</Link>
-            <Link href="/compare/factpilot-vs-qonto" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Qonto</Link>
-            <Link href="/compare/factpilot-vs-indy" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Indy</Link>
+            <Link href="/compare/factpilot-vs-dext" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Dext</Link>
             <Link href="/compare/factpilot-vs-tiime" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Tiime</Link>
+            <Link href="/compare/factpilot-vs-yooz" className="text-xs text-[#6b7280] hover:text-[#181818] transition-colors">vs Yooz</Link>
             <Link href="/compare" className="text-xs text-blue-600 hover:text-blue-700 transition-colors">Toutes les comparaisons →</Link>
           </div>
 
