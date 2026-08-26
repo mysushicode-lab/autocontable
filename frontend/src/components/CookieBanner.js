@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+const STORAGE_KEY = 'cookie_consent';
+
 function applyConsent(value) {
   if (typeof window === 'undefined') return;
   window.dataLayer = window.dataLayer || [];
@@ -19,11 +21,17 @@ function applyConsent(value) {
   }
 }
 
+function saveConsent(value, hide) {
+  localStorage.setItem(STORAGE_KEY, value);
+  applyConsent(value);
+  hide();
+}
+
 export function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('cookie_consent');
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       setVisible(true);
     } else {
@@ -31,52 +39,45 @@ export function CookieBanner() {
     }
   }, []);
 
-  function accept() {
-    localStorage.setItem('cookie_consent', 'granted');
-    applyConsent('granted');
-    setVisible(false);
-  }
-
-  function decline() {
-    localStorage.setItem('cookie_consent', 'denied');
-    applyConsent('denied');
-    setVisible(false);
-  }
-
   if (!visible) return null;
 
+  const hide = () => setVisible(false);
+  const btnBase = 'flex-1 py-2.5 text-xs rounded-lg transition-all font-medium';
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-lg shadow-xl p-6 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
-          Cookies & confidentialité
-        </p>
-        <p className="text-sm text-gray-700 leading-relaxed mb-2">
-          FactPilot utilise des cookies pour mesurer l&apos;audience et améliorer votre expérience.
-          En cliquant sur <strong>Accepter</strong>, vous consentez à l&apos;utilisation de cookies
-          d&apos;analyse et de publicité (Google Analytics, Google Ads).
-        </p>
-        <p className="text-xs text-gray-400 mb-6">
-          Conformément au RGPD et aux recommandations de la CNIL.{' '}
-          <Link href="/politique-confidentialite" className="underline hover:text-gray-600">
-            Politique de confidentialité
-          </Link>
-          .
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
+    <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center px-4">
+      <div className="bg-white w-full max-w-sm rounded-lg shadow-2xl p-6">
+
+        <div className="text-center mb-5">
+          <h3 className="text-base font-bold text-[#181818] mb-2">
+            Vos données vous appartiennent.
+          </h3>
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Nous utilisons des cookies d&apos;analyse (Google Analytics) et publicitaires (Google Ads)
+            pour améliorer nos services.{' '}
+            <Link href="/politique-confidentialite" className="underline hover:text-gray-700 transition-colors">
+              En savoir plus
+            </Link>
+          </p>
+        </div>
+
+        <div className="flex gap-3">
           <button
-            onClick={decline}
-            className="flex-1 py-2.5 px-4 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            type="button"
+            onClick={() => saveConsent('denied', hide)}
+            className={`${btnBase} border border-gray-200 text-gray-600 hover:bg-gray-50`}
           >
             Refuser
           </button>
           <button
-            onClick={accept}
-            className="flex-1 py-2.5 px-4 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            type="button"
+            onClick={() => saveConsent('granted', hide)}
+            className={`${btnBase} bg-[#181818] text-white hover:opacity-80`}
           >
             Accepter
           </button>
         </div>
+
       </div>
     </div>
   );

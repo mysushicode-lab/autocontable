@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Zap, Menu, ChevronRight, X, Gift, HelpCircle } from 'lucide-react';
+import { Bell, Zap, Menu, ChevronRight, X, Gift, HelpCircle, BookOpen } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { useClientFile } from '../context/ClientFileContext';
@@ -104,9 +104,9 @@ const Layout = ({ children }) => {
           >
             <Gift style={{ width: 15, height: 15 }} />
           </button>
-          <button aria-label="Aide" className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
-            <HelpCircle style={{ width: 15, height: 15 }} />
-          </button>
+          <Link href="/docs" aria-label="Documentation" className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            <BookOpen style={{ width: 15, height: 15 }} />
+          </Link>
 
           <span className="w-px h-4 bg-gray-200 mx-1" />
 
