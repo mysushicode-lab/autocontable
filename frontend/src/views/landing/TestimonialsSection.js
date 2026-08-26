@@ -92,9 +92,9 @@ export default function TestimonialsSection() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-0">
           {TESTIMONIALS.map((t) => (
             <div key={t.name} className="relative overflow-hidden min-h-[400px] sm:min-h-[480px]" style={{ backgroundColor: t.color }}>
-              <img src={t.avatar} alt={t.name} className="absolute inset-0 w-full h-full object-cover object-top mix-blend-luminosity opacity-70" />
+              <img src={t.avatar} alt={t.name} className="absolute inset-0 w-full h-full object-cover object-top" />
               <div className="absolute inset-0 opacity-[0.35] pointer-events-none" style={{ backgroundImage: NOISE_SVG }} />
-              <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 40%, ${t.color} 75%)` }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at center, transparent 35%, ${t.color}cc 80%, ${t.color} 100%)` }} />
               <div className="absolute top-5 right-5 text-right">
                 <p className="text-sm font-semibold text-white">{t.name}</p>
                 <p className="text-xs text-white/70">{t.role}</p>
