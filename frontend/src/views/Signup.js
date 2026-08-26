@@ -18,12 +18,13 @@ const Signup = () => {
   const [form, setForm] = useState({ username: '', password: '', confirm: '', name: '', email: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [error, setError] = useState('');
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
 
   const mutation = useMutation({
-    mutationFn: () => register(form.username, form.password, form.name, form.email),
+    mutationFn: () => register(form.username, form.password, form.name, form.email, newsletterOptIn),
     onSuccess: async (data) => {
       loginFromData(data);
       trackSignup('email');
@@ -212,13 +213,26 @@ const Signup = () => {
                 />
                 <label htmlFor="acceptedTerms" className="text-xs text-gray-500 cursor-pointer leading-relaxed">
                   J'accepte les{' '}
-                  <Link href="/terms" className="text-blue-600 hover:text-blue-500 underline">
+                  <Link href="/docs/cgu" className="text-blue-600 hover:text-blue-500 underline">
                     conditions d'utilisation
                   </Link>{' '}
                   et la{' '}
-                  <Link href="/privacy" className="text-blue-600 hover:text-blue-500 underline">
+                  <Link href="/docs/politique-confidentialite" className="text-blue-600 hover:text-blue-500 underline">
                     politique de confidentialité
                   </Link>
+                </label>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="newsletterOptIn"
+                  checked={newsletterOptIn}
+                  onChange={e => setNewsletterOptIn(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer flex-shrink-0"
+                />
+                <label htmlFor="newsletterOptIn" className="text-xs text-gray-500 cursor-pointer leading-relaxed">
+                  Je souhaite recevoir les actualités et mises à jour produit par email
                 </label>
               </div>
 
