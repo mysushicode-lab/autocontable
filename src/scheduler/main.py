@@ -19,11 +19,13 @@ from src.email_ingestion import IMAPClient
 from src.scheduler.email_sender import process_pending_emails
 from src.scheduler.lifecycle_engine import check_trial_lifecycle, check_abandoned_accounts
 from src.scheduler.sequenceScheduler import run_sequence_scheduler
-from src.storage.models import Settings, Organization, ClientFile
+from src.storage.models import (
+    Settings, Organization, ClientFile, Invoice, InvoiceStatus,
+    ProcessedFileHash, BankTransaction
+)
 from src.invoice_processor import InvoiceProcessor
 from src.classifier import SupplierClassifier, CategoryClassifier
 from src.storage.database import db
-from src.storage.models import Invoice, InvoiceStatus, ProcessedFileHash, BankTransaction
 from src.reconciliation import run_auto_reconciliation
 from src.utils.quota import can_process_invoice, increment_invoice_count
 import calendar

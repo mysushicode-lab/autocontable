@@ -10,6 +10,7 @@ conflict with the `stripe` package import.
 """
 import os
 import logging
+import threading
 from datetime import datetime
 from decimal import Decimal
 

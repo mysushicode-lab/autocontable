@@ -10,6 +10,7 @@ Sequences follow SaaS Marketing Playbook principles:
 - Churned: cancel confirm → feedback request → win-back
 """
 import logging
+import threading
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 

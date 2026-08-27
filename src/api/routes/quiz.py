@@ -9,6 +9,7 @@ import urllib.request
 import json as _json
 import hashlib
 import time
+import threading
 
 from src.storage.database import db
 from src.storage.models import QuizContact, EmailJob
@@ -230,8 +231,6 @@ def submit_quiz(body: QuizSubmitRequest):
         session.commit()
 
         # Background tasks (async, non-blocking)
-        import threading
-
         def background_tasks():
             # Add to SendGrid Marketing list
             _add_to_sendgrid_list(email, first_name)
