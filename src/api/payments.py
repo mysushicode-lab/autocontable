@@ -148,21 +148,24 @@ def handle_subscription_active(subscription, session):
                         if items:
                             amount = Decimal(str(items[0].get('price', {}).get('unit_amount', 0) / 100))
 
-                        # Track purchase
-                        import threading
-                        threading.Thread(
-                            target=track_purchase,
-                            args=(
-                                admin_user.email,
-                                admin_user.name,
-                                float(amount),
-                                plan,
-                                'EUR'
-                            ),
-                            daemon=True
-                        ).start()
+                        # Track purchase (non-blocking)
+                        def track_purchase_safe():
+                            try:
+                                result = track_purchase(
+                                    admin_user.email,
+                                    admin_user.name,
+                                    float(amount),
+                                    plan,
+                                    'EUR'
+                                )
+                                if result:
+                                    logger.info(f'[Meta Ads] Purchase tracked for org {org.id}: {plan} (€{amount})')
+                                else:
+                                    logger.warning(f'[Meta Ads] Purchase event failed for org {org.id} (returned False)')
+                            except Exception as e:
+                                logger.error(f'[Meta Ads] Exception tracking purchase for org {org.id}: {e}')
 
-                        logger.info(f'[Meta Ads] Purchase tracked for org {org.id}: {plan} (€{amount})')
+                        threading.Thread(target=track_purchase_safe, daemon=True).start()
                 except Exception as e:
                     logger.warning(f'[Meta Ads] Failed to track purchase for org {org.id}: {e}')
 

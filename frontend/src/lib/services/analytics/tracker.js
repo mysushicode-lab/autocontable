@@ -231,11 +231,12 @@ export const trackQuizComplete = (data) => {
 
 // ── EMAIL CAPTURE (MOFU Entry) ───────────────────────────────────────────────
 
-export const trackEmailCapture = (email) => {
+export const trackEmailCapture = async (email) => {
   const domain = email?.split('@')[1];
+  const emailHash = await hashEmail(email);
   return trackEvent('email_captured', {
     email_domain: domain,
-    email_hash: hashEmail(email),  // For Conversions API
+    email_hash: emailHash,  // SHA256 for Conversions API
   });
 };
 
@@ -305,12 +306,16 @@ export const trackPricingView = () => trackEvent('page_view_pricing');
 
 // ── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
 
-// Hash email for Conversions API (SHA256 simulation)
-function hashEmail(email) {
+// Hash email for Conversions API (SHA256)
+async function hashEmail(email) {
   if (!email || typeof window === 'undefined') return null;
   try {
-    // Browser crypto API for SHA256
-    return btoa(email.toLowerCase()).slice(0, 16);  // Simplified hash for client-side
+    // Proper SHA256 hash using Web Crypto API
+    const encoder = new TextEncoder();
+    const data = encoder.encode(email.toLowerCase());
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   } catch {
     return null;
   }

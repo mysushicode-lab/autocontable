@@ -182,8 +182,9 @@ def on_account_created(db: Session, user_id: int, organization_id: int, email: s
             'time_saved': 0,
         }
         send_lifecycle_email(email=email, first_name=first_name, email_type='trial_welcome', info=info)
+        logger.info(f'[Lifecycle] Trial welcome email sent to {email}')
     except Exception as e:
-        logger.error(f"Failed to send immediate trial_welcome to {email}: {e}")
+        logger.critical(f'[CRITICAL] Failed to send trial_welcome to {email}: {e} — user will not receive onboarding email')
 
     # Schedule trial_active sequence (starts J+1)
     schedule_sequence(db, LifecycleStage.TRIAL_ACTIVE,
