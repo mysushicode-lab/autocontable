@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { login } from '../api';
+import { setUserID } from '@/lib/services/analytics/init';
 
 const AuthContext = createContext(null);
 
@@ -32,6 +33,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    // Sync user ID with analytics (GA4 + Facebook)
+    setUserID(data.user.id, data.user.email);
     return data;
   }, []);
 
@@ -40,6 +43,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+    // Sync user ID with analytics (GA4 + Facebook)
+    setUserID(data.user.id, data.user.email);
   }, []);
 
   const updateUserPhoto = useCallback((photoUrl) => {

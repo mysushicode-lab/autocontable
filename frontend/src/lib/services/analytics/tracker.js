@@ -201,14 +201,182 @@ export function trackGoogleAdsConversion(label, value, currency = 'EUR') {
 
 // ── Convenience wrappers (exact same pattern as minimoes) ─────────────────────
 
-export const trackQuizStart        = ()           => trackEvent('quiz_start');
-export const trackQuizProgress     = (step, ans)  => trackEvent('quiz_progress', { step, answer: ans });
-export const trackQuizComplete     = (data)       => trackEvent('quiz_complete', { ...data, annual_loss: Math.round((data?.time_lost_year || 0) * 50) });
-export const trackEmailCapture     = (email)      => trackEvent('email_captured', { email_domain: email?.split('@')[1] });
-export const trackSignupStart      = ()           => trackEvent('signup_start');
-export const trackSignup           = (method = 'email') => { trackEvent('signup_complete', { method }); trackGoogleAdsConversion(process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL, 0); };
-export const trackLogin            = (method = 'email') => trackEvent('login', { method });
-export const trackTrialStart       = (plan)       => trackEvent('trial_start', { plan });
-export const trackPurchase         = (plan, value, currency = 'EUR') => { trackEvent('plan_upgrade', { plan, value, currency }); trackGoogleAdsConversion(process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL, value, currency); };
-export const trackCTAClick         = (label, loc) => trackEvent('cta_click', { cta_label: label, location: loc });
-export const trackPricingView      = ()           => trackEvent('page_view_pricing');
+// ── QUIZ FUNNEL ──────────────────────────────────────────────────────────────
+
+export const trackQuizStart = (utm_source = 'unknown') => {
+  const sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  return trackEvent('quiz_start', {
+    utm_source: sp.get('utm_source') || utm_source,
+    audience_type: 'cold_traffic',
+  });
+};
+
+export const trackQuizProgress = (step, ans) =>
+  trackEvent('quiz_progress', {
+    step,
+    answer: ans?.value || ans,
+    question_id: ans?.id
+  });
+
+export const trackQuizComplete = (data) => {
+  // Calculate lead score for qualification
+  const leadScore = calculateLeadScore(data);
+  return trackEvent('quiz_complete', {
+    ...data,
+    annual_loss: Math.round((data?.time_lost_year || 0) * 50),
+    lead_score: leadScore,
+    profile_type: getProfileTypeFromAnswers(data),
+  });
+};
+
+// ── EMAIL CAPTURE (MOFU Entry) ───────────────────────────────────────────────
+
+export const trackEmailCapture = (email) => {
+  const domain = email?.split('@')[1];
+  return trackEvent('email_captured', {
+    email_domain: domain,
+    email_hash: hashEmail(email),  // For Conversions API
+  });
+};
+
+// ── LANDING PAGE ──────────────────────────────────────────────────────────────
+
+export const trackLandingPageView = (page_type = 'vsl') =>
+  trackEvent('page_view_landing', { page_type, facebook: 'ViewContent' });
+
+export const trackLandingPageScroll = (scroll_percent) => {
+  if (scroll_percent >= 50) {
+    return trackEvent('landing_scroll_50', { scroll_depth: scroll_percent, facebook: 'AddToCart' });
+  }
+};
+
+export const trackTrialCTAClick = (location = 'landing') =>
+  trackEvent('cta_click', {
+    cta_label: 'trial_start',
+    location,
+    facebook: 'InitiateCheckout'
+  });
+
+// ── SIGNUP / REGISTRATION ────────────────────────────────────────────────────
+
+export const trackSignupStart = () => trackEvent('signup_start');
+
+export const trackSignup = (method = 'email') => {
+  trackEvent('signup_complete', { method });
+  trackGoogleAdsConversion(process.env.NEXT_PUBLIC_GOOGLE_ADS_SIGNUP_LABEL, 0);
+};
+
+export const trackLogin = (method = 'email', userId = null) =>
+  trackEvent('login', { method, user_id: userId });
+
+// ── TRIAL & PURCHASE ─────────────────────────────────────────────────────────
+
+export const trackTrialStart = (plan) => trackEvent('trial_start', { plan });
+
+export const trackTrialEndingSoon = (days_left = 3) =>
+  trackEvent('trial_ending_soon', {
+    days_remaining: days_left,
+    facebook: 'InitiateCheckout'  // Urgency signal
+  });
+
+export const trackPurchase = (plan, value, currency = 'EUR') => {
+  trackEvent('plan_upgrade', { plan, value, currency });
+  trackGoogleAdsConversion(process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL, value, currency);
+};
+
+// ── ENGAGEMENT & RETENTION ───────────────────────────────────────────────────
+
+export const trackFirstImport = (import_count = 1) =>
+  trackEvent('first_import', { import_count, facebook: 'AddToCart' });
+
+export const trackFirstReconciliation = () =>
+  trackEvent('first_reconciliation', { facebook: 'InitiateCheckout' });
+
+export const trackAccountAbandoned = (signup_date) => {
+  const days_since = Math.floor((Date.now() - new Date(signup_date)) / (1000 * 60 * 60 * 24));
+  return trackEvent('account_abandoned', {
+    days_since_signup: days_since,
+    facebook: 'CustomEvent'
+  });
+};
+
+export const trackCTAClick = (label, loc) => trackEvent('cta_click', { cta_label: label, location: loc });
+export const trackPricingView = () => trackEvent('page_view_pricing');
+
+// ── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
+
+// Hash email for Conversions API (SHA256 simulation)
+function hashEmail(email) {
+  if (!email || typeof window === 'undefined') return null;
+  try {
+    // Browser crypto API for SHA256
+    return btoa(email.toLowerCase()).slice(0, 16);  // Simplified hash for client-side
+  } catch {
+    return null;
+  }
+}
+
+// Calculate lead qualification score (0-100)
+function calculateLeadScore(answers = {}) {
+  let score = 0;
+
+  try {
+    // Frustration level (high frustration = high priority)
+    const frustration = answers?.frustration?.value;
+    if (frustration === 'manual-entry') score += 25;
+    if (frustration === 'client-chase') score += 20;
+    if (frustration === 'fiscal-stress') score += 30;
+    if (frustration === 'cant-scale') score += 35;
+
+    // Emotional state (burnout = highest priority)
+    const emotion = answers?.emotion?.value;
+    if (emotion === 'burnout') score += 30;
+    if (emotion === 'overwhelmed') score += 20;
+    if (emotion === 'pressure') score += 10;
+    if (emotion === 'optimistic') score += 5;
+
+    // Time spent (more time = higher priority)
+    const timeLost = answers?.['time-spent']?.value;
+    if (timeLost === '>30h') score += 20;
+    if (timeLost === '20-30h') score += 15;
+    if (timeLost === '10-20h') score += 10;
+
+    // Cabinet size (bigger = better fit)
+    const clientCount = answers?.['client-count']?.value;
+    if (clientCount === '>100') score += 10;
+    if (clientCount === '50-100') score += 8;
+
+    return Math.min(100, score);
+  } catch {
+    return 50;  // Default mid-score if calculation fails
+  }
+}
+
+// Map quiz answers to cabinet profile
+function getProfileTypeFromAnswers(answers = {}) {
+  try {
+    const clientCount = answers?.['client-count']?.value;
+    const timeSpent = answers?.['time-spent']?.value;
+    const emotion = answers?.emotion?.value;
+
+    // Cabinet Optimiseur
+    if (clientCount === '<20' && timeSpent === '<10h' && emotion === 'optimistic') {
+      return 'cabinet_optimiseur';
+    }
+
+    // Cabinet en Crise (burnout ou >30h/week)
+    if (timeSpent === '>30h' || emotion === 'burnout') {
+      return 'cabinet_crise';
+    }
+
+    // Cabinet Débordé (gros cabinet mais overwhelmed)
+    if ((clientCount === '50-100' || clientCount === '>100') && (timeSpent === '20-30h' || emotion === 'overwhelmed')) {
+      return 'cabinet_deborde';
+    }
+
+    // Cabinet en Croissance (default)
+    return 'cabinet_croissance';
+  } catch {
+    return 'cabinet_unknown';
+  }
+}
