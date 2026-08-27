@@ -17,7 +17,7 @@ import src.config  # noqa: F401
 
 from src.email_ingestion import IMAPClient
 from src.scheduler.email_sender import process_pending_emails
-from src.scheduler.lifecycle_engine import check_trial_lifecycle
+from src.scheduler.lifecycle_engine import check_trial_lifecycle, check_abandoned_accounts
 from src.scheduler.sequenceScheduler import run_sequence_scheduler
 from src.storage.models import Settings, Organization, ClientFile
 from src.invoice_processor import InvoiceProcessor
@@ -449,6 +449,18 @@ class InvoiceScheduler:
             trigger=IntervalTrigger(hours=1),
             id='trial_lifecycle',
             name='Check trial expiry and trigger emails',
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=3600,
+        )
+
+        # Abandoned accounts checker (every 24 hours: detect signups with zero usage)
+        logger.info("Scheduling abandoned accounts checker (24h interval)")
+        self.scheduler.add_job(
+            check_abandoned_accounts,
+            trigger=IntervalTrigger(hours=24),
+            id='abandoned_accounts',
+            name='Detect abandoned accounts for retargeting',
             replace_existing=True,
             max_instances=1,
             misfire_grace_time=3600,

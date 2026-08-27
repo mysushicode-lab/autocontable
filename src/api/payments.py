@@ -19,7 +19,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from src.api.auth import get_current_user
 from src.storage.database import db
-from src.storage.models import Organization, Affiliate, Referral, ReferralStatus
+from src.storage.models import Organization, Affiliate, Referral, ReferralStatus, User
+from src.scheduler.analytics_tracking import track_purchase
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -130,6 +131,39 @@ def handle_subscription_active(subscription, session):
             # Lifecycle: payment confirmed → paying sequence
             from src.scheduler.lifecycle_engine import on_payment_confirmed
             on_payment_confirmed(session, organization_id=org.id)
+
+            # Track purchase in Meta Ads (only for paid plans, not trialing)
+            if status == 'active' and plan != 'free':
+                try:
+                    admin_user = session.query(User).filter(
+                        User.organization_id == org.id,
+                        User.role == 'admin'
+                    ).first()
+
+                    if admin_user:
+                        # Get subscription amount
+                        items = subscription.get('items', {}).get('data', [])
+                        amount = Decimal('0')
+                        if items:
+                            amount = Decimal(str(items[0].get('price', {}).get('unit_amount', 0) / 100))
+
+                        # Track purchase
+                        import threading
+                        threading.Thread(
+                            target=track_purchase,
+                            args=(
+                                admin_user.email,
+                                admin_user.name,
+                                float(amount),
+                                plan,
+                                'EUR'
+                            ),
+                            daemon=True
+                        ).start()
+
+                        logger.info(f'[Meta Ads] Purchase tracked for org {org.id}: {plan} (€{amount})')
+                except Exception as e:
+                    logger.warning(f'[Meta Ads] Failed to track purchase for org {org.id}: {e}')
 
 
 def handle_subscription_deleted(subscription, session):

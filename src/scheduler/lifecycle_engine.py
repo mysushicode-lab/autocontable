@@ -17,6 +17,7 @@ from src.storage.models import (
     EmailJob, QuizContact, Organization, User, LifecycleStage
 )
 from src.storage.database import SessionLocal
+from src.scheduler.analytics_tracking import track_trial_ending_soon, track_account_abandoned
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +200,17 @@ def on_trial_ending(db: Session, organization_id: int):
             schedule_sequence(db, LifecycleStage.TRIAL_ENDING,
                               organization_id=organization_id,
                               user_id=user.id)
+
+            # Track trial ending soon in Meta Ads (urgency signal for retargeting)
+            try:
+                import threading
+                threading.Thread(
+                    target=track_trial_ending_soon,
+                    args=(user.email, user.name, 3),
+                    daemon=True
+                ).start()
+            except Exception as e:
+                logger.warning(f"Failed to track trial_ending_soon for {user.email}: {e}")
 
     # Update QuizContact lifecycle if linked
     contact = None
@@ -405,6 +417,53 @@ def check_trial_lifecycle():
         db.commit()
     except Exception as e:
         logger.error(f"Error in trial lifecycle check: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+def check_abandoned_accounts():
+    """Run daily: detect users who signed up but never imported an invoice."""
+    db = SessionLocal()
+    try:
+        now = datetime.utcnow()
+        one_day_ago = now - timedelta(days=1)
+
+        # Find users created 1+ days ago with active trial and ZERO invoices
+        from src.storage.models import Invoice
+        from sqlalchemy import func
+
+        abandoned_users = db.query(User).filter(
+            User.created_at < one_day_ago,
+            User.organization_id != None
+        ).all()
+
+        for user in abandoned_users:
+            org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+            if not org:
+                continue
+
+            # Check if they have any invoices imported
+            invoice_count = db.query(func.count(Invoice.id)).filter(
+                Invoice.organization_id == org.id
+            ).scalar()
+
+            if invoice_count == 0 and org.is_trial_active:
+                # Track account abandoned in Meta Ads
+                try:
+                    days_since = (now - user.created_at).days
+                    import threading
+                    threading.Thread(
+                        target=track_account_abandoned,
+                        args=(user.email, user.name, days_since),
+                        daemon=True
+                    ).start()
+                except Exception as e:
+                    logger.warning(f"Failed to track abandoned account for {user.email}: {e}")
+
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error checking abandoned accounts: {e}")
         db.rollback()
     finally:
         db.close()

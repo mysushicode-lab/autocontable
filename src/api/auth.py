@@ -13,6 +13,7 @@ from src.storage.models import (
 from src.api.schemas import RegisterRequest, LoginRequest, ChangeUsernameRequest, ChangeEmailRequest
 from src.utils.defaults import create_default_settings
 from src.api.rate_limit import limiter
+from src.scheduler.analytics_tracking import track_trial_start
 
 # Re-export helpers so existing imports (from src.api.auth import ...) keep working
 from src.api.auth_helpers import (  # noqa: F401
@@ -83,6 +84,14 @@ def register(request: Request, body: RegisterRequest, background_tasks: Backgrou
         on_account_created(session, user_id=user_id, organization_id=org_id, email=body.email)
 
         session.commit()
+
+        # Track trial start in Meta Ads (background task)
+        background_tasks.add_task(
+            track_trial_start,
+            user_email=body.email,
+            user_name=body.name,
+            plan='free_7days'
+        )
 
         return {
             "token": token_value,
