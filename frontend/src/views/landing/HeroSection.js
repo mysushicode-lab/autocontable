@@ -51,7 +51,7 @@ export default function HeroSection() {
             <div className="absolute left-[40px] top-[40px] w-[900px] lg:left-[200px] lg:top-0 lg:w-[1200px]">
               <div className="absolute -inset-6 bg-gradient-to-b from-[#f5f5f5] to-white border border-black/5 rounded-2xl" />
               <div className="relative rounded-2xl overflow-hidden">
-                <img src="/header-mocap.png" alt="Aperçu du dashboard FactPilot" className="w-full h-auto block" />
+                <img src="/header-mocap.webp" alt="Aperçu du dashboard FactPilot" className="w-full h-auto block" />
               </div>
               <div className="absolute inset-y-0 -right-6 w-56 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
               <div className="absolute inset-x-[-24px] bottom-[-24px] h-48 lg:h-80 bg-gradient-to-t from-white via-white/80 to-transparent z-10 pointer-events-none" />

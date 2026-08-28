@@ -1,45 +1,48 @@
-import DocsCard from '@/components/docs/DocsCard';
 import DocsNote from '@/components/docs/DocsNote';
+import { DocsToc } from '@/components/docs/DocsToc';
 
-export const metadata = { title: 'CGU' };
+export const metadata = { title: 'CGU', description: 'Conditions Générales d\'Utilisation de la plateforme FactPilot.' };
 
-export default function DocsCguPage() {
+const TOC = [
+  { id: 'objet', label: 'Objet' },
+  { id: 'acces', label: 'Accès au service' },
+  { id: 'donnees', label: 'Données et contenu' },
+  { id: 'ia', label: 'Contenu généré par l\'IA' },
+  { id: 'responsabilite', label: 'Limitation de responsabilité' },
+  { id: 'resiliation', label: 'Résiliation' },
+];
+
+export default function CguPage() {
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
-      <p style={{ fontSize: 13, color: 'var(--d-muted)', marginBottom: 8 }}>Documentation / Légal</p>
-      <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--d-text)', marginBottom: 8, marginTop: 0 }}>
-        Conditions Générales d&apos;Utilisation
-      </h1>
-      <p style={{ fontSize: 14, color: 'var(--d-muted)', marginBottom: 32, marginTop: 0 }}>Dernière mise à jour : juin 2025</p>
+    <div className="docs-page">
+      <div className="docs-prose">
+        <h1>Conditions Générales d'Utilisation</h1>
+        <p className="docs-lead">Dernière mise à jour : juin 2025</p>
 
-      <DocsCard id="objet" title="1. Objet">
-        <p style={{ margin: 0, color: 'var(--d-text)', fontSize: 14, lineHeight: 1.8 }}>
-          Les présentes CGU régissent l&apos;utilisation de la plateforme FactPilot, éditée par MySushiCode. En accédant à FactPilot, vous acceptez sans réserve les présentes conditions.
-        </p>
-      </DocsCard>
+        <h2 id="objet">Objet</h2>
+        <p>Les présentes CGU régissent l'utilisation de la plateforme FactPilot, éditée par MySushiCode. En accédant à FactPilot, vous acceptez sans réserve les présentes conditions.</p>
 
-      <DocsCard id="acces" title="2. Accès au service">
-        <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--d-text)', fontSize: 14, lineHeight: 2 }}>
-          <li>L&apos;accès à FactPilot nécessite la création d&apos;un compte avec une adresse email valide.</li>
-          <li>L&apos;essai gratuit est valable 14 jours sans carte bancaire.</li>
-          <li>L&apos;utilisateur est responsable de la confidentialité de ses identifiants.</li>
+        <h2 id="acces">Accès au service</h2>
+        <ul>
+          <li>L'accès à FactPilot nécessite la création d'un compte avec une adresse email valide.</li>
+          <li>L'essai gratuit est valable 14 jours sans carte bancaire.</li>
+          <li>L'utilisateur est responsable de la confidentialité de ses identifiants.</li>
         </ul>
-      </DocsCard>
 
-      <DocsCard id="donnees" title="3. Données et contenu">
-        <p style={{ margin: '0 0 12px', color: 'var(--d-text)', fontSize: 14, lineHeight: 1.7 }}>
-          L&apos;utilisateur reste propriétaire de ses données et documents importés dans FactPilot. MySushiCode s&apos;engage à ne pas utiliser ces données à des fins autres que la fourniture du service.
-        </p>
-        <DocsNote>
-          À la résiliation, les données sont conservées 30 jours puis supprimées définitivement sur demande.
-        </DocsNote>
-      </DocsCard>
+        <h2 id="donnees">Données et contenu</h2>
+        <p>L'utilisateur reste propriétaire de ses données et documents importés dans FactPilot. MySushiCode s'engage à ne pas utiliser ces données à des fins autres que la fourniture du service.</p>
+        <DocsNote>À la résiliation, les données sont conservées 30 jours puis supprimées définitivement sur demande.</DocsNote>
 
-      <DocsCard id="responsabilite" title="4. Limitation de responsabilité">
-        <p style={{ margin: 0, color: 'var(--d-text)', fontSize: 14, lineHeight: 1.8 }}>
-          FactPilot est fourni &quot;tel quel&quot;. MySushiCode ne saurait être tenu responsable des pertes de données, interruptions de service ou erreurs d&apos;extraction générées par l&apos;IA. L&apos;utilisateur est invité à vérifier les extractions avant tout import dans son logiciel comptable.
-        </p>
-      </DocsCard>
+        <h2 id="ia">Contenu généré par l'IA</h2>
+        <p>FactPilot utilise l'intelligence artificielle pour extraire et classer les informations comptables. Les extractions peuvent contenir des erreurs. L'utilisateur est tenu de vérifier les données extraites avant tout import dans son logiciel comptable. MySushiCode ne saurait être tenu responsable des erreurs d'extraction.</p>
+
+        <h2 id="responsabilite">Limitation de responsabilité</h2>
+        <p>FactPilot est fourni "tel quel". MySushiCode ne saurait être tenu responsable des pertes de données, interruptions de service ou erreurs générées par l'IA. Nous nous engageons à un uptime raisonnable mais ne garantissons pas une disponibilité ininterrompue.</p>
+
+        <h2 id="resiliation">Résiliation</h2>
+        <p>Vous pouvez résilier votre compte à tout moment depuis les paramètres de votre compte. MySushiCode se réserve le droit de suspendre ou résilier les comptes qui enfreindraient les présentes CGU ou utiliseraient la plateforme à des fins illicites.</p>
+      </div>
+      <DocsToc items={TOC} />
     </div>
   );
 }

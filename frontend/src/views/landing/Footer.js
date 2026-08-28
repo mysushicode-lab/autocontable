@@ -95,7 +95,7 @@ export default function Footer() {
           boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
         }}
       >
-        <img src="/logo_mysushicode.png" alt="mysushicode" className="w-4 h-4 object-contain" />
+        <img src="/logo_mysushicode.webp" alt="mysushicode" className="w-4 h-4 object-contain" />
         Made by mysushicode.fr
       </a>
     </div>
