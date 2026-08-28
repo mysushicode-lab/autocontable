@@ -142,6 +142,12 @@ export default function RootLayout({ children }) {
         />
         <Providers>{children}</Providers>
         <CookieBanner />
+        {/* Minimoes AI widget */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var iframe=document.createElement('iframe');iframe.src='https://minimoes.com/api/widget/6a918310a2853badf06e0768';iframe.style.cssText='position:fixed;bottom:0;right:0;width:420px;height:700px;border:none;z-index:999999;background:transparent;';iframe.setAttribute('allowtransparency','true');iframe.setAttribute('scrolling','no');document.body.appendChild(iframe);})();`,
+          }}
+        />
       </body>
     </html>
   );
