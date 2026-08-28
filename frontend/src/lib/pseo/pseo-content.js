@@ -78,6 +78,30 @@ function getIndustryContent(label) {
           "Génération de factures Factur-X 2026 dès aujourd'hui pour anticiper l'obligation légale",
           'Connexion sécurisée à votre logiciel existant : zéro migration, zéro risque, zéro formation',
         ],
+        sub: [
+          {
+            heading: 'Extraction et classification automatique',
+            body: `FactPilot lit tous les formats de documents rencontrés dans le secteur ${label} — PDFs natifs, scans dégradés, photos smartphone, pièces jointes WhatsApp. Le moteur OCR combiné à l'IA extrait fournisseur, SIRET, montants HT/TVA/TTC, date et numéro de facture avec un taux de précision supérieur à 95 %, sans aucun gabarit à configurer.`,
+          },
+          {
+            heading: 'Rapprochement bancaire en temps réel',
+            body: `Dès qu'un relevé bancaire est importé, FactPilot associe automatiquement chaque transaction aux factures correspondantes. Les impayés remontent seuls dans le tableau de bord, et la traçabilité complète est disponible pour n'importe quel contrôle fiscal — sans travail manuel supplémentaire de la part de vos équipes.`,
+          },
+          {
+            heading: 'Intégration sans migration avec vos logiciels',
+            body: `FactPilot se connecte nativement à Sage, Cegid, Quadratus, Pennylane et ACD. Les écritures validées sont poussées automatiquement dans votre logiciel comptable, au format attendu, sans ressaisie ni double vérification. La mise en route prend 60 minutes et ne nécessite aucune intervention de votre équipe informatique.`,
+          },
+        ],
+      },
+      {
+        heading: `Comment déployer FactPilot dans votre structure ${label}`,
+        bullets: [
+          'Créez votre compte — essai gratuit 14 jours, aucune carte bancaire requise',
+          'Connectez votre logiciel comptable — Sage, Cegid ou Quadratus en quelques clics',
+          'Configurez votre adresse de dépôt email — vos fournisseurs envoient directement leurs factures',
+          'Importez vos relevés bancaires — le rapprochement IA démarre automatiquement',
+          'Exportez votre FEC — conforme DGFiP, prêt pour tout contrôle fiscal',
+        ],
       },
       {
         heading: 'Résultats mesurables',
@@ -133,6 +157,26 @@ function getUseCaseContent(label) {
           "Proposition d'imputation comptable basée sur l'historique et les règles métier définies",
           'Validation en un clic pour les cas conformes, signalement ciblé des seules anomalies',
           'Export automatique vers votre logiciel comptable sans double saisie ni retraitement',
+        ],
+        sub: [
+          {
+            heading: 'Réception multicanal des documents',
+            body: `FactPilot accepte les documents liés à la ${label} par tous les canaux : email (adresse de dépôt dédiée), WhatsApp, upload manuel ou API. Chaque pièce est traitée dans les secondes qui suivent sa réception, quel que soit son format ou sa qualité de numérisation.`,
+          },
+          {
+            heading: 'Validation intelligente et contrôle qualité',
+            body: `Le moteur IA de FactPilot détecte automatiquement les doublons, les montants incohérents et les informations manquantes. Seules les anomalies réelles sont remontées pour validation humaine — les cas conformes sont traités et exportés sans intervention, ce qui réduit drastiquement le temps consacré à la ${label}.`,
+          },
+        ],
+      },
+      {
+        heading: `Démarrer avec FactPilot pour ${label}`,
+        bullets: [
+          "Créez votre compte — essai 14 jours gratuit, opérationnel en 60 minutes",
+          "Connectez votre logiciel comptable — Sage, Cegid ou Quadratus nativement",
+          "Configurez vos règles métier — plan de comptes, codes analytiques, seuils de validation",
+          "Importez vos premiers documents — FactPilot traite et classe automatiquement",
+          "Exportez en FEC ou vers votre logiciel — sans ressaisie ni double vérification",
         ],
       },
       {

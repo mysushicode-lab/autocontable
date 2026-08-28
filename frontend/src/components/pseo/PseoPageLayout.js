@@ -254,6 +254,13 @@ export default function PseoPageLayout({ page }) {
                       </ul>
                     )}
 
+                    {/* Sub-sections (h3) */}
+                    {section.sub && section.sub.map((sub, sIdx) => (
+                      <div key={sIdx} style={{ marginTop: 24 }}>
+                        <h3 style={{ ...robotoSlab.style, fontSize: 17, fontWeight: 700, color: '#000', marginBottom: 8 }}>{sub.heading}</h3>
+                        <p style={{ fontSize: 15, lineHeight: 1.8, marginBottom: 20, color: '#3d3d3d' }}>{sub.body}</p>
+                      </div>
+                    ))}
 
                     {/* Comparison table */}
                     {section.comparison && (
