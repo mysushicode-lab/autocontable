@@ -13,6 +13,7 @@ import threading
 
 from src.storage.database import db
 from src.storage.models import QuizContact, EmailJob
+from src.api.meta_conversions import track_lead_server
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quiz", tags=["quiz"])
@@ -131,6 +132,13 @@ class QuizSubmitRequest(BaseModel):
     first_name: str
     email: str
     answers: dict
+    # Advanced tracking for Meta Conversions API
+    event_id: str = None
+    fbc: str = None  # Facebook click ID cookie
+    fbp: str = None  # Facebook browser ID cookie
+    lead_value: float = None  # Dynamic lead value from scoring
+    lead_quality: str = None  # 'high', 'medium', 'low'
+    quiz_completion_time: int = None  # Seconds to complete quiz
 
 
 def get_profile_from_answers(answers: dict) -> str:
@@ -235,19 +243,21 @@ def submit_quiz(body: QuizSubmitRequest):
             # Add to SendGrid Marketing list
             _add_to_sendgrid_list(email, first_name)
 
-            # Send Lead event to Meta Conversions API (server-side tracking)
-            _send_to_meta_conversions_api(
+            # Send Lead event to Meta Conversions API (server-side tracking with deduplication)
+            track_lead_server(
                 email=email,
-                first_name=first_name,
-                event_name='Lead',
+                lead_id=str(quiz_contact.id),
+                value=body.lead_value or 10,  # Use dynamic value or fallback to 10
+                currency='USD',
+                event_id=body.event_id,  # For deduplication with client-side event
+                fbc=body.fbc,  # Facebook click ID cookie
+                fbp=body.fbp,  # Facebook browser ID cookie
                 custom_data={
-                    'value': 0,
-                    'currency': 'EUR',
-                    'content_name': 'Quiz Lead',
-                    'content_type': 'lead',
                     'profile_type': profile,
                     'time_lost_year': time_lost['year'],
                     'client_count': client_count,
+                    'lead_quality': body.lead_quality or 'medium',
+                    'quiz_completion_time': body.quiz_completion_time,
                 }
             )
 

@@ -83,6 +83,7 @@ export default function QuizPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizStartTime] = useState(Date.now()); // Track start time for lead scoring
 
   const currentQuestion = QUIZ_QUESTIONS[currentStep];
   const progress = ((currentStep + 1) / QUIZ_QUESTIONS.length) * 100;
@@ -99,7 +100,7 @@ export default function QuizPage() {
         setCurrentStep(currentStep + 1);
       } else {
         trackQuizComplete(newAnswers);
-        router.push(`/quiz/email?data=${encodeURIComponent(JSON.stringify(newAnswers))}`);
+        router.push(`/quiz/email?data=${encodeURIComponent(JSON.stringify(newAnswers))}&startTime=${quizStartTime}`);
       }
     }, 300);
   };

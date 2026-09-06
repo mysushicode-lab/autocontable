@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { btnPrimary } from '@/views/landing/_styles';
 import confetti from 'canvas-confetti';
 import { trackEmailCapture } from '@/lib/services/analytics/tracker';
+import { trackDynamicLead } from '@/lib/services/analytics/tracker-advanced';
 
 export default function EmailCapturePage() {
   const { user, logout } = useAuth();
@@ -59,6 +60,7 @@ export default function EmailCapturePage() {
   }, []);
 
   const quizData = searchParams.get('data');
+  const quizStartTime = searchParams.get('startTime');
   let answers = {};
   try {
     answers = quizData ? JSON.parse(decodeURIComponent(quizData)) : {};
@@ -72,6 +74,18 @@ export default function EmailCapturePage() {
     setIsSubmitting(true);
 
     try {
+      // Track dynamic lead with deduplication + lead scoring
+      const trackingData = trackDynamicLead({
+        email,
+        quizResponse: answers,
+        quizStartTime: quizStartTime ? parseInt(quizStartTime) : undefined,
+        utmParams: {
+          utm_source: searchParams.get('utm_source'),
+          utm_medium: searchParams.get('utm_medium'),
+          utm_campaign: searchParams.get('utm_campaign'),
+        },
+      });
+
       const response = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,6 +93,13 @@ export default function EmailCapturePage() {
           first_name: firstName,
           email,
           answers,
+          // Send tracking data for server-side deduplication
+          event_id: trackingData?.eventId,
+          fbc: trackingData?.fbc,
+          fbp: trackingData?.fbp,
+          lead_value: trackingData?.leadScore?.value,
+          lead_quality: trackingData?.leadScore?.quality,
+          quiz_completion_time: trackingData?.quizCompletionTime,
         }),
       });
 
@@ -88,7 +109,7 @@ export default function EmailCapturePage() {
         throw new Error(data.detail || data.message || 'Une erreur est survenue');
       }
 
-      trackEmailCapture(email); // Lead envoyé uniquement si l'API confirme
+      console.log('[Quiz] Lead tracked successfully with score:', trackingData?.leadScore);
 
       // Redirection vers la home
       router.push('/');
